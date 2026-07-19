@@ -110,6 +110,38 @@ the DB is compromised. This is special-category data under UK GDPR (§6).
   provider (Postmark/SES) with Reply-To `team@areterra.co.uk`; every send auto-logged
   to the member's comms timeline.
 
+### 5.1 Legacy technical notes — what the new stack absorbs
+
+The spec's "key technical notes" mostly stop being hand-rolled concerns in Laravel:
+
+| Legacy concern | In the rebuild |
+|---|---|
+| `1,000,000 + roster_id` payroll ID hack | Gone — polymorphic payee relation (§3). |
+| Service worker must live at site root | Trivially true — we own the whole document root, no plugin-directory constraint. |
+| Non-destructive `ALTER TABLE` upgrade routines | Laravel migrations (versioned, ordered, reversible). |
+| Manual `escapeHtml()` before DOM insertion | React escapes by default; validation via Form Requests on write. |
+| Manual `WHERE deleted_at IS NULL` on every query | `SoftDeletes` trait applies the scope globally. |
+| Monitoring upsert on `(animal_id, monitor_date)` | Kept as a DB unique index + `updateOrCreate` — same guarantee, enforced by the schema. |
+| VAPID JWT signing, DER→raw conversion, 410 handling | Handled by the `webpush` package; we keep the rule that a `410 Gone` deactivates the subscription. |
+| SMTP via Microsoft 365 | Laravel mail transport config; Postmark/SES also an option. |
+| Operating days ISO 1/2/4/5 | A single `OperatingDays` value object used by both reminder commands — one place to change if the charity ever opens Wednesdays. |
+
+Rules that **must be carried over verbatim**: transport charges auto-apply on
+mark-as-collected with balance = payments − charges; and the four PDF layouts
+(payroll landscape A4, policy portrait, transport receipt, SAR extract) which staff
+and auditors already recognise — print stylesheets should reproduce them, not
+redesign them.
+
+### 5.2 Login page & mobile shell
+
+The login screen (dark-blue split panel, glassmorphic form card, always-visible SSO
+button that greys out when unconfigured) and the mobile shell rules (bottom nav,
+bottom-sheet modals at 92vh, 44px tap targets, 48px/16px inputs to prevent iOS zoom,
+two-column grids collapsing under 960px) are specified in `SPEC.md` and belong to
+**Phase 0** — they are the design system's acceptance criteria, not per-module work.
+Live-recalculating forms (payroll grid) bind to input events, matching the current
+`oninput` behaviour.
+
 ## 6. Data protection (non-negotiable given the user base)
 
 This system holds special-category data about vulnerable adults: health data,

@@ -308,6 +308,68 @@ ledger), `am_comms_log`, `am_email_templates`, `am_leave_requests`,
   colour headers, signature lines
 - Search/filter on all list views; status pills with coloured backgrounds
 
+## Login page
+
+- **Left panel:** dark blue `#00345C`, Areterra logo, tagline "Animals. People.
+  Purpose." in bold chunky text, feature bullets, charity number footer.
+- **Right panel:** photo of animals/centre with "Animals. People. Purpose." overlay
+  text bottom-left.
+- **Form:** white glassmorphic card centred in left panel. Microsoft SSO button at top
+  (white card style with Microsoft logo), divider "or sign in with password", then
+  username/password fields, remember me, Log In button.
+- **Mobile (<900px):** blue background, logo + tagline above white form card.
+- **SSO button:** always visible — active if configured, greyed with a
+  "set up in Hub Settings" link if not.
+
+## PDF exports
+
+- **Payroll PDF:** landscape A4. "Pay Date - 28th July 2026" heading underlined,
+  centred. "Areterra" bold underlined, left-aligned. Table with exact columns:
+  Staff Name, N.I.C No., Hourly Rate (£), Total No. Hours, Basic Pay, Holiday Pay (£),
+  Total SSP, Mileage, Mileage Pay (£), Total (£). Dark blue total row. Three signature
+  lines: Authorised by (pre-filled if set), Date, Received by.
+- **Policy PDF:** A4 portrait. Logo top-left. Version + date top-right. Title as H1.
+  Rich HTML content. Footer with address.
+- **Receipt PDF:** small receipt format. Areterra logo. "Transport Receipt". Date,
+  rate, days covered, amount, running balance. Print button.
+- **SAR PDF:** member full data extract with Areterra branding.
+
+## Mobile behaviour
+
+- Bottom navigation bar: Today, Dashboard, Members, All Animals, Announcements, More
+- Sidebar hidden on mobile, accessed via hamburger
+- All two-column grids collapse to single column at <960px
+  (`.ah-profile-grid` handles member/animal profile collapse)
+- Topbar icons: 44×44px minimum tap targets
+- Modals: bottom-sheet style (slides up from bottom, 92vh max)
+- All inputs: min 48px height, 16px font to prevent iOS zoom
+- `oninput` not `onchange` for live calculation (fires immediately)
+
+## Key technical notes (current implementation)
+
+1. **UNSIGNED integer constraint:** staff roster IDs stored as `1,000,000 + roster_id`
+   in payroll tables to avoid clash with real user IDs while satisfying the UNSIGNED
+   constraint.
+2. **Service worker:** must be served from site root (not plugin directory) for push
+   notification scope to work.
+3. **DB upgrades:** never destructive. New columns added via
+   `ALTER TABLE ADD COLUMN IF NOT EXISTS`, version-gated.
+4. **All user input:** escaped with `escapeHtml()` before DOM insertion. APIs sanitise
+   on write.
+5. **Soft deletes:** all major tables have `deleted_at DATETIME NULL`; queries always
+   filter `WHERE deleted_at IS NULL`.
+6. **Animal monitoring:** upsert on `(animal_id, monitor_date)` — editing the same
+   animal on the same day updates rather than duplicating.
+7. **Transport fees:** charges auto-apply on mark-as-collected.
+   Balance = sum(payments) − sum(charges). Negative balance = owes.
+8. **Email:** From display name "Areterra Team", Reply-To `team@areterra.co.uk`.
+   SMTP via Microsoft 365 recommended.
+9. **Push VAPID:** P-256 EC keypair. JWT signed with private key. Raw 64-byte r||s
+   signature — DER→raw conversion required. `410 Gone` from a push endpoint means
+   deactivate that subscription.
+10. **Operating days:** Monday=1, Tuesday=2, Thursday=4, Friday=5 (ISO day of week).
+    Wednesday and weekends never trigger reminders.
+
 ## Integration points
 - **postcodes.io** — free UK postcode lookup for addresses
 - **Microsoft Graph** — SSO profile
