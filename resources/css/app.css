@@ -1,0 +1,39 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+
+    /* Areterra brand */
+    --color-brand: #009de6;
+    --color-brand-dark: #00345c;
+    --color-accent: #ffd900;
+
+    /* Traffic-light statuses */
+    --color-status-green: #10b981;
+    --color-status-amber: #f59e0b;
+    --color-status-red: #ef4444;
+
+    --radius-card: 12px;
+}
+
+@layer base {
+    /* 16px inputs prevent iOS zoom; 48px min height for touch (SPEC.md mobile rules) */
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+        min-height: 48px;
+    }
+
+    textarea {
+        min-height: 80px;
+    }
+
+    input[type='checkbox'],
+    input[type='radio'] {
+        min-height: 0;
+    }
+}

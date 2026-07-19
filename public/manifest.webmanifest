@@ -1,0 +1,17 @@
+{
+    "name": "Areterra Hub",
+    "short_name": "Areterra",
+    "description": "Areterra's operational hub — animals, people, purpose.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#00345C",
+    "theme_color": "#00345C",
+    "icons": [
+        {
+            "src": "/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}
