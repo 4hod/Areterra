@@ -18,15 +18,31 @@ React), replacing the previous WordPress-plugin implementation.
 
 ## Status
 
-**Phases 0–1 built:** auth + role/capability system, design system and app shell
-(sidebar / bottom nav, PWA), Dashboard, Today checklist (all five auto-check rules),
-Morning Register with arrival moods, End of Day records with concern flagging,
-Members (profiles, settings, create/edit), Animals with species-grouped welfare
-checks and daily monitoring. Seeded with the production data snapshot
-(12 members, 23 animals).
+**Phases 0–3 built.**
 
-Next: Phase 2 — transport planner + fees, leave, time clock, announcements,
-push notifications.
+- *Phase 0–1:* auth + role/capability system, design system and app shell
+  (sidebar / bottom nav, PWA), Dashboard, Today checklist (all five auto-check
+  rules), Morning Register with arrival moods, End of Day records with concern
+  flagging, Members, Animals with species-grouped welfare checks, daily
+  monitoring and vet records.
+- *Phase 2:* Transport planner (three-phase flow) with the £5/day cash fee
+  ledger and credit system, Leave management with manager approval and
+  balances, Time Clock, Announcements, and web-push notifications with email
+  fallback, per-user preferences, and the 12:00 / 14:30 reminder crons
+  (operating days Mon/Tue/Thu/Fri, deduped once per day).
+- *Phase 3:* Payroll (roster with rate history, pay periods, live-recalc grid,
+  landscape A4 print sheet), Supervisions & appraisals, Staff Directory,
+  Policies with five pre-filled templates and branded print, Document library
+  with read confirmations, Risk assessments (likelihood × severity), Member
+  reviews, and the System Audit health checks.
+
+Next: Phase 4 — finance & grants, invoice tracker, safeguarding section,
+compliance, ABC observations, body map, vehicles, activities, recognition,
+SAR/referral form, Microsoft SSO, Hub settings.
+
+The scheduler needs a cron entry in production (`php artisan schedule:run`
+every minute) for the reminder notifications; VAPID keys for push are generated
+with `php artisan webpush:vapid` into `.env`.
 
 ## Getting started
 

@@ -35,6 +35,10 @@ $manager = array_merge($staff, [
     'view_all_compliance',
     'manage_directory',
     'view_audit_log',
+    'post_announcements',
+    'manage_payroll',
+    'manage_supervisions',
+    'manage_policies',
 ]);
 
 return [

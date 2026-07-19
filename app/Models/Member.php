@@ -38,6 +38,21 @@ class Member extends Model
         return $this->hasMany(EndOfDayRecord::class);
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(MemberReview::class);
+    }
+
+    public function transportLedger()
+    {
+        return $this->hasMany(TransportLedgerEntry::class);
+    }
+
+    public function transportRuns()
+    {
+        return $this->hasMany(TransportRun::class);
+    }
+
     public function displayName(): string
     {
         $first = $this->preferred_name ?: $this->first_name;

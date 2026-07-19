@@ -21,7 +21,17 @@ interface Monitoring {
     concern: boolean;
 }
 
+interface VetRecordRow {
+    id: number;
+    visit_date: string;
+    reason: string | null;
+    treatment: string | null;
+    vet_name: string | null;
+    notes: string | null;
+}
+
 interface Props {
+    vetRecords: VetRecordRow[];
     animal: {
         id: number;
         name: string;
@@ -59,12 +69,14 @@ const emptyMonitoring = (): Monitoring => ({
     concern: false,
 });
 
-export default function Show({ animal, welfareChecks, monitoring, todayMonitoring }: Props) {
+export default function Show({ animal, welfareChecks, monitoring, todayMonitoring, vetRecords }: Props) {
     const [checkOpen, setCheckOpen] = useState(false);
     const [checkStatus, setCheckStatus] = useState<WelfareStatus>('green');
     const [checkNotes, setCheckNotes] = useState('');
     const [monitorOpen, setMonitorOpen] = useState(false);
     const [m, setM] = useState<Monitoring>(todayMonitoring ?? emptyMonitoring());
+    const [vetOpen, setVetOpen] = useState(false);
+    const [vet, setVet] = useState({ visit_date: new Date().toISOString().slice(0, 10), reason: '', treatment: '', vet_name: '', notes: '' });
 
     function saveCheck() {
         router.post(
@@ -109,6 +121,9 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                 >
                     📊 Daily monitoring
                 </button>
+                <button onClick={() => setVetOpen(true)} className="rounded-full bg-slate-700 text-white font-semibold text-sm px-4 py-2.5">
+                    🩺 Vet visit
+                </button>
             </div>
 
             <div className="grid md:grid-cols-2 gap-3">
@@ -150,7 +165,54 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         ))}
                     </ul>
                 </Card>
+                <Card title="Vet records" className="md:col-span-2">
+                    {vetRecords.length === 0 && <p className="text-sm text-slate-400">No vet visits recorded.</p>}
+                    <ul className="divide-y divide-slate-100 text-sm">
+                        {vetRecords.map((v) => (
+                            <li key={v.id} className="py-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-semibold">
+                                        {new Date(v.visit_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        {v.vet_name && <span className="text-slate-400"> · {v.vet_name}</span>}
+                                    </span>
+                                    <span className="text-slate-500">{v.reason}</span>
+                                </div>
+                                {v.treatment && <div className="text-slate-500 mt-1">{v.treatment}</div>}
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
             </div>
+
+            {/* Vet record modal */}
+            <Modal open={vetOpen} title={`Vet visit — ${animal.name}`} onClose={() => setVetOpen(false)}>
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium">
+                        Visit date
+                        <input type="date" value={vet.visit_date} onChange={(e) => setVet({ ...vet, visit_date: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Reason
+                            <input value={vet.reason} onChange={(e) => setVet({ ...vet, reason: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Vet name
+                            <input value={vet.vet_name} onChange={(e) => setVet({ ...vet, vet_name: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                    </div>
+                    <label className="block text-sm font-medium">
+                        Treatment
+                        <textarea value={vet.treatment} onChange={(e) => setVet({ ...vet, treatment: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />
+                    </label>
+                    <button
+                        onClick={() => router.post(`/animals/${animal.id}/vet-records`, { ...vet }, { onSuccess: () => setVetOpen(false) })}
+                        className="w-full rounded-lg bg-brand text-white font-bold py-3"
+                    >
+                        Save vet record
+                    </button>
+                </div>
+            </Modal>
 
             {/* Welfare check modal */}
             <Modal open={checkOpen} title={`Welfare check — ${animal.name}`} onClose={() => setCheckOpen(false)}>

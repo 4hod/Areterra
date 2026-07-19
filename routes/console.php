@@ -1,8 +1,7 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Operating-day + already-done + once-per-day guards live inside the commands.
+Schedule::command('hub:remind-register')->dailyAt('12:00');
+Schedule::command('hub:remind-end-of-day')->dailyAt('14:30');

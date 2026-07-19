@@ -31,6 +31,13 @@ class DatabaseSeeder extends Seeder
             'role' => 'staff',
         ]);
 
+        foreach ([['Lucy Mills', 12.71], ['Vanessa Goodall', 13.36]] as [$name, $rate]) {
+            $member = \App\Models\StaffRosterMember::firstOrCreate(['name' => $name], ['active' => true]);
+            if ($member->rates()->doesntExist()) {
+                $member->rates()->create(['hourly_rate' => $rate, 'effective_from' => today()]);
+            }
+        }
+
         $this->call([
             MemberSeeder::class,
             AnimalSeeder::class,

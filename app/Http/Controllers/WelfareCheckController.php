@@ -60,6 +60,15 @@ class WelfareCheckController extends Controller
 
         $animal->update(['welfare_status' => $data['status']]);
 
-        // Phase 2: concern flag additionally push-notifies managers.
+        if ($data['concern'] ?? false) {
+            \Illuminate\Support\Facades\Notification::send(
+                \App\Models\User::managers()->get(),
+                new \App\Notifications\ConcernRaised(
+                    "Welfare concern: {$animal->name}",
+                    trim("{$animal->species} {$animal->name} flagged {$data['status']}. ".($data['notes'] ?? '')),
+                    "/animals/{$animal->id}",
+                ),
+            );
+        }
     }
 }

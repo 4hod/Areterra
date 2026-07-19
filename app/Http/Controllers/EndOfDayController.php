@@ -50,13 +50,22 @@ class EndOfDayController extends Controller
             ->where('member_id', $member->id)
             ->value('arrival_mood');
 
-        EndOfDayRecord::updateOrCreate(
+        $record = EndOfDayRecord::updateOrCreate(
             ['member_id' => $member->id, 'date' => today()],
             [...$data, 'arrival_mood' => $arrival, 'user_id' => $request->user()->id],
         );
 
-        // Phase 2: concern flag additionally push-notifies all managers
-        // and auto-creates a safeguarding entry.
+        // Phase 4 additionally auto-creates a safeguarding entry from this.
+        if ($record->concern && ($record->wasRecentlyCreated || $record->wasChanged('concern'))) {
+            \Illuminate\Support\Facades\Notification::send(
+                \App\Models\User::managers()->get(),
+                new \App\Notifications\ConcernRaised(
+                    "End of day concern: {$member->displayName()}",
+                    $record->concern_detail ?? 'A concern was flagged in today\'s end-of-day record.',
+                    '/end-of-day',
+                ),
+            );
+        }
 
         return back()->with('success', "End of day saved for {$member->displayName()}.");
     }

@@ -40,6 +40,7 @@ class AnimalController extends Controller
             'welfareChecks' => $animal->welfareChecks()->with('user:id,name')
                 ->orderByDesc('created_at')->limit(20)->get(),
             'monitoring' => $animal->dailyMonitoring()->orderByDesc('monitor_date')->limit(20)->get(),
+            'vetRecords' => $animal->vetRecords()->orderByDesc('visit_date')->limit(20)->get(),
             'todayMonitoring' => $animal->dailyMonitoring()->whereDate('monitor_date', today())->first(),
             'canEdit' => Gate::allows('edit_animals'),
         ]);

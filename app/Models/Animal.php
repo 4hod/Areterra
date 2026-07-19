@@ -31,6 +31,11 @@ class Animal extends Model
         return $this->hasMany(DailyMonitoring::class);
     }
 
+    public function vetRecords()
+    {
+        return $this->hasMany(VetRecord::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
