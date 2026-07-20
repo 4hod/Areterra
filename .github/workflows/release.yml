@@ -1,0 +1,55 @@
+name: Build deploy package
+
+# Builds an upload-ready ZIP for shared hosting (vendor/ and public/build
+# included, so the server never needs Composer or npm).
+# Run it from GitHub → Actions → "Build deploy package" → Run workflow,
+# then download the "areterra-hub" artifact from the run page.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies (production)
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble package
+        run: |
+          mkdir -p package
+          rsync -a . package/areterra-hub \
+            --exclude .git --exclude .github --exclude node_modules \
+            --exclude tests --exclude package --exclude .env
+          # Writable directories Laravel needs at runtime
+          mkdir -p package/areterra-hub/storage/framework/{cache,sessions,views}
+          mkdir -p package/areterra-hub/storage/logs
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: areterra-hub
+          path: package
+          retention-days: 14
