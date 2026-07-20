@@ -1,7 +1,7 @@
 # Deploying the Hub to shared (cPanel) hosting
 
 The Hub runs happily on ordinary shared hosting — the same kind that runs
-areterra.co.uk. You need three things from the host: **PHP 8.2 or newer**,
+areterra.co.uk. You need three things from the host: **PHP 8.3 or newer**,
 **MySQL**, and **cron jobs**. Almost every cPanel host has all three.
 
 The server never runs Composer or npm: the GitHub Action
@@ -11,7 +11,7 @@ everything pre-built. Download the `areterra-hub` artifact from the run page.
 ## 1 · Check PHP version
 
 cPanel → **MultiPHP Manager** (or "Select PHP Version"). The domain must be
-on **PHP 8.2 or 8.3**. If only 8.1 or older is offered, contact the host —
+on **PHP 8.3 or 8.4**. If only 8.2 or older is offered, contact the host —
 or use a managed platform instead (see README).
 
 ## 2 · Create the subdomain
