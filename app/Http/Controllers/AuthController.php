@@ -16,6 +16,23 @@ class AuthController extends Controller
         ]);
     }
 
+    public function account()
+    {
+        return Inertia::render('Account');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:10', 'confirmed'],
+        ]);
+
+        $request->user()->update(['password' => $request->string('password')]);
+
+        return back()->with('success', 'Password changed.');
+    }
+
     public function confirmShow()
     {
         return Inertia::render('ConfirmPassword');

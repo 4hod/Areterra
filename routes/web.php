@@ -174,6 +174,9 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::get('/confirm-password', [AuthController::class, 'confirmShow'])->name('password.confirm');
     Route::post('/confirm-password', [AuthController::class, 'confirm']);
 
+    Route::get('/account', [AuthController::class, 'account'])->name('account');
+    Route::put('/account/password', [AuthController::class, 'updatePassword'])->name('account.password');
+
     Route::middleware('can:manage_finance')->group(function () {
         Route::get('/finance', [App\Http\Controllers\FinanceController::class, 'index'])->name('finance');
         Route::post('/finance/grants', [App\Http\Controllers\FinanceController::class, 'storeGrant'])->name('grants.store');

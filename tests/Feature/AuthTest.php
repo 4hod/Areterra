@@ -31,6 +31,28 @@ class AuthTest extends TestCase
         $this->get('/')->assertOk();
     }
 
+    public function test_user_can_change_their_password(): void
+    {
+        $user = User::factory()->create(['password' => 'old-password-123']);
+
+        $this->actingAs($user)->put('/account/password', [
+            'current_password' => 'wrong',
+            'password' => 'new-password-456',
+            'password_confirmation' => 'new-password-456',
+        ])->assertSessionHasErrors('current_password');
+
+        $this->actingAs($user)->put('/account/password', [
+            'current_password' => 'old-password-123',
+            'password' => 'new-password-456',
+            'password_confirmation' => 'new-password-456',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->post('/logout');
+        $this->post('/login', ['email' => $user->email, 'password' => 'new-password-456'])
+            ->assertRedirect('/');
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_invalid_credentials_are_rejected(): void
     {
         $user = User::factory()->create(['password' => 'secret-password']);

@@ -66,6 +66,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
             { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
             { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
+            { href: '/account', label: 'My Account', icon: '👤' },
         ],
     },
 ];
@@ -164,12 +165,14 @@ export default function AppShell({ title, children }: { title: string; children:
                 <div className="p-4 border-t border-white/10 text-sm">
                     <div className="font-semibold truncate">{auth.user?.name}</div>
                     <div className="text-white/50 capitalize text-xs">{auth.user?.role?.replace('_', ' ')}</div>
-                    <button
-                        onClick={() => router.post('/logout')}
-                        className="mt-2 text-white/70 hover:text-white text-xs"
-                    >
-                        Log out
-                    </button>
+                    <div className="mt-2 flex gap-3 text-xs">
+                        <Link href="/account" className="text-white/70 hover:text-white">
+                            My account
+                        </Link>
+                        <button onClick={() => router.post('/logout')} className="text-white/70 hover:text-white">
+                            Log out
+                        </button>
+                    </div>
                 </div>
             </aside>
 
