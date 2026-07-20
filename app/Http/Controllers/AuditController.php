@@ -76,7 +76,19 @@ class AuditController extends Controller
             }
         }
 
-        // 7. Pending referrals older than 5 days — arrives with the referral module (Phase 4).
+        // 7. Pending referrals older than 5 days.
+        $stale = \App\Models\Referral::where('status', 'pending')
+            ->where('created_at', '<', now()->subDays(5))
+            ->get();
+        foreach ($stale as $referral) {
+            $days = (int) $referral->created_at->diffInDays(now());
+            $findings[] = $this->finding('warning', "Referral for {$referral->person_name} has been pending for {$days} days", '/referrals');
+        }
+
+        // 8. Overdue compliance items.
+        foreach (\App\Models\ComplianceItem::whereNull('completed_at')->where('due_date', '<', today())->get() as $item) {
+            $findings[] = $this->finding('critical', "Compliance item \"{$item->title}\" was due ".$item->due_date->format('j M Y'), '/compliance');
+        }
 
         $order = ['critical' => 0, 'warning' => 1, 'info' => 2];
         usort($findings, fn ($a, $b) => $order[$a['severity']] <=> $order[$b['severity']]);

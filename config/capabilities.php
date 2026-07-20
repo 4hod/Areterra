@@ -39,6 +39,7 @@ $manager = array_merge($staff, [
     'manage_payroll',
     'manage_supervisions',
     'manage_policies',
+    'manage_finance',
 ]);
 
 return [

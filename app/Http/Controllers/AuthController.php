@@ -12,8 +12,22 @@ class AuthController extends Controller
     public function show()
     {
         return Inertia::render('Login', [
-            'ssoConfigured' => (bool) config('services.microsoft.client_id'),
+            'ssoConfigured' => MicrosoftAuthController::configured(),
         ]);
+    }
+
+    public function confirmShow()
+    {
+        return Inertia::render('ConfirmPassword');
+    }
+
+    public function confirm(Request $request)
+    {
+        $request->validate(['password' => ['required', 'current_password']]);
+
+        $request->session()->passwordConfirmed();
+
+        return redirect()->intended('/');
     }
 
     public function login(Request $request)

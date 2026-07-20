@@ -18,7 +18,7 @@ React), replacing the previous WordPress-plugin implementation.
 
 ## Status
 
-**Phases 0–3 built.**
+**Phases 0–4 built.**
 
 - *Phase 0–1:* auth + role/capability system, design system and app shell
   (sidebar / bottom nav, PWA), Dashboard, Today checklist (all five auto-check
@@ -36,9 +36,19 @@ React), replacing the previous WordPress-plugin implementation.
   with read confirmations, Risk assessments (likelihood × severity), Member
   reviews, and the System Audit health checks.
 
-Next: Phase 4 — finance & grants, invoice tracker, safeguarding section,
-compliance, ABC observations, body map, vehicles, activities, recognition,
-SAR/referral form, Microsoft SSO, Hub settings.
+- *Phase 4:* Finance & grants (spend tracking, in-kind donations), QuickBooks
+  invoice tracker with auto-overdue, Safeguarding section (capability +
+  password re-confirmation gated, auto-created from end-of-day concerns),
+  Compliance items feeding the System Audit, ABC observations and clickable
+  Body Map tabs on member profiles, SAR data extract (printable), Vehicles
+  with defect reporting, Activities calendar, Recognition shoutouts, the
+  public referral form at `/refer` (accepting creates a member), Microsoft
+  SSO (Azure OAuth2, configured from Hub Settings), and Hub Settings.
+
+Next: Phase 5 — WordPress data migration (import command with dry-run and
+verification report), parallel run, and cutover. Remaining polish: member
+photo/document uploads to profiles, comms log + email composer
+(needs the production mail account), and module enable/disable toggles.
 
 The scheduler needs a cron entry in production (`php artisan schedule:run`
 every minute) for the reminder notifications; VAPID keys for push are generated

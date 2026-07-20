@@ -1,7 +1,9 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../../components/AppShell';
+import BodyMapFigure from '../../components/BodyMapFigure';
 import Card from '../../components/Card';
+import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import { MOOD_EMOJI, Mood } from '../../types';
 
@@ -49,13 +51,63 @@ interface Props {
         notes: string | null;
         concern: boolean;
     }[];
+    abcObservations: {
+        id: number;
+        observed_at: string;
+        antecedent: string | null;
+        behaviour: string;
+        consequence: string | null;
+        wellbeing_score: number | null;
+        concern: boolean;
+        user: string;
+    }[];
+    bodyMaps: {
+        id: number;
+        recorded_at: string;
+        markers: { view: 'front' | 'back'; x: number; y: number; note?: string | null }[];
+        notes: string | null;
+        user: string;
+    }[];
     canEdit: boolean;
 }
 
-const TABS = ['Profile', 'Sessions', 'Settings'] as const;
+const TABS = ['Profile', 'Sessions', 'ABC Obs', 'Body Map', 'Settings'] as const;
 
-export default function Show({ member, recentAttendance, recentEndOfDay, canEdit }: Props) {
+export default function Show({ member, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, canEdit }: Props) {
     const [tab, setTab] = useState<(typeof TABS)[number]>('Profile');
+    const [addingAbc, setAddingAbc] = useState(false);
+    const [abc, setAbc] = useState({
+        observed_at: new Date().toISOString().slice(0, 16),
+        antecedent: '',
+        behaviour: '',
+        consequence: '',
+        wellbeing_score: '' as string | number,
+        concern: false,
+    });
+    const [addingMap, setAddingMap] = useState(false);
+    const [mapView, setMapView] = useState<'front' | 'back'>('front');
+    const [newMarkers, setNewMarkers] = useState<{ view: 'front' | 'back'; x: number; y: number; note: string }[]>([]);
+    const [mapNotes, setMapNotes] = useState('');
+
+    function saveAbc() {
+        router.post(`/members/${member.id}/abc`, { ...abc, wellbeing_score: abc.wellbeing_score || null }, {
+            onSuccess: () => setAddingAbc(false),
+        });
+    }
+
+    function saveBodyMap() {
+        router.post(
+            `/members/${member.id}/body-maps`,
+            { markers: newMarkers.map((m) => ({ ...m })), notes: mapNotes },
+            {
+                onSuccess: () => {
+                    setAddingMap(false);
+                    setNewMarkers([]);
+                    setMapNotes('');
+                },
+            },
+        );
+    }
 
     const address = [member.address_line1, member.address_line2, member.town, member.postcode]
         .filter(Boolean)
@@ -73,6 +125,15 @@ export default function Show({ member, recentAttendance, recentEndOfDay, canEdit
                     <div className="text-xl font-extrabold text-brand-dark">{member.name}</div>
                     <StatusPill status={member.status} />
                 </div>
+                {canEdit && (
+                    <a
+                        href={`/members/${member.id}/sar`}
+                        target="_blank"
+                        className="ml-auto rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2"
+                    >
+                        📄 SAR export
+                    </a>
+                )}
             </div>
 
             <div className="flex gap-1 mb-4 overflow-x-auto">
@@ -196,6 +257,147 @@ export default function Show({ member, recentAttendance, recentEndOfDay, canEdit
                     </Card>
                 </div>
             )}
+
+            {tab === 'ABC Obs' && (
+                <div>
+                    <button onClick={() => setAddingAbc(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                        + Record observation
+                    </button>
+                    <Card title="ABC observations">
+                        {abcObservations.length === 0 && <p className="text-sm text-slate-400">No observations recorded.</p>}
+                        <ul className="divide-y divide-slate-100 text-sm">
+                            {abcObservations.map((o) => (
+                                <li key={o.id} className="py-2">
+                                    <div className="flex items-center justify-between">
+                                        <b>
+                                            {new Date(o.observed_at.replace(' ', 'T')).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                            {o.concern && ' ⚠️'}
+                                        </b>
+                                        <span className="text-xs text-slate-400">
+                                            {o.user}
+                                            {o.wellbeing_score && ` · wellbeing ${o.wellbeing_score}/5`}
+                                        </span>
+                                    </div>
+                                    {o.antecedent && <div className="text-slate-500"><b>A:</b> {o.antecedent}</div>}
+                                    <div className="text-slate-500"><b>B:</b> {o.behaviour}</div>
+                                    {o.consequence && <div className="text-slate-500"><b>C:</b> {o.consequence}</div>}
+                                </li>
+                            ))}
+                        </ul>
+                    </Card>
+                </div>
+            )}
+
+            {tab === 'Body Map' && (
+                <div>
+                    <button onClick={() => setAddingMap(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                        + New body map
+                    </button>
+                    {bodyMaps.length === 0 && (
+                        <Card><p className="text-sm text-slate-400">No body maps recorded.</p></Card>
+                    )}
+                    <div className="space-y-3">
+                        {bodyMaps.map((b) => (
+                            <Card key={b.id}>
+                                <div className="text-sm font-bold text-brand-dark mb-2">
+                                    {new Date(b.recorded_at.replace(' ', 'T')).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    <span className="text-xs font-normal text-slate-400"> · {b.user}</span>
+                                </div>
+                                <div className="flex gap-6">
+                                    <BodyMapFigure view="front" markers={b.markers} />
+                                    <BodyMapFigure view="back" markers={b.markers} />
+                                </div>
+                                <ul className="mt-2 text-xs text-slate-500 space-y-0.5">
+                                    {b.markers.filter((m) => m.note).map((m, i) => (
+                                        <li key={i}>🔴 {m.view}: {m.note}</li>
+                                    ))}
+                                </ul>
+                                {b.notes && <p className="text-sm mt-2">{b.notes}</p>}
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ABC modal */}
+            <Modal open={addingAbc} title="ABC observation" onClose={() => setAddingAbc(false)}>
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium">
+                        When observed
+                        <input type="datetime-local" value={abc.observed_at} onChange={(e) => setAbc({ ...abc, observed_at: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Antecedent — what happened before?
+                        <textarea value={abc.antecedent} onChange={(e) => setAbc({ ...abc, antecedent: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Behaviour — what did you observe?
+                        <textarea value={abc.behaviour} onChange={(e) => setAbc({ ...abc, behaviour: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} required />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Consequence — what happened after?
+                        <textarea value={abc.consequence} onChange={(e) => setAbc({ ...abc, consequence: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />
+                    </label>
+                    <div className="flex items-center gap-4">
+                        <label className="text-sm font-medium">
+                            Wellbeing (1–5)
+                            <input type="number" min={1} max={5} value={abc.wellbeing_score} onChange={(e) => setAbc({ ...abc, wellbeing_score: e.target.value })} className="mt-1 w-20 rounded-lg border border-slate-300 px-3 block" />
+                        </label>
+                        <label className="flex items-center gap-2 text-sm font-medium text-red-700 pt-5">
+                            <input type="checkbox" checked={abc.concern} onChange={(e) => setAbc({ ...abc, concern: e.target.checked })} className="rounded border-slate-300" />
+                            ⚠️ Concern
+                        </label>
+                    </div>
+                    <button onClick={saveAbc} disabled={!abc.behaviour} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
+                        Save observation
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Body map modal */}
+            <Modal open={addingMap} title="Record body map" onClose={() => setAddingMap(false)}>
+                <div className="space-y-3">
+                    <p className="text-sm text-slate-500">Tap the figure to mark the location of any marks or injuries.</p>
+                    <div className="flex gap-2">
+                        {(['front', 'back'] as const).map((v) => (
+                            <button
+                                key={v}
+                                onClick={() => setMapView(v)}
+                                className={`flex-1 rounded-lg py-2 text-sm font-bold capitalize ${mapView === v ? 'bg-brand text-white' : 'bg-slate-100 text-slate-500'}`}
+                            >
+                                {v}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex justify-center">
+                        <BodyMapFigure
+                            view={mapView}
+                            markers={newMarkers}
+                            onPlace={(x, y) => {
+                                const note = prompt('Describe this mark (optional):') ?? '';
+                                setNewMarkers([...newMarkers, { view: mapView, x, y, note }]);
+                            }}
+                        />
+                    </div>
+                    {newMarkers.length > 0 && (
+                        <ul className="text-xs text-slate-500 space-y-0.5">
+                            {newMarkers.map((m, i) => (
+                                <li key={i} className="flex justify-between">
+                                    <span>🔴 {m.view}{m.note && `: ${m.note}`}</span>
+                                    <button onClick={() => setNewMarkers(newMarkers.filter((_, j) => j !== i))} className="text-red-500 font-bold">✕</button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    <label className="block text-sm font-medium">
+                        Notes
+                        <textarea value={mapNotes} onChange={(e) => setMapNotes(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />
+                    </label>
+                    <button onClick={saveBodyMap} disabled={newMarkers.length === 0} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
+                        Save body map ({newMarkers.length} marker{newMarkers.length === 1 ? '' : 's'})
+                    </button>
+                </div>
+            </Modal>
 
             {tab === 'Settings' && (
                 <Card title="Member settings">

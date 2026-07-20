@@ -32,6 +32,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
         title: 'Staff',
         items: [
             { href: '/announcements', label: 'Announcements', icon: '📢' },
+            { href: '/recognition', label: 'Recognition', icon: '🌟' },
             { href: '/leave', label: 'Leave', icon: '🌴', cap: 'request_leave' },
             { href: '/timeclock', label: 'Time Clock', icon: '⏱️', cap: 'own_timeclock' },
             { href: '/directory', label: 'Directory', icon: '📖' },
@@ -40,13 +41,26 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
         ],
     },
     {
+        title: 'Operations',
+        items: [
+            { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
+            { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
+            { href: '/referrals', label: 'Referrals', icon: '📨', cap: 'create_members' },
+            { href: '/finance', label: 'Finance & Grants', icon: '💰', cap: 'manage_finance' },
+            { href: '/invoices', label: 'Invoices', icon: '🧾', cap: 'manage_finance' },
+        ],
+    },
+    {
         title: 'Governance',
         items: [
             { href: '/policies', label: 'Policies', icon: '📜' },
             { href: '/documents', label: 'Documents', icon: '📁' },
             { href: '/risk-assessments', label: 'Risk Assessments', icon: '⚖️' },
+            { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
+            { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
             { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
+            { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
         ],
     },
 ];

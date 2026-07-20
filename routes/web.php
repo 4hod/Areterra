@@ -31,6 +31,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+// Microsoft SSO (Azure OAuth2). Callback path matches the legacy Hub.
+Route::get('/auth/microsoft', [App\Http\Controllers\MicrosoftAuthController::class, 'redirect'])->name('microsoft.redirect');
+Route::get('/ah-ms-callback', [App\Http\Controllers\MicrosoftAuthController::class, 'callback'])->name('microsoft.callback');
+
+// Public referral form — no auth.
+Route::get('/refer', [App\Http\Controllers\ReferralController::class, 'create'])->name('refer');
+Route::post('/refer', [App\Http\Controllers\ReferralController::class, 'store'])->middleware('throttle:10,60');
+
 Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -160,4 +168,71 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::get('/audit', [AuditController::class, 'index'])
         ->middleware('can:view_reports')->name('audit');
+
+    // ── Phase 4 ──────────────────────────────────────────────────────────
+
+    Route::get('/confirm-password', [AuthController::class, 'confirmShow'])->name('password.confirm');
+    Route::post('/confirm-password', [AuthController::class, 'confirm']);
+
+    Route::middleware('can:manage_finance')->group(function () {
+        Route::get('/finance', [App\Http\Controllers\FinanceController::class, 'index'])->name('finance');
+        Route::post('/finance/grants', [App\Http\Controllers\FinanceController::class, 'storeGrant'])->name('grants.store');
+        Route::put('/finance/grants/{grant}', [App\Http\Controllers\FinanceController::class, 'updateGrant'])->name('grants.update');
+        Route::post('/finance/grants/{grant}/expenditures', [App\Http\Controllers\FinanceController::class, 'storeExpenditure'])->name('grants.spend');
+        Route::post('/finance/in-kind', [App\Http\Controllers\FinanceController::class, 'storeInKind'])->name('in-kind.store');
+
+        Route::get('/invoices', [App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices');
+        Route::post('/invoices', [App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');
+        Route::put('/invoices/{invoice}', [App\Http\Controllers\InvoiceController::class, 'update'])->name('invoices.update');
+        Route::post('/invoices/{invoice}/paid', [App\Http\Controllers\InvoiceController::class, 'markPaid'])->name('invoices.paid');
+    });
+
+    Route::middleware(['can:access_safeguarding', 'password.confirm'])->group(function () {
+        Route::get('/safeguarding', [App\Http\Controllers\SafeguardingController::class, 'index'])->name('safeguarding');
+        Route::post('/safeguarding', [App\Http\Controllers\SafeguardingController::class, 'store'])->name('safeguarding.store');
+        Route::put('/safeguarding/{concern}', [App\Http\Controllers\SafeguardingController::class, 'update'])->name('safeguarding.update');
+    });
+
+    Route::get('/compliance', [App\Http\Controllers\ComplianceController::class, 'index'])
+        ->middleware('can:view_all_compliance')->name('compliance');
+    Route::post('/compliance', [App\Http\Controllers\ComplianceController::class, 'store'])
+        ->middleware('can:manage_compliance')->name('compliance.store');
+    Route::post('/compliance/{item}/complete', [App\Http\Controllers\ComplianceController::class, 'complete'])
+        ->middleware('can:manage_compliance')->name('compliance.complete');
+
+    Route::post('/members/{member}/abc', [App\Http\Controllers\CareController::class, 'storeAbc'])
+        ->middleware('can:log_sessions')->name('abc.store');
+    Route::post('/members/{member}/body-maps', [App\Http\Controllers\CareController::class, 'storeBodyMap'])
+        ->middleware('can:log_sessions')->name('body-maps.store');
+    Route::get('/members/{member}/sar', [App\Http\Controllers\SarController::class, 'show'])
+        ->middleware('can:edit_members')->name('members.sar');
+
+    Route::get('/vehicles', [App\Http\Controllers\VehicleController::class, 'index'])
+        ->middleware('can:view_vehicles')->name('vehicles');
+    Route::post('/vehicles', [App\Http\Controllers\VehicleController::class, 'store'])
+        ->middleware('can:manage_vehicles')->name('vehicles.store');
+    Route::put('/vehicles/{vehicle}', [App\Http\Controllers\VehicleController::class, 'update'])
+        ->middleware('can:manage_vehicles')->name('vehicles.update');
+    Route::post('/vehicles/{vehicle}/defects', [App\Http\Controllers\VehicleController::class, 'storeDefect'])
+        ->middleware('can:view_vehicles')->name('defects.store');
+    Route::post('/defects/{defect}/resolve', [App\Http\Controllers\VehicleController::class, 'resolveDefect'])
+        ->name('defects.resolve');
+
+    Route::get('/activities', [App\Http\Controllers\ActivityController::class, 'index'])->name('activities');
+    Route::post('/activities', [App\Http\Controllers\ActivityController::class, 'store'])
+        ->middleware('can:log_sessions')->name('activities.store');
+
+    Route::get('/recognition', [App\Http\Controllers\RecognitionController::class, 'index'])->name('recognition');
+    Route::post('/recognition', [App\Http\Controllers\RecognitionController::class, 'store'])->name('recognition.store');
+    Route::post('/recognition/{recognition}/like', [App\Http\Controllers\RecognitionController::class, 'toggleLike'])->name('recognition.like');
+
+    Route::get('/referrals', [App\Http\Controllers\ReferralController::class, 'index'])
+        ->middleware('can:create_members')->name('referrals');
+    Route::put('/referrals/{referral}/review', [App\Http\Controllers\ReferralController::class, 'review'])
+        ->middleware('can:create_members')->name('referrals.review');
+
+    Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'edit'])
+        ->middleware('can:manage_settings')->name('settings');
+    Route::put('/settings', [App\Http\Controllers\SettingsController::class, 'update'])
+        ->middleware('can:manage_settings')->name('settings.update');
 });

@@ -55,8 +55,19 @@ class EndOfDayController extends Controller
             [...$data, 'arrival_mood' => $arrival, 'user_id' => $request->user()->id],
         );
 
-        // Phase 4 additionally auto-creates a safeguarding entry from this.
         if ($record->concern && ($record->wasRecentlyCreated || $record->wasChanged('concern'))) {
+            // Concerns flagged at end of day auto-create a safeguarding entry (SPEC.md §25).
+            \App\Models\SafeguardingConcern::firstOrCreate(
+                ['end_of_day_record_id' => $record->id],
+                [
+                    'member_id' => $member->id,
+                    'reported_by' => $request->user()->id,
+                    'source' => 'end_of_day',
+                    'date' => today(),
+                    'details' => $record->concern_detail ?? 'Concern flagged in end-of-day record.',
+                ],
+            );
+
             \Illuminate\Support\Facades\Notification::send(
                 \App\Models\User::managers()->get(),
                 new \App\Notifications\ConcernRaised(

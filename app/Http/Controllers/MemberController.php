@@ -73,6 +73,29 @@ class MemberController extends Controller
                 ->get(['id', 'date', 'checked_in', 'arrival_mood', 'notes']),
             'recentEndOfDay' => $member->endOfDayRecords()->orderByDesc('date')->limit(10)
                 ->get(['id', 'date', 'arrival_mood', 'end_mood', 'session_type', 'activities', 'notes', 'concern']),
+            'abcObservations' => $detailed
+                ? $member->abcObservations()->with('user:id,name')->orderByDesc('observed_at')->limit(20)->get()
+                    ->map(fn ($o) => [
+                        'id' => $o->id,
+                        'observed_at' => $o->observed_at->toDateTimeString(),
+                        'antecedent' => $o->antecedent,
+                        'behaviour' => $o->behaviour,
+                        'consequence' => $o->consequence,
+                        'wellbeing_score' => $o->wellbeing_score,
+                        'concern' => $o->concern,
+                        'user' => $o->user->name,
+                    ])
+                : [],
+            'bodyMaps' => $detailed
+                ? $member->bodyMaps()->with('user:id,name')->orderByDesc('recorded_at')->limit(10)->get()
+                    ->map(fn ($b) => [
+                        'id' => $b->id,
+                        'recorded_at' => $b->recorded_at->toDateTimeString(),
+                        'markers' => $b->markers,
+                        'notes' => $b->notes,
+                        'user' => $b->user->name,
+                    ])
+                : [],
             'canEdit' => Gate::allows('edit_members'),
         ]);
     }

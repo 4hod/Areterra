@@ -44,6 +44,7 @@ export default function Login({ ssoConfigured }: { ssoConfigured: boolean }) {
                             <button
                                 type="button"
                                 disabled={!ssoConfigured}
+                                onClick={() => ssoConfigured && (window.location.href = '/auth/microsoft')}
                                 title={ssoConfigured ? 'Sign in with Microsoft' : 'Set up in Hub Settings'}
                                 className={`w-full flex items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-semibold ${
                                     ssoConfigured

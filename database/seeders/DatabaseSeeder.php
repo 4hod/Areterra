@@ -38,6 +38,11 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        \App\Models\Vehicle::firstOrCreate(
+            ['registration' => 'YE66 EGY'],
+            ['make_model' => 'Silver Ford Transit Custom', 'active' => true],
+        );
+
         $this->call([
             MemberSeeder::class,
             AnimalSeeder::class,

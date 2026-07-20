@@ -53,6 +53,21 @@ class Member extends Model
         return $this->hasMany(TransportRun::class);
     }
 
+    public function abcObservations()
+    {
+        return $this->hasMany(AbcObservation::class);
+    }
+
+    public function bodyMaps()
+    {
+        return $this->hasMany(BodyMap::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(MemberInvoice::class);
+    }
+
     public function displayName(): string
     {
         $first = $this->preferred_name ?: $this->first_name;
