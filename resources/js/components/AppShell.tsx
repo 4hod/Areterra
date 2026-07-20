@@ -25,7 +25,9 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
         items: [
             { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
             { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
+            { href: '/monitoring', label: 'Daily Monitoring', icon: '📊', cap: 'log_welfare' },
             { href: '/reviews', label: 'Member Reviews', icon: '🔄', cap: 'view_members' },
+            { href: '/email', label: 'Email Composer', icon: '✉️', cap: 'view_member_details' },
         ],
     },
     {
@@ -59,17 +61,22 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
             { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
             { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
             { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
+            { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
+            { href: '/audit-log', label: 'Audit Log', icon: '🧾', cap: 'view_audit_log' },
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
+            { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
             { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
         ],
     },
 ];
 
+// Spec order: Today, Dashboard, Members, All Animals, Announcements, More.
 const MOBILE_NAV: NavItem[] = [
-    { href: '/', label: 'Dashboard', icon: '🏠' },
     { href: '/today', label: 'Today', icon: '✅' },
+    { href: '/', label: 'Dashboard', icon: '🏠' },
     { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
     { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
+    { href: '/announcements', label: 'News', icon: '📢' },
     { href: '/more', label: 'More', icon: '⋯' },
 ];
 
@@ -86,6 +93,8 @@ export default function AppShell({ title, children }: { title: string; children:
     const url = usePage().url;
     const caps = auth.user?.capabilities ?? [];
     const [toast, setToast] = useState<string | null>(null);
+    const [drawer, setDrawer] = useState(false);
+    const [pushPrompt, setPushPrompt] = useState(false);
 
     useEffect(() => {
         const message = flash.success ?? flash.error ?? null;
@@ -95,6 +104,23 @@ export default function AppShell({ title, children }: { title: string; children:
             return () => clearTimeout(t);
         }
     }, [flash]);
+
+    // Push permission prompt: 3s after login, dismissible, once per session (SPEC.md §22).
+    useEffect(() => {
+        if (
+            'Notification' in window &&
+            Notification.permission === 'default' &&
+            !sessionStorage.getItem('ah-push-prompted')
+        ) {
+            const t = setTimeout(() => setPushPrompt(true), 3000);
+            return () => clearTimeout(t);
+        }
+    }, []);
+
+    function dismissPushPrompt() {
+        sessionStorage.setItem('ah-push-prompted', '1');
+        setPushPrompt(false);
+    }
 
     return (
         <div className="min-h-screen md:flex">
@@ -148,8 +174,15 @@ export default function AppShell({ title, children }: { title: string; children:
             </aside>
 
             <div className="flex-1 min-w-0">
-                <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between md:px-6">
-                    <h1 className="text-lg font-bold text-brand-dark truncate">{title}</h1>
+                <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center gap-2 md:px-6">
+                    <button
+                        onClick={() => setDrawer(true)}
+                        aria-label="Open menu"
+                        className="md:hidden h-11 w-11 -ml-2 rounded-full hover:bg-slate-100 text-xl"
+                    >
+                        ☰
+                    </button>
+                    <h1 className="text-lg font-bold text-brand-dark truncate flex-1">{title}</h1>
                     <button
                         onClick={() => router.post('/logout')}
                         aria-label="Log out"
@@ -179,6 +212,66 @@ export default function AppShell({ title, children }: { title: string; children:
                     </Link>
                 ))}
             </nav>
+
+            {/* Mobile drawer */}
+            {drawer && (
+                <div className="md:hidden fixed inset-0 z-50 bg-black/40" onClick={() => setDrawer(false)}>
+                    <div
+                        className="absolute inset-y-0 left-0 w-72 bg-brand-dark text-white overflow-y-auto p-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="text-lg font-extrabold mb-3">Areterra Hub</div>
+                        {NAV_SECTIONS.map((section, i) => {
+                            const items = section.items.filter((item) => allowed(item, caps));
+                            if (items.length === 0) return null;
+                            return (
+                                <div key={i} className="mb-3">
+                                    {section.title && (
+                                        <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
+                                            {section.title}
+                                        </div>
+                                    )}
+                                    {items.map((item) => (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={() => setDrawer(false)}
+                                            className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
+                                                isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
+                                            }`}
+                                        >
+                                            <span aria-hidden>{item.icon}</span>
+                                            {item.label}
+                                        </Link>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Push permission prompt (3s after login, once per session) */}
+            {pushPrompt && (
+                <div className="fixed bottom-20 md:bottom-6 right-4 z-50 max-w-xs bg-white rounded-card shadow-xl border border-slate-200 p-4">
+                    <div className="font-bold text-brand-dark text-sm">🔔 Stay in the loop</div>
+                    <p className="text-xs text-slate-500 mt-1">
+                        Turn on notifications for announcements, welfare alerts and reminders.
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                        <Link
+                            href="/notifications"
+                            onClick={dismissPushPrompt}
+                            className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2"
+                        >
+                            Enable
+                        </Link>
+                        <button onClick={dismissPushPrompt} className="rounded-full bg-slate-100 text-slate-500 text-xs font-bold px-3 py-2">
+                            Not now
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {toast && (
                 <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand-dark text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg">

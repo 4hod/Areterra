@@ -4,6 +4,14 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 
+interface LedgerEntry {
+    id: number;
+    type: string;
+    amount: number;
+    entry_date: string;
+    notes: string | null;
+}
+
 interface Row {
     id: number;
     name: string;
@@ -13,10 +21,12 @@ interface Row {
     days_credit: number;
     morning_done: boolean;
     afternoon_done: boolean;
+    ledger: LedgerEntry[];
 }
 
 interface Props {
     date: string;
+    isToday: boolean;
     rows: Row[];
     dailyRate: number;
     monthly: { charged: number; collected: number };
@@ -34,9 +44,11 @@ function FeeStatus({ row }: { row: Row }) {
     return <span className="text-slate-400 text-xs font-semibold">Paid up</span>;
 }
 
-export default function Transport({ date, rows, dailyRate, monthly }: Props) {
+export default function Transport({ date, isToday, rows, dailyRate, monthly }: Props) {
     const [paying, setPaying] = useState<Row | null>(null);
     const [amount, setAmount] = useState<number>(dailyRate);
+    const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+    const [payNotes, setPayNotes] = useState('');
     const [receipt, setReceipt] = useState<{ name: string; amount: number; balance: number } | null>(null);
 
     const morningQueue = rows.filter((r) => !r.morning_done);
@@ -61,11 +73,12 @@ export default function Transport({ date, rows, dailyRate, monthly }: Props) {
         const member = paying;
         router.post(
             `/transport/${member.id}/pay`,
-            { amount },
+            { amount, entry_date: payDate, notes: payNotes },
             {
                 onSuccess: () => {
                     setReceipt({ name: member.name, amount, balance: member.balance + amount });
                     setPaying(null);
+                    setPayNotes('');
                 },
             },
         );
@@ -74,6 +87,24 @@ export default function Transport({ date, rows, dailyRate, monthly }: Props) {
     return (
         <AppShell title="Transport">
             <Head title="Transport" />
+
+            {/* Date picker */}
+            <div className="flex items-center gap-2 mb-3">
+                <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => router.get('/transport', { date: e.target.value })}
+                    className="rounded-lg border border-slate-300 px-3 bg-white text-sm"
+                />
+                {!isToday && <span className="text-xs font-bold text-amber-600">Viewing a different day</span>}
+            </div>
+
+            {/* Morning summary banner during afternoon phase */}
+            {phase === 2 && (
+                <div className="rounded-card bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold px-4 py-2.5 mb-3">
+                    ✓ Morning complete — all {rows.length} collected. Now dropping off.
+                </div>
+            )}
 
             {/* Progress stepper */}
             <div className="flex items-center gap-2 mb-4 text-xs font-bold">
@@ -121,6 +152,12 @@ export default function Transport({ date, rows, dailyRate, monthly }: Props) {
                             className="rounded-full bg-white text-brand-dark font-bold px-5 py-2.5"
                         >
                             {phase === 2 ? 'Mark as Dropped Off ✓' : 'Mark as Collected ✓'}
+                        </button>
+                        <button
+                            onClick={() => setPaying(next)}
+                            className="rounded-full bg-accent text-brand-dark font-bold px-4 py-2.5"
+                        >
+                            💷 Take Payment
                         </button>
                         {next.address && (
                             <a
@@ -296,10 +333,52 @@ export default function Transport({ date, rows, dailyRate, monthly }: Props) {
                             onChange={(e) => setAmount(Number(e.target.value))}
                             className="mt-1 w-full rounded-lg border border-slate-300 px-3"
                         />
+                        <span className="text-xs font-bold text-brand">
+                            = {Math.floor(amount / dailyRate)} day{Math.floor(amount / dailyRate) === 1 ? '' : 's'}
+                        </span>
                     </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Date
+                            <input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Notes
+                            <input value={payNotes} onChange={(e) => setPayNotes(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                    </div>
                     <button onClick={pay} className="w-full rounded-lg bg-brand text-white font-bold py-3">
                         Save & Receipt
                     </button>
+
+                    {/* Payment & charge history */}
+                    {paying && paying.ledger.length > 0 && (
+                        <details>
+                            <summary className="text-xs font-bold text-brand cursor-pointer">History</summary>
+                            <ul className="mt-1 text-xs space-y-0.5 max-h-40 overflow-y-auto">
+                                {paying.ledger.map((e) => (
+                                    <li key={e.id} className="flex items-center justify-between">
+                                        <span className={e.type === 'payment' ? 'text-emerald-700' : 'text-slate-500'}>
+                                            {new Date(e.entry_date).toLocaleDateString('en-GB')} — {e.type === 'payment' ? 'payment' : 'charge'}
+                                            {e.notes && ` (${e.notes})`}
+                                        </span>
+                                        <span className="flex items-center gap-2 font-bold">
+                                            {e.type === 'payment' ? '+' : '−'}{gbp(e.amount)}
+                                            {e.type === 'payment' && (
+                                                <button
+                                                    onClick={() => confirm('Delete this payment?') && router.delete(`/transport/payments/${e.id}`, { onSuccess: () => setPaying(null) })}
+                                                    className="text-red-400"
+                                                    aria-label="Delete payment"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </details>
+                    )}
                 </div>
             </Modal>
 

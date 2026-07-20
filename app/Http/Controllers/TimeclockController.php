@@ -31,9 +31,11 @@ class TimeclockController extends Controller
             'myEntries' => $user->timeclockEntries()->with('user:id,name')
                 ->orderByDesc('clock_in')->limit(15)->get()->map($entryRow),
             'isManager' => Gate::allows('view_all_timeclock'),
+            'from' => ($from = $request->date('from') ?? now()->startOfWeek())->toDateString(),
+            'to' => ($to = $request->date('to') ?? today())->toDateString(),
             'weekEntries' => Gate::allows('view_all_timeclock')
                 ? TimeclockEntry::with('user:id,name')
-                    ->where('clock_in', '>=', now()->startOfWeek())
+                    ->whereBetween('clock_in', [$from, $to->copy()->endOfDay()])
                     ->orderByDesc('clock_in')
                     ->get()
                     ->map($entryRow)

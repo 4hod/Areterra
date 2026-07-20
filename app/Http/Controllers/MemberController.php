@@ -62,6 +62,10 @@ class MemberController extends Controller
                 'town' => $member->town,
                 'postcode' => $member->postcode,
                 'photo_path' => $member->photo_path,
+                'gp_name' => $detailed ? $member->gp_name : null,
+                'gp_practice' => $detailed ? $member->gp_practice : null,
+                'gp_phone' => $detailed ? $member->gp_phone : null,
+                'medication' => $detailed ? $member->medication : null,
                 'settings' => [
                     'transport_required' => (bool) $member->settings?->transport_required,
                     'attendance_days' => $member->settings?->attendance_days ?? [],
@@ -95,6 +99,53 @@ class MemberController extends Controller
                         'notes' => $b->notes,
                         'user' => $b->user->name,
                     ])
+                : [],
+            'commsLog' => $detailed
+                ? $member->commsLog()->with('user:id,name')->orderByDesc('date')->limit(30)->get()
+                    ->map(fn ($c) => [
+                        'id' => $c->id,
+                        'type' => $c->type,
+                        'direction' => $c->direction,
+                        'subject' => $c->subject,
+                        'summary' => $c->summary,
+                        'contact_name' => $c->contact_name,
+                        'organisation' => $c->organisation,
+                        'date' => $c->date->toDateString(),
+                        'user' => $c->user->name,
+                    ])
+                : [],
+            'contacts' => $detailed
+                ? $member->contacts()->get(['id', 'name', 'role', 'organisation', 'email', 'phone', 'notes'])
+                : [],
+            'goals' => $member->goals()->with('outcomes')->orderByDesc('created_at')->get()
+                ->map(fn ($g) => [
+                    'id' => $g->id,
+                    'title' => $g->title,
+                    'description' => $g->description,
+                    'status' => $g->status,
+                    'target_date' => $g->target_date?->toDateString(),
+                    'achieved_at' => $g->achieved_at?->toDateString(),
+                ]),
+            'outcomes' => $member->outcomes()->with(['goal:id,title', 'user:id,name'])->orderByDesc('date')->limit(20)->get()
+                ->map(fn ($o) => [
+                    'id' => $o->id,
+                    'date' => $o->date->toDateString(),
+                    'outcome' => $o->outcome,
+                    'goal' => $o->goal?->title,
+                    'user' => $o->user->name,
+                ]),
+            'alerts' => $detailed
+                ? $member->alerts()->get()->map(fn ($a) => [
+                    'id' => $a->id, 'type' => $a->type, 'text' => $a->text, 'severity' => $a->severity,
+                ])
+                : [],
+            'consents' => $detailed
+                ? $member->consents()->get()->map(fn ($c) => [
+                    'consent_type' => $c->consent_type,
+                    'granted' => $c->granted,
+                    'recorded_on' => $c->recorded_on->toDateString(),
+                    'notes' => $c->notes,
+                ])
                 : [],
             'canEdit' => Gate::allows('edit_members'),
         ]);
@@ -141,6 +192,10 @@ class MemberController extends Controller
             'address_line2' => ['nullable', 'string', 'max:255'],
             'town' => ['nullable', 'string', 'max:100'],
             'postcode' => ['nullable', 'string', 'max:10'],
+            'gp_name' => ['nullable', 'string', 'max:100'],
+            'gp_practice' => ['nullable', 'string', 'max:200'],
+            'gp_phone' => ['nullable', 'string', 'max:30'],
+            'medication' => ['nullable', 'string'],
             'transport_required' => ['boolean'],
             'attendance_days' => ['nullable', 'array'],
             'attendance_days.*' => ['integer', 'between:1,7'],

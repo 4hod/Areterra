@@ -122,6 +122,16 @@ export default function Login({ ssoConfigured }: { ssoConfigured: boolean }) {
                             Areterra · Registered charity No. 1196211
                         </p>
                     </div>
+
+                    <a
+                        href="https://rockitfox.co.uk"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/70 hover:bg-white/20"
+                    >
+                        <span className="text-orange-400" aria-hidden>🚀</span>
+                        Site designed &amp; built by RockitFox
+                    </a>
                 </div>
 
                 {/* Right panel (desktop only) */}

@@ -8,10 +8,12 @@ import StatusPill from '../../components/StatusPill';
 interface PolicyRow {
     id: number;
     title: string;
+    category: string;
     version: string;
     review_date: string | null;
     status: string;
     author: string;
+    approved: boolean;
     updated_at: string;
 }
 
@@ -59,25 +61,40 @@ export default function Index({ policies, canManage }: { policies: PolicyRow[]; 
                 <Card><p className="text-slate-500">No policies yet.</p></Card>
             )}
 
-            <div className="space-y-2">
-                {policies.map((p) => (
-                    <Link key={p.id} href={`/policies/${p.id}`} className="block">
-                        <Card>
-                            <div className="flex items-center justify-between gap-2">
-                                <div>
-                                    <div className="font-bold text-brand-dark">{p.title}</div>
-                                    <div className="text-xs text-slate-400">
-                                        v{p.version} · updated {new Date(p.updated_at).toLocaleDateString('en-GB')}
-                                        {p.review_date && ` · review ${new Date(p.review_date).toLocaleDateString('en-GB')}`}
-                                    </div>
-                                </div>
-                                <StatusPill
-                                    status={p.status === 'active' ? 'active' : p.status === 'draft' ? 'inactive' : 'archived'}
-                                    label={p.status}
-                                />
-                            </div>
-                        </Card>
-                    </Link>
+            <div className="space-y-4">
+                {Object.entries(
+                    policies.reduce<Record<string, PolicyRow[]>>((acc, p) => {
+                        (acc[p.category] ??= []).push(p);
+                        return acc;
+                    }, {}),
+                ).map(([category, group]) => (
+                    <div key={category}>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">{category}</div>
+                        <div className="space-y-2">
+                            {group.map((p) => (
+                                <Link key={p.id} href={`/policies/${p.id}`} className="block">
+                                    <Card>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div>
+                                                <div className="font-bold text-brand-dark">
+                                                    {p.title}
+                                                    {p.approved && <span className="ml-2 text-xs text-emerald-600 font-bold">✓ approved</span>}
+                                                </div>
+                                                <div className="text-xs text-slate-400">
+                                                    v{p.version} · updated {new Date(p.updated_at).toLocaleDateString('en-GB')}
+                                                    {p.review_date && ` · review ${new Date(p.review_date).toLocaleDateString('en-GB')}`}
+                                                </div>
+                                            </div>
+                                            <StatusPill
+                                                status={p.status === 'active' ? 'active' : p.status === 'draft' ? 'inactive' : 'archived'}
+                                                label={p.status}
+                                            />
+                                        </div>
+                                    </Card>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
                 ))}
             </div>
 

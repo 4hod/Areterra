@@ -70,9 +70,17 @@ export default function Show({ policy, canManage }: Props) {
                         🖨 Print PDF
                     </button>
                     {canManage && !editing && (
-                        <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2">
-                            ✏️ Edit
-                        </button>
+                        <>
+                            <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2">
+                                ✏️ Edit
+                            </button>
+                            <button
+                                onClick={() => router.post(`/policies/${policy.id}/approve`)}
+                                className="rounded-full bg-status-green text-white font-semibold text-xs px-4 py-2"
+                            >
+                                ✓ Approve
+                            </button>
+                        </>
                     )}
                 </span>
             </div>

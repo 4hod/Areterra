@@ -9,12 +9,13 @@ class ConcernRaised extends HubNotification
         private string $subject,
         private string $detail,
         private string $link = '/',
+        private string $categoryName = 'concerns',
     ) {
     }
 
     public function category(): string
     {
-        return 'concerns';
+        return $this->categoryName;
     }
 
     public function title(): string

@@ -26,10 +26,22 @@ class MonitoringController extends Controller
         // Same animal, same day → update, never duplicate (SPEC.md technical note 6).
         // Carbon (not a Y-m-d string) so the lookup matches the cast storage format.
         $date = \Illuminate\Support\Carbon::parse($data['monitor_date'])->startOfDay();
-        $animal->dailyMonitoring()->updateOrCreate(
+        $monitoring = $animal->dailyMonitoring()->updateOrCreate(
             ['monitor_date' => $date],
             [...$data, 'monitor_date' => $date, 'user_id' => $request->user()->id],
         );
+
+        // Monitoring concern → welfare alert to managers (SPEC checklist).
+        if ($monitoring->concern && ($monitoring->wasRecentlyCreated || $monitoring->wasChanged('concern'))) {
+            \Illuminate\Support\Facades\Notification::send(
+                \App\Models\User::managers()->get(),
+                new \App\Notifications\ConcernRaised(
+                    "Monitoring concern: {$animal->name}",
+                    trim("{$animal->species} {$animal->name} flagged during daily monitoring. ".($data['notes'] ?? '')),
+                    "/animals/{$animal->id}",
+                ),
+            );
+        }
 
         return back()->with('success', "Monitoring saved for {$animal->name}.");
     }

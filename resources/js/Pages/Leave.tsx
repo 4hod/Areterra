@@ -129,6 +129,49 @@ export default function Leave({ balance, myRequests, types, isManager, pending, 
                             </li>
                         ))}
                     </ul>
+
+                    {/* Calendar view: current month, approved leave marked */}
+                    <div className="mt-4">
+                        <div className="text-xs font-bold text-slate-400 uppercase mb-1.5">
+                            {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400">
+                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+                                <div key={i}>{d}</div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 mt-1">
+                            {(() => {
+                                const now = new Date();
+                                const first = new Date(now.getFullYear(), now.getMonth(), 1);
+                                const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                                const offset = (first.getDay() + 6) % 7;
+                                const cells = [];
+                                for (let i = 0; i < offset; i++) cells.push(<div key={`pad-${i}`} />);
+                                for (let d = 1; d <= days; d++) {
+                                    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                                    const onLeave = upcoming.filter((r) => r.start_date.slice(0, 10) <= dateStr && r.end_date.slice(0, 10) >= dateStr);
+                                    cells.push(
+                                        <div
+                                            key={d}
+                                            title={onLeave.map((r) => r.user?.name).join(', ')}
+                                            className={`rounded-md py-1.5 text-xs font-semibold ${
+                                                onLeave.length > 0
+                                                    ? 'bg-brand text-white'
+                                                    : d === now.getDate()
+                                                      ? 'bg-slate-200 text-slate-700'
+                                                      : 'bg-slate-50 text-slate-400'
+                                            }`}
+                                        >
+                                            {d}
+                                            {onLeave.length > 0 && <div className="text-[8px] leading-none">{onLeave.length}</div>}
+                                        </div>,
+                                    );
+                                }
+                                return cells;
+                            })()}
+                        </div>
+                    </div>
                 </Card>
             )}
 

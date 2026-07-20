@@ -15,7 +15,8 @@ interface Props {
 
 const CATEGORY_LABELS: Record<string, string> = {
     announcements: '📢 Announcements',
-    concerns: '⚠️ Welfare & safeguarding concerns',
+    concerns: '⚠️ Welfare alerts',
+    safeguarding: '🛡️ Safeguarding concerns',
     leave: '🌴 Leave requests',
     reminders: '⏰ Daily reminders',
 };
@@ -95,9 +96,15 @@ export default function NotificationPrefs({ prefs, vapidPublicKey, hasSubscripti
                 ) : (
                     <p className="text-sm text-slate-400">Push is not configured on the server (VAPID keys missing).</p>
                 )}
+                <p className="text-xs text-slate-400 mt-2">
+                    Browser permission:{' '}
+                    <b className="capitalize">
+                        {'Notification' in window ? Notification.permission : 'not supported'}
+                    </b>
+                </p>
                 <button
                     onClick={() => router.post('/notifications/test')}
-                    className="mt-3 block text-sm font-semibold text-brand"
+                    className="mt-2 block text-sm font-semibold text-brand"
                 >
                     Send a test notification
                 </button>

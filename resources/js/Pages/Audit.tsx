@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 
@@ -15,9 +16,21 @@ const SEVERITY: Record<string, { dot: string; label: string }> = {
 };
 
 export default function Audit({ findings, counts }: { findings: Finding[]; counts: Record<string, number> }) {
+    const [checkedAt] = useState(() => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+
     return (
         <AppShell title="System Audit">
             <Head title="System Audit" />
+
+            <div className="flex items-center justify-between mb-3">
+                <span className="text-xs text-slate-400">Last checked {checkedAt} — checks run live on every load.</span>
+                <button
+                    onClick={() => router.reload()}
+                    className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2"
+                >
+                    ↻ Refresh
+                </button>
+            </div>
 
             <div className="grid grid-cols-3 gap-3 mb-4">
                 <Card>

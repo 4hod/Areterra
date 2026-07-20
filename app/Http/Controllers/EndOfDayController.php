@@ -74,6 +74,7 @@ class EndOfDayController extends Controller
                     "End of day concern: {$member->displayName()}",
                     $record->concern_detail ?? 'A concern was flagged in today\'s end-of-day record.',
                     '/end-of-day',
+                    'safeguarding',
                 ),
             );
         }

@@ -235,4 +235,74 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_settings')->name('settings');
     Route::put('/settings', [App\Http\Controllers\SettingsController::class, 'update'])
         ->middleware('can:manage_settings')->name('settings.update');
+
+    // ── Checklist gap-fill ───────────────────────────────────────────────
+
+    // Member profile tabs
+    Route::middleware('can:view_member_details')->group(function () {
+        Route::post('/members/{member}/photo', [App\Http\Controllers\MemberProfileController::class, 'storePhoto'])
+            ->middleware('can:edit_members')->name('members.photo');
+        Route::post('/members/{member}/comms', [App\Http\Controllers\MemberProfileController::class, 'storeComms'])->name('comms.store');
+        Route::delete('/members/{member}/comms/{comms}', [App\Http\Controllers\MemberProfileController::class, 'destroyComms'])->name('comms.destroy');
+        Route::post('/members/{member}/contacts', [App\Http\Controllers\MemberProfileController::class, 'storeContact'])->name('contacts.store');
+        Route::delete('/members/{member}/contacts/{contact}', [App\Http\Controllers\MemberProfileController::class, 'destroyContact'])->name('contacts.destroy');
+        Route::post('/members/{member}/goals', [App\Http\Controllers\MemberProfileController::class, 'storeGoal'])->name('goals.store');
+        Route::put('/members/{member}/goals/{goal}', [App\Http\Controllers\MemberProfileController::class, 'updateGoal'])->name('goals.update');
+        Route::post('/members/{member}/outcomes', [App\Http\Controllers\MemberProfileController::class, 'storeOutcome'])->name('outcomes.store');
+        Route::post('/members/{member}/alerts', [App\Http\Controllers\MemberProfileController::class, 'storeAlert'])->name('alerts.store');
+        Route::delete('/members/{member}/alerts/{alert}', [App\Http\Controllers\MemberProfileController::class, 'destroyAlert'])->name('alerts.destroy');
+        Route::post('/members/{member}/consents', [App\Http\Controllers\MemberProfileController::class, 'storeConsent'])->name('consents.store');
+    });
+
+    // Email composer
+    Route::get('/email', [App\Http\Controllers\EmailComposerController::class, 'index'])
+        ->middleware('can:view_member_details')->name('email');
+    Route::post('/email/send', [App\Http\Controllers\EmailComposerController::class, 'send'])
+        ->middleware('can:view_member_details')->name('email.send');
+    Route::delete('/email/templates/{template}', [App\Http\Controllers\EmailComposerController::class, 'destroyTemplate'])
+        ->middleware('can:view_member_details')->name('email.templates.destroy');
+
+    // Daily monitoring dashboard
+    Route::get('/monitoring', [App\Http\Controllers\MonitoringPageController::class, 'index'])
+        ->middleware('can:log_welfare')->name('monitoring');
+
+    // Transport corrections
+    Route::delete('/transport/payments/{entry}', [App\Http\Controllers\TransportController::class, 'deletePayment'])
+        ->middleware('can:log_sessions')->name('transport.payments.destroy');
+
+    // Invoices
+    Route::delete('/invoices/{invoice}', [App\Http\Controllers\InvoiceController::class, 'destroy'])
+        ->middleware('can:manage_finance')->name('invoices.destroy');
+
+    // Payroll rates + roster management
+    Route::middleware('can:manage_payroll')->group(function () {
+        Route::post('/payroll/rates', [PayrollController::class, 'setRate'])->name('payroll.rates.set');
+        Route::delete('/payroll/roster/{rosterMember}', [PayrollController::class, 'destroyRosterMember'])->name('payroll.roster.destroy');
+    });
+
+    // Policy approval
+    Route::post('/policies/{policy}/approve', [PolicyController::class, 'approve'])
+        ->middleware('can:manage_policies')->name('policies.approve');
+
+    // Reporting
+    Route::middleware('can:view_reports')->group(function () {
+        Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])->name('reports');
+        Route::middleware('can:export_reports')->group(function () {
+            Route::get('/reports/members.csv', [App\Http\Controllers\ReportsController::class, 'membersCsv'])->name('reports.members');
+            Route::get('/reports/animals.csv', [App\Http\Controllers\ReportsController::class, 'animalsCsv'])->name('reports.animals');
+            Route::get('/reports/activities.csv', [App\Http\Controllers\ReportsController::class, 'activitiesCsv'])->name('reports.activities');
+            Route::get('/reports/hours.csv', [App\Http\Controllers\ReportsController::class, 'hoursCsv'])->name('reports.hours');
+        });
+    });
+
+    // Audit log
+    Route::get('/audit-log', [App\Http\Controllers\AuditLogController::class, 'index'])
+        ->middleware('can:view_audit_log')->name('audit-log');
+
+    // CSV import
+    Route::middleware('can:manage_settings')->group(function () {
+        Route::get('/import', [App\Http\Controllers\ImportController::class, 'index'])->name('import');
+        Route::post('/import/preview', [App\Http\Controllers\ImportController::class, 'preview'])->name('import.preview');
+        Route::post('/import/commit', [App\Http\Controllers\ImportController::class, 'commit'])->name('import.commit');
+    });
 });

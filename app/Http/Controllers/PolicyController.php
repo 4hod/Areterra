@@ -12,13 +12,15 @@ class PolicyController extends Controller
     public function index()
     {
         return Inertia::render('Policies/Index', [
-            'policies' => Policy::with('author:id,name')->orderBy('title')->get()->map(fn ($p) => [
+            'policies' => Policy::with(['author:id,name'])->orderBy('title')->get()->map(fn ($p) => [
                 'id' => $p->id,
                 'title' => $p->title,
+                'category' => $p->category ?? 'General',
                 'version' => $p->version,
                 'review_date' => $p->review_date?->toDateString(),
                 'status' => $p->status,
                 'author' => $p->author->name,
+                'approved' => $p->approved_at !== null,
                 'updated_at' => $p->updated_at->toDateString(),
             ]),
             'canManage' => Gate::allows('manage_policies'),
@@ -58,10 +60,22 @@ class PolicyController extends Controller
         return back()->with('success', 'Policy saved.');
     }
 
+    public function approve(Request $request, Policy $policy)
+    {
+        $policy->update([
+            'approved_by' => $request->user()->id,
+            'approved_at' => now(),
+            'status' => 'active',
+        ]);
+
+        return back()->with('success', 'Policy approved.');
+    }
+
     private function validated(Request $request): array
     {
         return $request->validate([
             'title' => ['required', 'string', 'max:200'],
+            'category' => ['nullable', 'string', 'max:100'],
             'body' => ['required', 'string'],
             'version' => ['required', 'string', 'max:20'],
             'review_date' => ['nullable', 'date'],

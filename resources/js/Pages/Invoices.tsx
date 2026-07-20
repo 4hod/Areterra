@@ -33,6 +33,8 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function Invoices({ invoices, summary, members }: Props) {
     const [adding, setAdding] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const filtered = statusFilter === 'all' ? invoices : invoices.filter((i) => i.status === statusFilter);
     const { data, setData, post, processing, reset } = useForm({
         member_id: members[0]?.id ?? 0,
         qb_reference: '',
@@ -71,12 +73,27 @@ export default function Invoices({ invoices, summary, members }: Props) {
                 </Card>
             </div>
 
-            <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
-                + Track invoice
-            </button>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+                <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">
+                    + Track invoice
+                </button>
+                <div className="flex gap-1 ml-auto">
+                    {['all', 'sent', 'overdue', 'paid', 'draft'].map((s) => (
+                        <button
+                            key={s}
+                            onClick={() => setStatusFilter(s)}
+                            className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${
+                                statusFilter === s ? 'bg-brand-dark text-white' : 'bg-white text-slate-500 border border-slate-200'
+                            }`}
+                        >
+                            {s}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             <div className="space-y-2">
-                {invoices.map((i) => (
+                {filtered.map((i) => (
                     <Card key={i.id}>
                         <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
@@ -109,11 +126,31 @@ export default function Invoices({ invoices, summary, members }: Props) {
                                         ✓ Paid
                                     </button>
                                 )}
+                                <button
+                                    onClick={() => {
+                                        const due = prompt('Update due date (YYYY-MM-DD), or leave blank to keep:', i.due_date ?? '');
+                                        if (due === null) return;
+                                        const status = prompt('Status (draft/sent/paid/cancelled):', i.status);
+                                        if (status === null) return;
+                                        router.put(`/invoices/${i.id}`, { due_date: due || null, status });
+                                    }}
+                                    className="rounded-full bg-slate-100 text-slate-500 text-xs font-bold px-2.5 py-1.5"
+                                    aria-label="Edit invoice"
+                                >
+                                    ✏️
+                                </button>
+                                <button
+                                    onClick={() => confirm(`Remove ${i.qb_reference}?`) && router.delete(`/invoices/${i.id}`)}
+                                    className="rounded-full bg-slate-100 text-red-500 text-xs font-bold px-2.5 py-1.5"
+                                    aria-label="Delete invoice"
+                                >
+                                    ✕
+                                </button>
                             </div>
                         </div>
                     </Card>
                 ))}
-                {invoices.length === 0 && <Card><p className="text-slate-500">No invoices tracked yet.</p></Card>}
+                {filtered.length === 0 && <Card><p className="text-slate-500">No invoices{statusFilter !== 'all' && ` with status "${statusFilter}"`}.</p></Card>}
             </div>
 
             <Modal open={adding} title="Track QuickBooks invoice" onClose={() => setAdding(false)}>

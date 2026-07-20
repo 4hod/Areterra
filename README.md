@@ -45,10 +45,22 @@ React), replacing the previous WordPress-plugin implementation.
   public referral form at `/refer` (accepting creates a member), Microsoft
   SSO (Azure OAuth2, configured from Hub Settings), and Hub Settings.
 
+- *Checklist gap-fill (full WordPress feature parity):* comms log + branded
+  email composer with merge tags, templates and log-only mode; all member
+  profile tabs (Goals, Outcomes, Alerts with profile banner, Circle of Care,
+  Consents, GP Info) plus photo upload, full profile editing with postcodes.io
+  autocomplete and birthday display; daily monitoring dashboard with progress
+  bar; dashboard widgets (My Shift, leave balance, announcements feed, staff
+  avatars, settings banner, count-up stats); transport date picker, payment
+  history/corrections and inline take-payment; invoice filters/edit/delete;
+  payroll overtime auto-1.5× + contracted hours + roster management; policy
+  approval and category grouping; leave calendar; reporting (impact report +
+  CSV exports); full audit log with encrypted-field redaction; CSV import
+  with preview; hamburger drawer, spec bottom-nav, push permission prompt.
+
 Next: Phase 5 — WordPress data migration (import command with dry-run and
-verification report), parallel run, and cutover. Remaining polish: member
-photo/document uploads to profiles, comms log + email composer
-(needs the production mail account), and module enable/disable toggles.
+verification report), parallel run, and cutover. The CSV importer already
+covers members/animals; Phase 5 adds the full `am_*` table migration.
 
 The scheduler needs a cron entry in production (`php artisan schedule:run`
 every minute) for the reminder notifications; VAPID keys for push are generated

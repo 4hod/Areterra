@@ -67,4 +67,11 @@ class InvoiceController extends Controller
 
         return back()->with('success', 'Invoice updated.');
     }
+
+    public function destroy(MemberInvoice $invoice)
+    {
+        $invoice->delete();
+
+        return back()->with('success', "{$invoice->qb_reference} removed.");
+    }
 }

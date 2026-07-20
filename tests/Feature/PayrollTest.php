@@ -89,7 +89,7 @@ class PayrollTest extends TestCase
         $lucy = StaffRosterMember::create(['name' => 'Lucy Mills', 'active' => true]);
         $lucy->rates()->create(['hourly_rate' => 12.71, 'effective_from' => today()->subYear()]);
 
-        $this->actingAs($manager)->put("/payroll/roster/{$lucy->id}", ['hourly_rate' => 13.50])
+        $this->actingAs($manager)->post('/payroll/rates', ['key' => "roster:{$lucy->id}", 'hourly_rate' => 13.50])
             ->assertRedirect();
 
         $this->assertSame(2, $lucy->rates()->count());

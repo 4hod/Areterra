@@ -19,6 +19,7 @@ class Member extends Model
             'nhs_number' => 'encrypted',
             'support_needs' => 'encrypted',
             'diagnoses' => 'encrypted',
+            'medication' => 'encrypted',
             'emergency_contacts' => 'encrypted:array',
         ];
     }
@@ -66,6 +67,36 @@ class Member extends Model
     public function invoices()
     {
         return $this->hasMany(MemberInvoice::class);
+    }
+
+    public function contacts()
+    {
+        return $this->hasMany(MemberContact::class);
+    }
+
+    public function goals()
+    {
+        return $this->hasMany(MemberGoal::class);
+    }
+
+    public function outcomes()
+    {
+        return $this->hasMany(MemberOutcome::class);
+    }
+
+    public function alerts()
+    {
+        return $this->hasMany(MemberAlert::class);
+    }
+
+    public function consents()
+    {
+        return $this->hasMany(MemberConsent::class);
+    }
+
+    public function commsLog()
+    {
+        return $this->hasMany(CommsLog::class);
     }
 
     public function displayName(): string

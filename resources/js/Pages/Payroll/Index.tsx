@@ -18,11 +18,16 @@ interface Period {
 
 interface RosterMember {
     id: number;
+    key: string;
     name: string;
     ni_number: string | null;
     job_title: string | null;
+    email: string | null;
+    phone: string | null;
     active: boolean;
+    has_account: boolean;
     current_rate: number | null;
+    contracted_hours: number | null;
 }
 
 const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -37,7 +42,7 @@ export default function Index({ periods, roster }: { periods: Period[]; roster: 
     const [addingStaff, setAddingStaff] = useState(false);
 
     const periodForm = useForm({ label: '', start_date: '', end_date: '', pay_date: '', authorised_by: '' });
-    const staffForm = useForm({ name: '', ni_number: '', job_title: '', hourly_rate: '' });
+    const staffForm = useForm({ name: '', ni_number: '', job_title: '', email: '', phone: '', hourly_rate: '' });
 
     function createPeriod(e: FormEvent) {
         e.preventDefault();
@@ -92,31 +97,61 @@ export default function Index({ periods, roster }: { periods: Period[]; roster: 
                 </ul>
             </Card>
 
-            <Card title="Staff roster">
+            <Card title="Staff & pay rates">
                 <p className="text-xs text-slate-400 mb-2">
-                    Staff paid through payroll, including those without Hub accounts. Rate changes keep history.
+                    All staff — roster and Hub accounts. Rate changes keep history; overtime auto-fills at 1.5×.
                 </p>
                 <ul className="divide-y divide-slate-100">
                     {roster.map((s) => (
-                        <li key={s.id} className="py-2 flex items-center justify-between text-sm">
-                            <div>
+                        <li key={s.key} className="py-2 flex items-center justify-between text-sm gap-2">
+                            <div className="min-w-0">
                                 <span className="font-semibold">{s.name}</span>
+                                {!s.has_account && <span className="ml-2 text-[10px] font-bold text-amber-600 uppercase">No Hub account yet</span>}
                                 {!s.active && <span className="ml-2 text-xs text-slate-400">(inactive)</span>}
-                                {s.job_title && <div className="text-xs text-slate-400">{s.job_title}</div>}
+                                <div className="text-xs text-slate-400">
+                                    {[s.job_title, s.contracted_hours && `${s.contracted_hours}h/wk contracted`].filter(Boolean).join(' · ')}
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 shrink-0">
                                 <span className="font-bold text-brand-dark">
                                     {s.current_rate !== null ? `£${s.current_rate.toFixed(2)}/hr` : '—'}
                                 </span>
                                 <button
                                     onClick={() => {
                                         const rate = prompt(`New hourly rate for ${s.name} (£):`, s.current_rate?.toFixed(2) ?? '');
-                                        if (rate) router.put(`/payroll/roster/${s.id}`, { hourly_rate: Number(rate) });
+                                        if (!rate) return;
+                                        const contracted = prompt('Contracted hours per week (optional):', s.contracted_hours?.toString() ?? '');
+                                        router.post('/payroll/rates', {
+                                            key: s.key,
+                                            hourly_rate: Number(rate),
+                                            contracted_hours: contracted ? Number(contracted) : null,
+                                        });
                                     }}
                                     className="text-xs font-bold text-brand"
                                 >
-                                    Change rate
+                                    Set rate
                                 </button>
+                                {!s.has_account && (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                const name = prompt('Name:', s.name);
+                                                if (!name) return;
+                                                const job = prompt('Job title:', s.job_title ?? '') ?? '';
+                                                router.put(`/payroll/roster/${s.id}`, { name, job_title: job });
+                                            }}
+                                            className="text-xs font-bold text-slate-400"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => confirm(`Remove ${s.name} from the roster?`) && router.delete(`/payroll/roster/${s.id}`)}
+                                            className="text-xs font-bold text-red-400"
+                                        >
+                                            Remove
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </li>
                     ))}
@@ -180,6 +215,16 @@ export default function Index({ periods, roster }: { periods: Period[]; roster: 
                         Job title
                         <input value={staffForm.data.job_title} onChange={(e) => staffForm.setData('job_title', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
                     </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Email
+                            <input type="email" value={staffForm.data.email} onChange={(e) => staffForm.setData('email', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Phone
+                            <input value={staffForm.data.phone} onChange={(e) => staffForm.setData('phone', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                    </div>
                     <button type="submit" disabled={staffForm.processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
                         Add to roster
                     </button>

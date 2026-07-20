@@ -28,12 +28,31 @@ class PayrollController extends Controller
                 ]),
             'roster' => StaffRosterMember::orderBy('name')->get()->map(fn ($s) => [
                 'id' => $s->id,
+                'key' => "roster:{$s->id}",
                 'name' => $s->name,
                 'ni_number' => $s->ni_number,
                 'job_title' => $s->job_title,
+                'email' => $s->email,
+                'phone' => $s->phone,
                 'active' => $s->active,
+                'has_account' => false,
                 'current_rate' => $s->currentRate(),
-            ]),
+                'contracted_hours' => $s->rates()->orderByDesc('effective_from')->value('contracted_hours'),
+            ])->concat(
+                \App\Models\User::orderBy('name')->get()->map(fn ($u) => [
+                    'id' => $u->id,
+                    'key' => "user:{$u->id}",
+                    'name' => $u->name,
+                    'ni_number' => null,
+                    'job_title' => $u->job_title,
+                    'email' => $u->email,
+                    'phone' => null,
+                    'active' => true,
+                    'has_account' => true,
+                    'current_rate' => ($r = $u->rates()->where('effective_from', '<=', today())->orderByDesc('effective_from')->first()) ? (float) $r->hourly_rate : null,
+                    'contracted_hours' => $u->rates()->orderByDesc('effective_from')->value('contracted_hours'),
+                ]),
+            )->values(),
         ]);
     }
 
@@ -150,6 +169,8 @@ class PayrollController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'ni_number' => ['nullable', 'string', 'max:20'],
             'job_title' => ['nullable', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'hourly_rate' => ['nullable', 'numeric', 'min:0'],
         ]);
 
@@ -158,6 +179,7 @@ class PayrollController extends Controller
         if (! empty($data['hourly_rate'])) {
             $member->rates()->create([
                 'hourly_rate' => $data['hourly_rate'],
+                'overtime_rate' => round($data['hourly_rate'] * 1.5, 2),
                 'effective_from' => today(),
             ]);
         }
@@ -171,22 +193,46 @@ class PayrollController extends Controller
             'name' => ['sometimes', 'string', 'max:100'],
             'ni_number' => ['nullable', 'string', 'max:20'],
             'job_title' => ['nullable', 'string', 'max:100'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'active' => ['sometimes', 'boolean'],
-            'hourly_rate' => ['nullable', 'numeric', 'min:0'],
-            'rate_effective_from' => ['nullable', 'date'],
         ]);
 
-        $rosterMember->update(collect($data)->except(['hourly_rate', 'rate_effective_from'])->all());
-
-        // A new rate is a new history row, preserving the old one (rate history).
-        if (isset($data['hourly_rate']) && (float) $data['hourly_rate'] !== $rosterMember->currentRate()) {
-            $rosterMember->rates()->create([
-                'hourly_rate' => $data['hourly_rate'],
-                'effective_from' => $data['rate_effective_from'] ?? today(),
-            ]);
-        }
+        $rosterMember->update($data);
 
         return back()->with('success', 'Roster updated.');
+    }
+
+    public function destroyRosterMember(StaffRosterMember $rosterMember)
+    {
+        $rosterMember->delete();
+
+        return back()->with('success', "{$rosterMember->name} removed from the roster.");
+    }
+
+    // New rate = new history row (roster staff or system users alike).
+    public function setRate(Request $request)
+    {
+        $data = $request->validate([
+            'key' => ['required', 'string'], // "roster:1" or "user:2"
+            'hourly_rate' => ['required', 'numeric', 'min:0'],
+            'overtime_rate' => ['nullable', 'numeric', 'min:0'],
+            'contracted_hours' => ['nullable', 'numeric', 'min:0'],
+            'effective_from' => ['nullable', 'date'],
+        ]);
+
+        [$kind, $id] = explode(':', $data['key']);
+        $payee = ($kind === 'user' ? \App\Models\User::class : StaffRosterMember::class)::findOrFail($id);
+
+        $payee->rates()->create([
+            'hourly_rate' => $data['hourly_rate'],
+            // Overtime auto-fills at 1.5× unless given explicitly (SPEC checklist).
+            'overtime_rate' => $data['overtime_rate'] ?? round($data['hourly_rate'] * 1.5, 2),
+            'contracted_hours' => $data['contracted_hours'] ?? null,
+            'effective_from' => $data['effective_from'] ?? today(),
+        ]);
+
+        return back()->with('success', "Rate updated for {$payee->name}.");
     }
 
     private function periodProps(PayrollPeriod $period): array

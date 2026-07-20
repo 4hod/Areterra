@@ -10,9 +10,9 @@ use Inertia\Inertia;
 
 class TransportController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
-        $today = today();
+        $today = $request->date('date') ?? today();
 
         $members = Member::active()
             ->whereHas('settings', fn ($q) => $q->where('transport_required', true))
@@ -37,16 +37,28 @@ class TransportController extends Controller
                 'days_credit' => (int) floor(max(0, $balance) / TransportLedgerEntry::DAILY_RATE),
                 'morning_done' => $runs->has($m->id.':morning'),
                 'afternoon_done' => $runs->has($m->id.':afternoon'),
+                'ledger' => $m->transportLedger()->orderByDesc('entry_date')->orderByDesc('id')->limit(20)->get()
+                    ->map(fn ($e) => [
+                        'id' => $e->id,
+                        'type' => $e->type,
+                        'amount' => (float) $e->amount,
+                        'entry_date' => $e->entry_date->toDateString(),
+                        'notes' => $e->notes,
+                    ]),
             ];
-        })->values();
+        })
+            // Owing first, then clear, then in credit (SPEC checklist).
+            ->sortBy(fn ($r) => $r['balance'])
+            ->values();
 
         $monthEntries = TransportLedgerEntry::whereBetween('entry_date', [
-            today()->startOfMonth(),
-            today()->endOfMonth(),
+            $today->copy()->startOfMonth(),
+            $today->copy()->endOfMonth(),
         ])->get();
 
         return Inertia::render('Transport', [
             'date' => $today->toDateString(),
+            'isToday' => $today->isToday(),
             'rows' => $rows,
             'dailyRate' => TransportLedgerEntry::DAILY_RATE,
             'monthly' => [
@@ -116,6 +128,7 @@ class TransportController extends Controller
     {
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01', 'max:500'],
+            'entry_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
         ]);
 
@@ -123,12 +136,21 @@ class TransportController extends Controller
             'member_id' => $member->id,
             'type' => 'payment',
             'amount' => $data['amount'],
-            'entry_date' => today(),
+            'entry_date' => $data['entry_date'] ?? today(),
             'method' => 'cash',
             'notes' => $data['notes'] ?? null,
             'user_id' => $request->user()->id,
         ]);
 
         return back()->with('success', '£'.number_format($data['amount'], 2)." received from {$member->displayName()}.");
+    }
+
+    // Corrections only — payments recorded in error (SPEC checklist: delete payment).
+    public function deletePayment(TransportLedgerEntry $entry)
+    {
+        abort_unless($entry->type === 'payment', 404);
+        $entry->delete();
+
+        return back()->with('success', 'Payment removed.');
     }
 }

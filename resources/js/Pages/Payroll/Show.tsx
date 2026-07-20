@@ -123,10 +123,10 @@ export default function Show({ period }: { period: Period }) {
                 </span>
             </div>
 
-            {/* Live total banner */}
-            <div className="rounded-card bg-brand-dark text-white p-4 mb-4 flex items-center justify-between">
-                <span className="font-semibold">Period total</span>
-                <span className="text-2xl font-extrabold">£{grandTotal.toFixed(2)}</span>
+            {/* Live total banner — dark blue with yellow total, matching the paper sheet */}
+            <div className="rounded-card bg-brand-dark p-4 mb-4 flex items-center justify-between">
+                <span className="font-semibold text-white">Period total</span>
+                <span className="text-2xl font-extrabold text-accent">£{grandTotal.toFixed(2)}</span>
             </div>
 
             <Card>
