@@ -8,10 +8,12 @@ $staff = [
     'view_members',
     'view_member_details',
     'view_animals',
+    'view_documents',
     'log_welfare',
     'log_sessions',
     'request_leave',
     'own_timeclock',
+    'request_products',
 ];
 
 $manager = array_merge($staff, [
@@ -40,6 +42,7 @@ $manager = array_merge($staff, [
     'manage_supervisions',
     'manage_policies',
     'manage_finance',
+    'manage_orders',
 ]);
 
 return [
@@ -51,6 +54,7 @@ return [
             'access_hub',
             'view_members',
             'view_animals',
+            'view_documents',
             'log_welfare',
             'request_leave',
             'own_timeclock',

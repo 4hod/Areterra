@@ -28,7 +28,11 @@ class EndOfDayController extends Controller
                 'name' => $a->member->displayName(),
                 'arrival_mood' => $a->arrival_mood,
                 'record' => $records->get($a->member_id)?->only([
-                    'end_mood', 'session_type', 'activities', 'notes', 'concern', 'concern_detail',
+                    'end_mood', 'session_type', 'activities',
+                    'food_intake', 'fluid_intake', 'toileting_notes',
+                    'medication_given', 'medication_notes',
+                    'incident', 'incident_detail', 'photos',
+                    'notes', 'concern', 'concern_detail',
                 ]),
             ])->values(),
             'moods' => Attendance::MOODS,
@@ -41,18 +45,43 @@ class EndOfDayController extends Controller
             'end_mood' => ['nullable', 'in:'.implode(',', Attendance::MOODS)],
             'session_type' => ['nullable', 'string', 'max:100'],
             'activities' => ['nullable', 'string'],
+            'food_intake' => ['nullable', 'in:'.implode(',', EndOfDayRecord::INTAKE_LEVELS)],
+            'fluid_intake' => ['nullable', 'in:'.implode(',', EndOfDayRecord::INTAKE_LEVELS)],
+            'toileting_notes' => ['nullable', 'string'],
+            'medication_given' => ['boolean'],
+            'medication_notes' => ['nullable', 'string'],
+            'incident' => ['boolean'],
+            'incident_detail' => ['nullable', 'string', 'required_if:incident,true'],
             'notes' => ['nullable', 'string'],
             'concern' => ['boolean'],
             'concern_detail' => ['nullable', 'string', 'required_if:concern,true'],
+            'photos' => ['nullable', 'array', 'max:6'],
+            'photos.*' => ['image', 'max:8192'],
+            'remove_photos' => ['nullable', 'array'],
+            'remove_photos.*' => ['string'],
         ]);
 
         $arrival = Attendance::whereDate('date', today())
             ->where('member_id', $member->id)
             ->value('arrival_mood');
 
+        $existing = EndOfDayRecord::where('member_id', $member->id)->whereDate('date', today())->first();
+        $photos = collect($existing?->photos ?? [])
+            ->reject(fn ($p) => in_array($p, $data['remove_photos'] ?? [], true))
+            ->values();
+
+        foreach ($request->file('photos', []) as $file) {
+            $photos->push('/storage/'.$file->store('end-of-day-photos', 'public'));
+        }
+
         $record = EndOfDayRecord::updateOrCreate(
             ['member_id' => $member->id, 'date' => today()],
-            [...$data, 'arrival_mood' => $arrival, 'user_id' => $request->user()->id],
+            [
+                ...collect($data)->except(['photos', 'remove_photos'])->all(),
+                'photos' => $photos->all(),
+                'arrival_mood' => $arrival,
+                'user_id' => $request->user()->id,
+            ],
         );
 
         if ($record->concern && ($record->wasRecentlyCreated || $record->wasChanged('concern'))) {

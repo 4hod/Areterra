@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import BodyMapFigure from '../../components/BodyMapFigure';
@@ -51,7 +51,7 @@ interface Props {
         settings: { transport_required: boolean; attendance_days: number[]; key_worker: string | null };
     };
     recentAttendance: { id: number; date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null }[];
-    recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean }[];
+    recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean; incident: boolean }[];
     abcObservations: { id: number; observed_at: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null; concern: boolean; user: string }[];
     bodyMaps: { id: number; recorded_at: string; markers: { view: 'front' | 'back'; x: number; y: number; note?: string | null }[]; notes: string | null; user: string }[];
     commsLog: CommsRow[];
@@ -324,6 +324,12 @@ export default function Show(props: Props) {
             {/* ── Sessions ── */}
             {tab === 'Sessions' && (
                 <div className="space-y-3">
+                    <Link
+                        href={`/members/${member.id}/history`}
+                        className="inline-block text-sm font-semibold text-brand"
+                    >
+                        View full history →
+                    </Link>
                     <Card title="Recent end-of-day records">
                         {recentEndOfDay.length === 0 && <p className="text-sm text-slate-400">No records yet.</p>}
                         <ul className="divide-y divide-slate-100">
@@ -333,6 +339,7 @@ export default function Show(props: Props) {
                                         <span className="font-semibold text-sm">
                                             {new Date(r.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                                             {r.concern && <span className="ml-2">⚠️</span>}
+                                            {r.incident && <span className="ml-1">🩹</span>}
                                         </span>
                                         <span className="text-lg">
                                             {r.arrival_mood && MOOD_EMOJI[r.arrival_mood]}

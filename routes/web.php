@@ -28,7 +28,7 @@ use Inertia\Inertia;
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'show'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 });
 
 // Microsoft SSO (Azure OAuth2). Callback path matches the legacy Hub.
@@ -49,6 +49,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:view_members')->name('members.index');
     Route::get('/members/{member}', [MemberController::class, 'show'])
         ->middleware('can:view_members')->name('members.show');
+    Route::get('/members/{member}/history', [App\Http\Controllers\MemberHistoryController::class, 'show'])
+        ->middleware('can:view_members')->name('members.history');
     Route::post('/members', [MemberController::class, 'store'])
         ->middleware('can:create_members')->name('members.store');
     Route::put('/members/{member}', [MemberController::class, 'update'])
@@ -148,11 +150,14 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::put('/policies/{policy}', [PolicyController::class, 'update'])
         ->middleware('can:manage_policies')->name('policies.update');
 
-    Route::get('/documents', [DocumentController::class, 'index'])->name('documents');
+    Route::get('/documents', [DocumentController::class, 'index'])
+        ->middleware('can:view_documents')->name('documents');
     Route::post('/documents', [DocumentController::class, 'store'])
         ->middleware('can:upload_documents')->name('documents.store');
-    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
-    Route::post('/documents/{document}/read', [DocumentController::class, 'markRead'])->name('documents.read');
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])
+        ->middleware('can:view_documents')->name('documents.download');
+    Route::post('/documents/{document}/read', [DocumentController::class, 'markRead'])
+        ->middleware('can:view_documents')->name('documents.read');
 
     Route::get('/risk-assessments', [RiskAssessmentController::class, 'index'])->name('risks');
     Route::post('/risk-assessments', [RiskAssessmentController::class, 'store'])
@@ -219,7 +224,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/vehicles/{vehicle}/defects', [App\Http\Controllers\VehicleController::class, 'storeDefect'])
         ->middleware('can:view_vehicles')->name('defects.store');
     Route::post('/defects/{defect}/resolve', [App\Http\Controllers\VehicleController::class, 'resolveDefect'])
-        ->name('defects.resolve');
+        ->middleware('can:manage_vehicles')->name('defects.resolve');
 
     Route::get('/activities', [App\Http\Controllers\ActivityController::class, 'index'])->name('activities');
     Route::post('/activities', [App\Http\Controllers\ActivityController::class, 'store'])
@@ -307,5 +312,18 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::get('/import', [App\Http\Controllers\ImportController::class, 'index'])->name('import');
         Route::post('/import/preview', [App\Http\Controllers\ImportController::class, 'preview'])->name('import.preview');
         Route::post('/import/commit', [App\Http\Controllers\ImportController::class, 'commit'])->name('import.commit');
+    });
+
+    // Ordering — staff request products, managers approve and manage delivery.
+    Route::middleware('can:request_products')->group(function () {
+        Route::get('/orders', [App\Http\Controllers\ProductOrderController::class, 'index'])->name('orders');
+        Route::post('/orders', [App\Http\Controllers\ProductOrderController::class, 'store'])->name('orders.store');
+        Route::delete('/orders/{order}', [App\Http\Controllers\ProductOrderController::class, 'cancel'])->name('orders.cancel');
+    });
+    Route::middleware('can:manage_orders')->group(function () {
+        Route::put('/orders/{order}/approve', [App\Http\Controllers\ProductOrderController::class, 'approve'])->name('orders.approve');
+        Route::put('/orders/{order}/reject', [App\Http\Controllers\ProductOrderController::class, 'reject'])->name('orders.reject');
+        Route::put('/orders/{order}/ordered', [App\Http\Controllers\ProductOrderController::class, 'markOrdered'])->name('orders.ordered');
+        Route::put('/orders/{order}/delivered', [App\Http\Controllers\ProductOrderController::class, 'markDelivered'])->name('orders.delivered');
     });
 });

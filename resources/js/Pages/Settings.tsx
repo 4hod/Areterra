@@ -61,6 +61,10 @@ export default function Settings({ settings }: Props) {
                     <p className="text-xs text-slate-400 mb-3">
                         From your Azure app registration. Redirect URI: <code className="bg-slate-100 px-1 rounded">{window.location.origin}/ah-ms-callback</code>
                     </p>
+                    <p className="text-xs text-amber-600 mb-3">
+                        Tenant ID is required alongside Client ID — without it, sign-in stays disabled rather than
+                        falling back to accepting any Microsoft account.
+                    </p>
                     <div className="space-y-3">
                         <label className="block text-sm font-medium">
                             Client ID

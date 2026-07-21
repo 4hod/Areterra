@@ -31,7 +31,7 @@ class SettingsController extends Controller
             'reply_to' => ['required', 'email', 'max:255'],
             'banner_text' => ['nullable', 'string', 'max:500'],
             'ms_client_id' => ['nullable', 'string', 'max:100'],
-            'ms_tenant_id' => ['nullable', 'string', 'max:100'],
+            'ms_tenant_id' => ['nullable', 'string', 'max:100', 'required_with:ms_client_id'],
             'ms_client_secret' => ['nullable', 'string', 'max:200'],
         ]);
 

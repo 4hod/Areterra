@@ -15,7 +15,14 @@ class MicrosoftAuthController extends Controller
 {
     public static function configured(): bool
     {
-        return (bool) (Setting::get('ms_client_id') ?? config('services.microsoft.client_id'));
+        $clientId = Setting::get('ms_client_id') ?? config('services.microsoft.client_id');
+        $tenant = Setting::get('ms_tenant_id') ?? config('services.microsoft.tenant_id');
+
+        // Require an explicit tenant — accepting sign-ins via the 'common'
+        // endpoint would let any Microsoft/Entra tenant (or personal account)
+        // attempt to authenticate, relying solely on email-matching to keep
+        // outsiders out.
+        return (bool) ($clientId && $tenant);
     }
 
     public function redirect(Request $request)
@@ -40,6 +47,10 @@ class MicrosoftAuthController extends Controller
 
     public function callback(Request $request)
     {
+        if (! self::configured()) {
+            return redirect('/login')->with('error', 'Microsoft sign-in is not set up yet.');
+        }
+
         // Friendly-error redirects — never a white error screen (SPEC.md §23).
         if ($request->input('state') !== $request->session()->pull('ms_oauth_state')) {
             return redirect('/login')->with('error', 'Microsoft sign-in expired — please try again.');
@@ -96,6 +107,8 @@ class MicrosoftAuthController extends Controller
 
     private function tenant(): string
     {
-        return Setting::get('ms_tenant_id') ?? config('services.microsoft.tenant_id') ?? 'common';
+        // configured() guarantees one of these is set before redirect()/callback()
+        // are ever reached, so no 'common' fallback here.
+        return Setting::get('ms_tenant_id') ?? config('services.microsoft.tenant_id');
     }
 }

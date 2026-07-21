@@ -38,6 +38,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
             { href: '/leave', label: 'Leave', icon: '🌴', cap: 'request_leave' },
             { href: '/timeclock', label: 'Time Clock', icon: '⏱️', cap: 'own_timeclock' },
             { href: '/directory', label: 'Directory', icon: '📖' },
+            { href: '/orders', label: 'Orders', icon: '📦', cap: 'request_products' },
             { href: '/supervisions', label: 'Supervisions', icon: '🗣️', cap: 'manage_supervisions' },
             { href: '/payroll', label: 'Payroll', icon: '💷', cap: 'manage_payroll' },
         ],

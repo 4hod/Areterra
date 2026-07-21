@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class NotificationPref extends Model
 {
-    public const CATEGORIES = ['announcements', 'concerns', 'safeguarding', 'leave', 'reminders'];
+    public const CATEGORIES = ['announcements', 'concerns', 'safeguarding', 'leave', 'reminders', 'orders'];
 
     protected $guarded = [];
 

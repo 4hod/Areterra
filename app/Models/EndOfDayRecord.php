@@ -16,8 +16,13 @@ class EndOfDayRecord extends Model
         return [
             'date' => 'date',
             'concern' => 'boolean',
+            'medication_given' => 'boolean',
+            'incident' => 'boolean',
+            'photos' => 'array',
         ];
     }
+
+    public const INTAKE_LEVELS = ['good', 'some', 'poor', 'refused'];
 
     public function member()
     {
