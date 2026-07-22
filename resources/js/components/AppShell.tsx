@@ -51,27 +51,32 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
             { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
             { href: '/calendar', label: 'Calendar', icon: '🗓️' },
             { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
+            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations' },
+            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations' },
+            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations' },
             { href: '/referrals', label: 'Referrals', icon: '📨', cap: 'create_members' },
             { href: '/finance', label: 'Finance & Grants', icon: '💰', cap: 'manage_finance' },
             { href: '/invoices', label: 'Invoices', icon: '🧾', cap: 'manage_finance' },
         ],
     },
     {
-        title: 'Governance',
+        title: 'Governance & safety',
         items: [
             { href: '/policies', label: 'Policies', icon: '📜' },
             { href: '/documents', label: 'Documents', icon: '📁' },
             { href: '/risk-assessments', label: 'Risk Assessments', icon: '⚖️' },
             { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
             { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents' },
-            { href: '/forms', label: 'Forms', icon: '📝' },
-            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations' },
-            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations' },
-            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations' },
             { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
+        ],
+    },
+    {
+        title: 'Reporting & admin',
+        items: [
             { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
             { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
             { href: '/audit-log', label: 'Audit Log', icon: '🧾', cap: 'view_audit_log' },
+            { href: '/forms', label: 'Forms', icon: '📝' },
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
             { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
             { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
@@ -106,6 +111,30 @@ export default function AppShell({ title, children }: { title: string; children:
     const [drawer, setDrawer] = useState(false);
     const [searching, setSearching] = useState(false);
     const [pushPrompt, setPushPrompt] = useState(false);
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+        let stored: Record<string, boolean> = {};
+        try {
+            stored = JSON.parse(localStorage.getItem('ah-nav-open') ?? '{}');
+        } catch {
+            stored = {};
+        }
+        // Always auto-open whichever section contains the current page, regardless
+        // of stored state, so navigating somewhere never hides where you just went.
+        for (const section of NAV_SECTIONS) {
+            if (section.title && section.items.some((item) => isActive(item.href, url))) {
+                stored[section.title] = true;
+            }
+        }
+        return stored;
+    });
+
+    function toggleSection(title: string) {
+        setOpenSections((prev) => {
+            const next = { ...prev, [title]: !prev[title] };
+            localStorage.setItem('ah-nav-open', JSON.stringify(next));
+            return next;
+        });
+    }
 
     useEffect(() => {
         const message = flash.success ?? flash.error ?? null;
@@ -145,18 +174,16 @@ export default function AppShell({ title, children }: { title: string; children:
                     )}
                     <div className="text-xs text-white/60 mt-1">Animals. People. Purpose.</div>
                 </div>
-                <nav className="flex-1 px-3 pb-4 space-y-4">
+                <nav className="flex-1 px-3 pb-4 space-y-1">
                     {NAV_SECTIONS.map((section, i) => {
                         const items = section.items.filter((item) => allowed(item, caps));
                         if (items.length === 0) return null;
-                        return (
-                            <div key={i}>
-                                {section.title && (
-                                    <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
-                                        {section.title}
-                                    </div>
-                                )}
-                                <div className="space-y-0.5">
+
+                        // The untitled top section (Dashboard/Today/etc) has no header
+                        // and is always expanded — everything else collapses.
+                        if (!section.title) {
+                            return (
+                                <div key={i} className="space-y-0.5 pb-3">
                                     {items.map((item) => (
                                         <Link
                                             key={item.href}
@@ -172,6 +199,40 @@ export default function AppShell({ title, children }: { title: string; children:
                                         </Link>
                                     ))}
                                 </div>
+                            );
+                        }
+
+                        const isOpen = openSections[section.title] ?? false;
+
+                        return (
+                            <div key={i}>
+                                <button
+                                    onClick={() => toggleSection(section.title!)}
+                                    className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-white/70"
+                                >
+                                    <span>{section.title}</span>
+                                    <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`} aria-hidden>
+                                        ›
+                                    </span>
+                                </button>
+                                {isOpen && (
+                                    <div className="space-y-0.5 pb-2">
+                                        {items.map((item) => (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                                                    isActive(item.href, url)
+                                                        ? 'bg-brand text-white'
+                                                        : 'text-white/75 hover:bg-white/10'
+                                                }`}
+                                            >
+                                                <span aria-hidden>{item.icon}</span>
+                                                {item.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
@@ -252,26 +313,55 @@ export default function AppShell({ title, children }: { title: string; children:
                         {NAV_SECTIONS.map((section, i) => {
                             const items = section.items.filter((item) => allowed(item, caps));
                             if (items.length === 0) return null;
+
+                            if (!section.title) {
+                                return (
+                                    <div key={i} className="mb-3">
+                                        {items.map((item) => (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={() => setDrawer(false)}
+                                                className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
+                                                    isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
+                                                }`}
+                                            >
+                                                <span aria-hidden>{item.icon}</span>
+                                                {item.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                );
+                            }
+
+                            const isOpen = openSections[section.title] ?? false;
+
                             return (
-                                <div key={i} className="mb-3">
-                                    {section.title && (
-                                        <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
-                                            {section.title}
+                                <div key={i} className="mb-1">
+                                    <button
+                                        onClick={() => toggleSection(section.title!)}
+                                        className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40"
+                                    >
+                                        <span>{section.title}</span>
+                                        <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`} aria-hidden>›</span>
+                                    </button>
+                                    {isOpen && (
+                                        <div className="mb-2">
+                                            {items.map((item) => (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    onClick={() => setDrawer(false)}
+                                                    className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
+                                                        isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
+                                                    }`}
+                                                >
+                                                    <span aria-hidden>{item.icon}</span>
+                                                    {item.label}
+                                                </Link>
+                                            ))}
                                         </div>
                                     )}
-                                    {items.map((item) => (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            onClick={() => setDrawer(false)}
-                                            className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
-                                                isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
-                                            }`}
-                                        >
-                                            <span aria-hidden>{item.icon}</span>
-                                            {item.label}
-                                        </Link>
-                                    ))}
                                 </div>
                             );
                         })}
