@@ -2,11 +2,14 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import EmptyState from '../components/EmptyState';
+import Sparkline from '../components/Sparkline';
 import StatusPill from '../components/StatusPill';
 import { ChecklistItem, SharedProps } from '../types';
 
 interface Props {
-    stats: { membersInToday: number; membersScheduled: number; animalsNeedingChecks: number };
+    orgIsEmpty: boolean;
+    stats: { membersInToday: number; membersScheduled: number; animalsNeedingChecks: number; attendanceTrend: number[] };
     welfareAlerts: { id: number; name: string; species: string; welfare_status: string }[];
     checklist: ChecklistItem[];
     banner: string | null;
@@ -43,15 +46,6 @@ function CountUp({ value }: { value: number }) {
     return <>{display}</>;
 }
 
-function EmptyState({ icon, text }: { icon: string; text: string }) {
-    return (
-        <div className="flex flex-col items-center justify-center text-center py-8">
-            <span className="text-3xl mb-2 opacity-40" aria-hidden>{icon}</span>
-            <p className="text-sm text-ink/40">{text}</p>
-        </div>
-    );
-}
-
 const QUICK_ACTIONS = [
     { href: '/register', label: 'Morning Register', icon: '📋', color: 'cat-people' },
     { href: '/animals', label: 'Welfare Checks', icon: '🦜', color: 'cat-ops' },
@@ -64,9 +58,36 @@ const QUICK_ACTION_BG: Record<string, string> = {
     'cat-staff': 'bg-cat-staff/10 text-cat-staff',
 };
 
-export default function Dashboard({ stats, welfareAlerts, checklist, banner, staffAvatars, myShift, leaveBalance, announcements, notifications }: Props) {
+export default function Dashboard({ orgIsEmpty, stats, welfareAlerts, checklist, banner, staffAvatars, myShift, leaveBalance, announcements, notifications }: Props) {
     const { auth } = usePage<SharedProps>().props;
     const done = checklist.filter((c) => c.done).length;
+
+    if (orgIsEmpty) {
+        return (
+            <AppShell title="Dashboard">
+                <Head title="Dashboard" />
+                <div className="flex flex-col items-center justify-center text-center py-20 max-w-md mx-auto">
+                    <span className="text-5xl mb-4" aria-hidden>🦜🐰🐹</span>
+                    <h2 className="text-2xl font-bold text-brand-dark mb-2">
+                        Welcome, {auth.user?.name?.split(' ')[0]}!
+                    </h2>
+                    <p className="text-sm text-ink/50 mb-6">
+                        Your hub is set up but doesn't have any members or animals yet. Add your first ones to get
+                        started — everything else (registers, welfare checks, end-of-day records) will come to life
+                        from there.
+                    </p>
+                    <div className="flex gap-2">
+                        <Link href="/members" className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">
+                            + Add a member
+                        </Link>
+                        <Link href="/animals" className="rounded-full bg-brand-dark text-white font-semibold text-sm px-5 py-2.5">
+                            + Add an animal
+                        </Link>
+                    </div>
+                </div>
+            </AppShell>
+        );
+    }
 
     return (
         <AppShell title="Dashboard">
@@ -127,6 +148,9 @@ export default function Dashboard({ stats, welfareAlerts, checklist, banner, sta
                                 <span className="text-base text-ink/30 font-semibold">/{stats.membersScheduled}</span>
                             </div>
                             <div className="text-sm text-ink/45 font-medium">Members in today</div>
+                            <div className="mt-1.5">
+                                <Sparkline values={stats.attendanceTrend} />
+                            </div>
                         </Card>
                         <Card>
                             <div className={`text-3xl font-extrabold ${stats.animalsNeedingChecks > 0 ? 'text-status-amber' : 'text-status-green'}`}>

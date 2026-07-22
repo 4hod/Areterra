@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
+import EmptyState from '../../components/EmptyState';
 
 interface FormRow {
     id: number;
@@ -48,7 +49,7 @@ export default function Index({ forms, canBuild }: { forms: FormRow[]; canBuild:
                         </div>
                     </Card>
                 ))}
-                {forms.length === 0 && <Card><p className="text-slate-500">No forms yet.</p></Card>}
+                {forms.length === 0 && <Card><EmptyState icon="📝" text="No forms yet." /></Card>}
             </div>
         </AppShell>
     );

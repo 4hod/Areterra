@@ -1,10 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import { WelfareStatus } from '../../types';
+import { recordRecentlyViewed } from '../../utils/recentlyViewed';
 
 interface Monitoring {
     id?: number;
@@ -70,6 +71,10 @@ const emptyMonitoring = (): Monitoring => ({
 });
 
 export default function Show({ animal, welfareChecks, monitoring, todayMonitoring, vetRecords }: Props) {
+    useEffect(() => {
+        recordRecentlyViewed({ title: animal.name, url: `/animals/${animal.id}`, type: 'Animal' });
+    }, [animal.id]);
+
     const [checkOpen, setCheckOpen] = useState(false);
     const [checkStatus, setCheckStatus] = useState<WelfareStatus>('green');
     const [checkNotes, setCheckNotes] = useState('');

@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import { confirmDialog } from '../../utils/dialogs';
 
 export interface Entry {
@@ -90,6 +91,11 @@ export default function Show({ period }: { period: Period }) {
     return (
         <AppShell title={period.label}>
             <Head title={`Payroll — ${period.label}`} />
+
+            <Breadcrumbs items={[
+                { label: 'Payroll', href: '/payroll' },
+                { label: period.label },
+            ]} />
 
             <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
                 <span className="text-slate-500">

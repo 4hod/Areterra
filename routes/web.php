@@ -55,6 +55,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:create_members')->name('members.store');
     Route::put('/members/{member}', [MemberController::class, 'update'])
         ->middleware('can:edit_members')->name('members.update');
+    Route::put('/members/bulk/status', [MemberController::class, 'bulkUpdateStatus'])
+        ->middleware('can:edit_members')->name('members.bulk-status');
 
     Route::get('/animals', [AnimalController::class, 'index'])
         ->middleware('can:view_animals')->name('animals.index');
@@ -200,6 +202,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::post('/invoices', [App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');
         Route::put('/invoices/{invoice}', [App\Http\Controllers\InvoiceController::class, 'update'])->name('invoices.update');
         Route::post('/invoices/{invoice}/paid', [App\Http\Controllers\InvoiceController::class, 'markPaid'])->name('invoices.paid');
+        Route::post('/invoices/bulk/paid', [App\Http\Controllers\InvoiceController::class, 'bulkMarkPaid'])->name('invoices.bulk-paid');
     });
 
     Route::middleware(['can:access_safeguarding', 'password.confirm'])->group(function () {

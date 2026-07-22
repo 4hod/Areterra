@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import BodyMapFigure from '../../components/BodyMapFigure';
 import Card from '../../components/Card';
@@ -8,6 +8,7 @@ import StatusPill from '../../components/StatusPill';
 import TabBar from '../../components/TabBar';
 import { MOOD_EMOJI, Mood } from '../../types';
 import { confirmDialog, promptDialog } from '../../utils/dialogs';
+import { recordRecentlyViewed } from '../../utils/recentlyViewed';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
 const CONSENT_LABELS: Record<string, string> = {
@@ -82,6 +83,10 @@ export default function Show(props: Props) {
     const { member, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, alerts, consents, canEdit } = props;
     const [tab, setTab] = useState<(typeof TABS)[number]>('Profile');
     const photoInput = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        recordRecentlyViewed({ title: member.name, url: `/members/${member.id}`, type: 'Member' });
+    }, [member.id]);
 
     // --- modal state ---
     const [editing, setEditing] = useState(false);

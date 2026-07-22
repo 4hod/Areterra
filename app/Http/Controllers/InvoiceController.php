@@ -57,6 +57,18 @@ class InvoiceController extends Controller
         return back()->with('success', "{$invoice->qb_reference} marked paid.");
     }
 
+    public function bulkMarkPaid(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['exists:member_invoices,id'],
+        ]);
+
+        $count = MemberInvoice::whereIn('id', $data['ids'])->update(['status' => 'paid', 'paid_date' => today()]);
+
+        return back()->with('success', "{$count} invoice".($count === 1 ? '' : 's').' marked paid.');
+    }
+
     public function update(Request $request, MemberInvoice $invoice)
     {
         $invoice->update($request->validate([

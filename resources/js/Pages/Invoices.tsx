@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import SegmentedControl from '../components/SegmentedControl';
 import { confirmDialog, promptDialog } from '../utils/dialogs';
@@ -36,7 +37,24 @@ const STATUS_STYLE: Record<string, string> = {
 export default function Invoices({ invoices, summary, members }: Props) {
     const [adding, setAdding] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selected, setSelected] = useState<number[]>([]);
     const filtered = statusFilter === 'all' ? invoices : invoices.filter((i) => i.status === statusFilter);
+    const payableSelected = selected.filter((id) => {
+        const inv = invoices.find((i) => i.id === id);
+        return inv && inv.status !== 'paid' && inv.status !== 'cancelled';
+    });
+
+    function toggleSelected(id: number) {
+        setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    }
+
+    function bulkMarkPaid() {
+        router.post('/invoices/bulk/paid', { ids: payableSelected }, {
+            preserveScroll: true,
+            onSuccess: () => setSelected([]),
+        });
+    }
+
     const { data, setData, post, processing, reset } = useForm({
         member_id: members[0]?.id ?? 0,
         qb_reference: '',
@@ -88,9 +106,31 @@ export default function Invoices({ invoices, summary, members }: Props) {
                 </div>
             </div>
 
+            {payableSelected.length > 0 && (
+                <div className="flex items-center gap-2 mb-3 px-1">
+                    <span className="text-xs text-ink/45">{payableSelected.length} selected</span>
+                    <button
+                        onClick={bulkMarkPaid}
+                        className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5"
+                    >
+                        ✓ Mark {payableSelected.length} paid
+                    </button>
+                </div>
+            )}
+
             <div className="space-y-2">
                 {filtered.map((i) => (
-                    <Card key={i.id}>
+                    <div key={i.id} className="flex items-start gap-2">
+                        {i.status !== 'paid' && i.status !== 'cancelled' && (
+                            <input
+                                type="checkbox"
+                                checked={selected.includes(i.id)}
+                                onChange={() => toggleSelected(i.id)}
+                                className="mt-5 shrink-0 rounded border-slate-300"
+                                aria-label={`Select invoice ${i.qb_reference}`}
+                            />
+                        )}
+                    <Card className="flex-1">
                         <div className="flex items-center justify-between gap-2">
                             <div className="min-w-0">
                                 <div className="font-bold text-brand-dark">
@@ -145,8 +185,9 @@ export default function Invoices({ invoices, summary, members }: Props) {
                             </div>
                         </div>
                     </Card>
+                    </div>
                 ))}
-                {filtered.length === 0 && <Card><p className="text-slate-500">No invoices{statusFilter !== 'all' && ` with status "${statusFilter}"`}.</p></Card>}
+                {filtered.length === 0 && <Card><EmptyState icon="🧾" text={`No invoices${statusFilter !== 'all' ? ` with status "${statusFilter}"` : ''}.`} /></Card>}
             </div>
 
             <Modal open={adding} title="Track QuickBooks invoice" onClose={() => setAdding(false)}>

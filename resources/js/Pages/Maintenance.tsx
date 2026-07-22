@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 
 interface Task {
@@ -66,7 +67,7 @@ export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]
                         </div>
                     </Card>
                 ))}
-                {open.length === 0 && <Card><p className="text-slate-500">No open tasks.</p></Card>}
+                {open.length === 0 && <Card><EmptyState icon="🔧" text="No open tasks." /></Card>}
             </div>
 
             {done.length > 0 && (

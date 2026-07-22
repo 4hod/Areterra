@@ -27,11 +27,20 @@ class DashboardController extends Controller
 
         $openShift = $user->timeclockEntries()->whereNull('clock_out')->latest('clock_in')->first();
 
+        // 7-day attendance trend for the dashboard sparkline.
+        $attendanceTrend = collect(range(6, 0))->map(function ($daysAgo) {
+            $date = today()->subDays($daysAgo);
+
+            return Attendance::whereDate('date', $date)->where('checked_in', true)->count();
+        })->values();
+
         return Inertia::render('Dashboard', [
+            'orgIsEmpty' => Member::count() === 0 && Animal::count() === 0,
             'stats' => [
                 'membersInToday' => Attendance::whereDate('date', $today)->where('checked_in', true)->count(),
                 'membersScheduled' => Member::scheduledFor($today)->count(),
                 'animalsNeedingChecks' => max(0, $activeAnimals - $checkedAnimals),
+                'attendanceTrend' => $attendanceTrend,
             ],
             'welfareAlerts' => Animal::active()
                 ->whereIn('welfare_status', ['amber', 'red'])

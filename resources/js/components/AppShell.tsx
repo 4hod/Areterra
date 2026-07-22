@@ -124,7 +124,7 @@ export default function AppShell({ title, children }: { title: string; children:
     const { auth, flash, branding, unreadNotifications } = usePage<SharedProps>().props;
     const url = usePage().url;
     const caps = auth.user?.capabilities ?? [];
-    const [toast, setToast] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const [drawer, setDrawer] = useState(false);
     const [searching, setSearching] = useState(false);
     const [pushPrompt, setPushPrompt] = useState(false);
@@ -154,13 +154,29 @@ export default function AppShell({ title, children }: { title: string; children:
     }
 
     useEffect(() => {
-        const message = flash.success ?? flash.error ?? null;
-        setToast(message);
-        if (message) {
-            const t = setTimeout(() => setToast(null), 3500);
-            return () => clearTimeout(t);
+        if (flash.success) {
+            setToast({ message: flash.success, type: 'success' });
+        } else if (flash.error) {
+            setToast({ message: flash.error, type: 'error' });
+        } else {
+            setToast(null);
+            return;
         }
+        const t = setTimeout(() => setToast(null), 3500);
+        return () => clearTimeout(t);
     }, [flash]);
+
+    // Cmd+K / Ctrl+K opens search from anywhere.
+    useEffect(() => {
+        function onKey(e: KeyboardEvent) {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setSearching(true);
+            }
+        }
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
 
     // Push permission prompt: 3s after login, dismissible, once per session (SPEC.md §22).
     useEffect(() => {
@@ -299,6 +315,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     >
                         <span aria-hidden>🔍</span>
                         Search anything…
+                        <kbd className="ml-auto text-[10px] font-mono bg-black/[0.06] text-ink/40 rounded px-1.5 py-0.5">⌘K</kbd>
                     </button>
                     <div className="flex-1 md:hidden" />
 
@@ -451,8 +468,13 @@ export default function AppShell({ title, children }: { title: string; children:
             )}
 
             {toast && (
-                <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-brand-dark text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg">
-                    {toast}
+                <div
+                    className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 ${
+                        toast.type === 'success' ? 'bg-status-green' : toast.type === 'error' ? 'bg-status-red' : 'bg-status-amber'
+                    }`}
+                >
+                    <span aria-hidden>{toast.type === 'success' ? '✓' : toast.type === 'error' ? '✕' : '⚠'}</span>
+                    {toast.message}
                 </div>
             )}
 

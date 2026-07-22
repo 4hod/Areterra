@@ -168,6 +168,34 @@ export default function Account({ profile }: { profile: Profile }) {
                                 required
                             />
                             {passwordForm.errors.password && <span className="text-red-600 text-xs">{passwordForm.errors.password}</span>}
+                            {passwordForm.data.password.length > 0 && (() => {
+                                const pw = passwordForm.data.password;
+                                let score = 0;
+                                if (pw.length >= 10) score++;
+                                if (pw.length >= 14) score++;
+                                if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+                                if (/[0-9]/.test(pw)) score++;
+                                if (/[^A-Za-z0-9]/.test(pw)) score++;
+                                const levels = [
+                                    { label: 'Weak', color: 'bg-status-red' },
+                                    { label: 'Weak', color: 'bg-status-red' },
+                                    { label: 'Fair', color: 'bg-status-amber' },
+                                    { label: 'Good', color: 'bg-status-amber' },
+                                    { label: 'Strong', color: 'bg-status-green' },
+                                    { label: 'Strong', color: 'bg-status-green' },
+                                ];
+                                const level = levels[score];
+                                return (
+                                    <div className="mt-1.5">
+                                        <div className="flex gap-1">
+                                            {[0, 1, 2, 3, 4].map((i) => (
+                                                <div key={i} className={`h-1 flex-1 rounded-full ${i < score ? level.color : 'bg-black/[0.08]'}`} />
+                                            ))}
+                                        </div>
+                                        <span className="text-xs text-ink/40">{level.label}</span>
+                                    </div>
+                                );
+                            })()}
                         </label>
                         <label className="block text-sm font-medium">
                             Confirm new password

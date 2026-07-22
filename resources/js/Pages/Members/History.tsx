@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import AppShell from '../../components/AppShell';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import Card from '../../components/Card';
 import { MOOD_EMOJI, Mood } from '../../types';
 
@@ -69,9 +70,11 @@ export default function History({
         <AppShell title={`${member.name} — full history`}>
             <Head title={`${member.name} — history`} />
 
-            <Link href={`/members/${member.id}`} className="text-sm font-semibold text-brand mb-4 inline-block">
-                ← Back to {member.name}'s profile
-            </Link>
+            <Breadcrumbs items={[
+                { label: 'Members', href: '/members' },
+                { label: member.name, href: `/members/${member.id}` },
+                { label: 'Full history' },
+            ]} />
 
             <Card title="End of day history" className="mb-4">
                 {endOfDay.data.length === 0 && <p className="text-sm text-slate-400">No end-of-day records yet.</p>}

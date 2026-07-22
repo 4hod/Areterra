@@ -171,6 +171,19 @@ class MemberController extends Controller
         return back()->with('success', 'Member updated.');
     }
 
+    public function bulkUpdateStatus(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['exists:members,id'],
+            'status' => ['required', 'in:active,inactive,on-leave,archived'],
+        ]);
+
+        $count = Member::whereIn('id', $data['ids'])->update(['status' => $data['status']]);
+
+        return back()->with('success', "{$count} member".($count === 1 ? '' : 's')." set to {$data['status']}.");
+    }
+
     private function validated(Request $request): array
     {
         $validated = $request->validate([

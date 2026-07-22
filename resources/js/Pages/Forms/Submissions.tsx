@@ -1,6 +1,8 @@
 import { Head } from '@inertiajs/react';
 import AppShell from '../../components/AppShell';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import Card from '../../components/Card';
+import EmptyState from '../../components/EmptyState';
 
 interface Submission {
     id: number;
@@ -19,6 +21,12 @@ export default function Submissions({ form, submissions }: Props) {
         <AppShell title={`${form.title} — responses`}>
             <Head title={`${form.title} — responses`} />
 
+            <Breadcrumbs items={[
+                { label: 'Forms', href: '/forms' },
+                { label: form.title },
+                { label: 'Responses' },
+            ]} />
+
             <div className="space-y-2">
                 {submissions.map((s) => (
                     <Card key={s.id}>
@@ -35,7 +43,7 @@ export default function Submissions({ form, submissions }: Props) {
                         </dl>
                     </Card>
                 ))}
-                {submissions.length === 0 && <Card><p className="text-slate-500">No responses yet.</p></Card>}
+                {submissions.length === 0 && <Card><EmptyState icon="📝" text="No responses yet." /></Card>}
             </div>
         </AppShell>
     );

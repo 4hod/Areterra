@@ -1,8 +1,9 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import { SharedProps } from '../types';
 import { confirmDialog } from '../utils/dialogs';
 
 interface LedgerEntry {
@@ -46,6 +47,7 @@ function FeeStatus({ row }: { row: Row }) {
 }
 
 export default function Transport({ date, isToday, rows, dailyRate, monthly }: Props) {
+    const { branding } = usePage<SharedProps>().props;
     const [paying, setPaying] = useState<Row | null>(null);
     const [amount, setAmount] = useState<number>(dailyRate);
     const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
@@ -387,7 +389,11 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
             <Modal open={receipt !== null} title="Transport Receipt" onClose={() => setReceipt(null)}>
                 {receipt && (
                     <div id="receipt" className="text-center space-y-2 print:block">
-                        <div className="text-2xl font-extrabold text-brand-dark">Areterra</div>
+                        {branding.logoUrl ? (
+                            <img src={branding.logoUrl} alt={branding.orgName} className="h-8 mx-auto object-contain" />
+                        ) : (
+                            <div className="text-2xl font-extrabold text-brand-dark">{branding.orgName}</div>
+                        )}
                         <div className="text-xs text-slate-500">Transport Receipt · {new Date(date).toLocaleDateString('en-GB')}</div>
                         <div className="text-lg font-bold">{receipt.name}</div>
                         <div className="text-3xl font-extrabold text-brand">{gbp(receipt.amount)}</div>

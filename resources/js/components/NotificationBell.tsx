@@ -71,7 +71,11 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
                         Notifications
                     </div>
                     <div className="max-h-80 overflow-y-auto">
-                        {loading && <p className="text-sm text-ink/40 text-center py-6">Loading…</p>}
+                        {loading && (
+                            <div className="p-3 space-y-2">
+                                {[0, 1, 2].map((i) => <div key={i} className="h-11 rounded-lg skeleton" />)}
+                            </div>
+                        )}
                         {!loading && notifications.length === 0 && (
                             <div className="text-center py-8">
                                 <span className="text-2xl block mb-1 opacity-40" aria-hidden>🔔</span>

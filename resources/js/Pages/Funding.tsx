@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 
 interface Entry {
@@ -60,7 +61,7 @@ export default function Funding({ entries, canManage }: { entries: Entry[]; canM
                         </div>
                     </Card>
                 ))}
-                {entries.length === 0 && <Card><p className="text-slate-500">No funding opportunities logged yet.</p></Card>}
+                {entries.length === 0 && <Card><EmptyState icon="💰" text="No funding opportunities logged yet." /></Card>}
             </div>
 
             <Modal open={adding} title="New funding opportunity" onClose={() => setAdding(false)}>

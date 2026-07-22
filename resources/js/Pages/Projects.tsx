@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 
 interface Project {
@@ -57,7 +58,7 @@ export default function Projects({ projects, canManage }: { projects: Project[];
                         </div>
                     </Card>
                 ))}
-                {projects.length === 0 && <Card><p className="text-slate-500">No projects yet.</p></Card>}
+                {projects.length === 0 && <Card><EmptyState icon="🗂️" text="No projects yet." /></Card>}
             </div>
 
             <Modal open={adding} title="New project" onClose={() => setAdding(false)}>

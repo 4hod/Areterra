@@ -5,6 +5,7 @@ import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import SegmentedControl from '../../components/SegmentedControl';
+import EmptyState from '../../components/EmptyState';
 import { SharedProps } from '../../types';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' };
@@ -21,7 +22,9 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
     const [search, setSearch] = useState(filters.search ?? '');
     const status = filters.status ?? 'all';
     const [adding, setAdding] = useState(false);
+    const [selected, setSelected] = useState<number[]>([]);
     const canCreate = auth.user?.capabilities.includes('create_members') || auth.user?.role === 'administrator';
+    const canEdit = auth.user?.capabilities.includes('edit_members') || auth.user?.role === 'administrator';
     const { data, setData, post, processing, errors, reset } = useForm({
         first_name: '',
         last_name: '',
@@ -47,6 +50,21 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
 
     function setStatusFilter(s: string) {
         router.get('/members', { ...(search ? { search } : {}), ...(s !== 'all' ? { status: s } : {}) }, { preserveState: true, replace: true });
+    }
+
+    function toggleSelected(id: number) {
+        setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    }
+
+    function toggleSelectAll() {
+        setSelected((s) => (s.length === members.length ? [] : members.map((m) => m.id)));
+    }
+
+    function bulkSetStatus(newStatus: string) {
+        router.put('/members/bulk/status', { ids: selected, status: newStatus }, {
+            preserveScroll: true,
+            onSuccess: () => setSelected([]),
+        });
     }
 
     const STATUS_TABS = [
@@ -81,28 +99,67 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
 
             <SegmentedControl options={STATUS_TABS} value={status} onChange={setStatusFilter} />
 
+            {canEdit && members.length > 0 && (
+                <div className="flex items-center gap-3 mb-2 px-1">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-ink/50">
+                        <input
+                            type="checkbox"
+                            checked={selected.length === members.length}
+                            onChange={toggleSelectAll}
+                            className="rounded border-slate-300"
+                        />
+                        Select all
+                    </label>
+                    {selected.length > 0 && (
+                        <div className="flex items-center gap-1.5 ml-auto">
+                            <span className="text-xs text-ink/45">{selected.length} selected</span>
+                            {STATUS_TABS.filter((t) => t.value !== 'all').map((t) => (
+                                <button
+                                    key={t.value}
+                                    onClick={() => bulkSetStatus(t.value)}
+                                    className="rounded-full bg-ink/[0.06] text-ink/70 text-xs font-bold px-3 py-1.5 hover:bg-ink/10"
+                                >
+                                    Set {t.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className="space-y-2">
                 {members.map((m) => (
-                    <Link key={m.id} href={`/members/${m.id}`} className="block">
-                        <Card>
-                            <div className="flex items-center gap-3">
-                                <div className="h-11 w-11 shrink-0 rounded-full bg-brand/10 text-brand font-bold flex items-center justify-center text-lg">
-                                    {m.name.charAt(0)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="font-bold text-brand-dark truncate">{m.name}</div>
-                                    <div className="text-xs text-slate-400 font-medium">
-                                        {m.attendance_days.map((d) => DAY_LABELS[d]).join(' · ')}
+                    <div key={m.id} className="flex items-center gap-2">
+                        {canEdit && (
+                            <input
+                                type="checkbox"
+                                checked={selected.includes(m.id)}
+                                onChange={() => toggleSelected(m.id)}
+                                className="shrink-0 rounded border-slate-300"
+                                aria-label={`Select ${m.name}`}
+                            />
+                        )}
+                        <Link href={`/members/${m.id}`} className="block flex-1 min-w-0">
+                            <Card>
+                                <div className="flex items-center gap-3">
+                                    <div className="h-11 w-11 shrink-0 rounded-full bg-brand/10 text-brand font-bold flex items-center justify-center text-lg">
+                                        {m.name.charAt(0)}
                                     </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="font-bold text-brand-dark truncate">{m.name}</div>
+                                        <div className="text-xs text-slate-400 font-medium">
+                                            {m.attendance_days.map((d) => DAY_LABELS[d]).join(' · ')}
+                                        </div>
+                                    </div>
+                                    <StatusPill status={m.status} />
                                 </div>
-                                <StatusPill status={m.status} />
-                            </div>
-                        </Card>
-                    </Link>
+                            </Card>
+                        </Link>
+                    </div>
                 ))}
                 {members.length === 0 && (
                     <Card>
-                        <p className="text-slate-500">No members found.</p>
+                        <EmptyState icon="👥" text="No members found." />
                     </Card>
                 )}
             </div>
