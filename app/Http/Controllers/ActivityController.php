@@ -14,6 +14,8 @@ class ActivityController extends Controller
 
         return Inertia::render('Activities', [
             'month' => $month->format('Y-m'),
+            'prevMonth' => $month->copy()->subMonthNoOverflow()->format('Y-m'),
+            'nextMonth' => $month->copy()->addMonthNoOverflow()->format('Y-m'),
             'activities' => Activity::with('user:id,name')
                 ->whereBetween('activity_date', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
                 ->orderBy('activity_date')

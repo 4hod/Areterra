@@ -15,9 +15,10 @@ interface MemberRow {
     attendance_days: number[];
 }
 
-export default function Index({ members, filters }: { members: MemberRow[]; filters: { search?: string } }) {
+export default function Index({ members, filters }: { members: MemberRow[]; filters: { search?: string; status?: string } }) {
     const { auth } = usePage<SharedProps>().props;
     const [search, setSearch] = useState(filters.search ?? '');
+    const status = filters.status ?? 'all';
     const [adding, setAdding] = useState(false);
     const canCreate = auth.user?.capabilities.includes('create_members') || auth.user?.role === 'administrator';
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -40,8 +41,20 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
 
     function submitSearch(value: string) {
         setSearch(value);
-        router.get('/members', value ? { search: value } : {}, { preserveState: true, replace: true });
+        router.get('/members', { ...(value ? { search: value } : {}), ...(status !== 'all' ? { status } : {}) }, { preserveState: true, replace: true });
     }
+
+    function setStatusFilter(s: string) {
+        router.get('/members', { ...(search ? { search } : {}), ...(s !== 'all' ? { status: s } : {}) }, { preserveState: true, replace: true });
+    }
+
+    const STATUS_TABS = [
+        { value: 'all', label: 'All' },
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+        { value: 'on-leave', label: 'On leave' },
+        { value: 'archived', label: 'Archived' },
+    ];
 
     return (
         <AppShell title="Members">
@@ -63,6 +76,20 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
                         + Add
                     </button>
                 )}
+            </div>
+
+            <div className="flex gap-1.5 mb-4 overflow-x-auto">
+                {STATUS_TABS.map((t) => (
+                    <button
+                        key={t.value}
+                        onClick={() => setStatusFilter(t.value)}
+                        className={`shrink-0 rounded-full text-xs font-bold px-3 py-1.5 ${
+                            status === t.value ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'
+                        }`}
+                    >
+                        {t.label}
+                    </button>
+                ))}
             </div>
 
             <div className="space-y-2">
