@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import SegmentedControl from '../components/SegmentedControl';
 import { confirmDialog, promptDialog } from '../utils/dialogs';
 
 interface Invoice {
@@ -78,18 +79,12 @@ export default function Invoices({ invoices, summary, members }: Props) {
                 <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">
                     + Track invoice
                 </button>
-                <div className="flex gap-1 ml-auto">
-                    {['all', 'sent', 'overdue', 'paid', 'draft'].map((s) => (
-                        <button
-                            key={s}
-                            onClick={() => setStatusFilter(s)}
-                            className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${
-                                statusFilter === s ? 'bg-brand-dark text-white' : 'bg-white text-slate-500 border border-slate-200'
-                            }`}
-                        >
-                            {s}
-                        </button>
-                    ))}
+                <div className="ml-auto">
+                    <SegmentedControl
+                        options={['all', 'sent', 'overdue', 'paid', 'draft'].map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                    />
                 </div>
             </div>
 

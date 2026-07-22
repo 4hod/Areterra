@@ -4,6 +4,7 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
+import SegmentedControl from '../../components/SegmentedControl';
 import { SharedProps } from '../../types';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 7: 'Sun' };
@@ -78,19 +79,7 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
                 )}
             </div>
 
-            <div className="flex gap-1.5 mb-4 overflow-x-auto">
-                {STATUS_TABS.map((t) => (
-                    <button
-                        key={t.value}
-                        onClick={() => setStatusFilter(t.value)}
-                        className={`shrink-0 rounded-full text-xs font-bold px-3 py-1.5 ${
-                            status === t.value ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'
-                        }`}
-                    >
-                        {t.label}
-                    </button>
-                ))}
-            </div>
+            <SegmentedControl options={STATUS_TABS} value={status} onChange={setStatusFilter} />
 
             <div className="space-y-2">
                 {members.map((m) => (

@@ -5,6 +5,7 @@ import BodyMapFigure from '../../components/BodyMapFigure';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
+import TabBar from '../../components/TabBar';
 import { MOOD_EMOJI, Mood } from '../../types';
 import { confirmDialog, promptDialog } from '../../utils/dialogs';
 
@@ -247,19 +248,7 @@ export default function Show(props: Props) {
             )}
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
-                {TABS.map((t) => (
-                    <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        className={`rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap ${
-                            tab === t ? 'bg-brand text-white' : 'bg-white text-slate-600 border border-slate-200'
-                        }`}
-                    >
-                        {t}
-                    </button>
-                ))}
-            </div>
+            <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
             {/* ── Profile ── */}
             {tab === 'Profile' && (
