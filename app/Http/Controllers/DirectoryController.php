@@ -11,10 +11,13 @@ class DirectoryController extends Controller
     public function index()
     {
         $users = User::orderBy('name')->get()->map(fn ($u) => [
+            'id' => $u->id,
             'name' => $u->name,
             'job_title' => $u->job_title ?? ucfirst(str_replace('_', ' ', $u->role)),
             'email' => $u->email,
-            'phone' => null,
+            'phone' => $u->phone,
+            'bio' => $u->bio,
+            'photo_path' => $u->photo_path,
             'has_account' => true,
         ]);
 

@@ -49,7 +49,7 @@ $manager = array_merge($staff, [
 
 return [
     'roles' => [
-        'administrator' => [], // full access via Gate::before
+        'administrator' => ['manage_settings'], // most access via Gate::before; this is only here so nav items render
         'manager' => $manager,
         'staff' => $staff,
         'volunteer' => [

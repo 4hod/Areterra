@@ -13,12 +13,56 @@ class AuthController extends Controller
     {
         return Inertia::render('Login', [
             'ssoConfigured' => MicrosoftAuthController::configured(),
+            'loginPhotoUrl' => \App\Models\Setting::get('login_photo_url'),
+            'logoUrl' => \App\Models\Setting::get('logo_url'),
         ]);
     }
 
-    public function account()
+    public function account(Request $request)
     {
-        return Inertia::render('Account');
+        $user = $request->user();
+
+        return Inertia::render('Account', [
+            'profile' => [
+                'name' => $user->name,
+                'job_title' => $user->job_title,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'bio' => $user->bio,
+                'photo_path' => $user->photo_path,
+            ],
+        ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'job_title' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'bio' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $request->user()->update($data);
+
+        return back()->with('success', 'Profile updated.');
+    }
+
+    public function updatePhoto(Request $request)
+    {
+        $request->validate(['photo' => ['required', 'image', 'max:8192']]);
+
+        $path = $request->file('photo')->store('staff-photos', 'public');
+        $request->user()->update(['photo_path' => '/storage/'.$path]);
+
+        return back()->with('success', 'Photo updated.');
+    }
+
+    public function removePhoto(Request $request)
+    {
+        $request->user()->update(['photo_path' => null]);
+
+        return back()->with('success', 'Photo removed.');
     }
 
     public function updatePassword(Request $request)

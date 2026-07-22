@@ -184,6 +184,9 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::get('/account', [AuthController::class, 'account'])->name('account');
     Route::put('/account/password', [AuthController::class, 'updatePassword'])->name('account.password');
+    Route::put('/account/profile', [AuthController::class, 'updateProfile'])->name('account.profile');
+    Route::post('/account/photo', [AuthController::class, 'updatePhoto'])->name('account.photo');
+    Route::delete('/account/photo', [AuthController::class, 'removePhoto'])->name('account.photo.remove');
 
     Route::middleware('can:manage_finance')->group(function () {
         Route::get('/finance', [App\Http\Controllers\FinanceController::class, 'index'])->name('finance');
