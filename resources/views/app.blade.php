@@ -6,13 +6,13 @@
     <meta name="theme-color" content="#00345C">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800|fraunces:500,600,700&display=swap" rel="stylesheet">
     <title inertia>{{ config('app.name', 'Areterra Hub') }}</title>
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
     @inertiaHead
 </head>
-<body class="font-sans antialiased bg-slate-100">
+<body class="font-sans antialiased bg-paper">
     @inertia
 </body>
 </html>

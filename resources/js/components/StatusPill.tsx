@@ -1,20 +1,31 @@
-const STYLES: Record<string, string> = {
-    green: 'bg-emerald-100 text-emerald-800',
-    amber: 'bg-amber-100 text-amber-800',
-    red: 'bg-red-100 text-red-800',
-    active: 'bg-emerald-100 text-emerald-800',
-    inactive: 'bg-slate-200 text-slate-600',
-    'on-leave': 'bg-amber-100 text-amber-800',
-    archived: 'bg-slate-200 text-slate-500',
+const DOT: Record<string, string> = {
+    green: 'bg-status-green',
+    amber: 'bg-status-amber',
+    red: 'bg-status-red',
+    active: 'bg-status-green',
+    inactive: 'bg-ink/30',
+    'on-leave': 'bg-status-amber',
+    archived: 'bg-ink/25',
+};
+
+const TEXT: Record<string, string> = {
+    green: 'text-status-green',
+    amber: 'text-status-amber',
+    red: 'text-status-red',
+    active: 'text-status-green',
+    inactive: 'text-ink/60',
+    'on-leave': 'text-status-amber',
+    archived: 'text-ink/50',
 };
 
 export default function StatusPill({ status, label }: { status: string; label?: string }) {
     return (
         <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
-                STYLES[status] ?? 'bg-slate-200 text-slate-600'
+            className={`inline-flex items-center gap-1.5 rounded-full bg-black/[0.03] px-2.5 py-1 text-xs font-semibold capitalize ${
+                TEXT[status] ?? 'text-ink/60'
             }`}
         >
+            <span className={`h-1.5 w-1.5 rounded-full ${DOT[status] ?? 'bg-ink/30'}`} aria-hidden />
             {label ?? status}
         </span>
     );

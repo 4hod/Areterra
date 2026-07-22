@@ -165,7 +165,10 @@ export default function AppShell({ title, children }: { title: string; children:
     return (
         <div className="min-h-screen md:flex">
             {/* Desktop sidebar */}
-            <aside className="hidden md:flex md:flex-col w-60 shrink-0 bg-brand-dark text-white min-h-screen sticky top-0 overflow-y-auto">
+            <aside
+                className="hidden md:flex md:flex-col w-60 shrink-0 text-white min-h-screen sticky top-0 overflow-y-auto"
+                style={{ background: 'linear-gradient(180deg, var(--color-brand-dark) 0%, var(--color-ink) 100%)' }}
+            >
                 <div className="px-5 py-5">
                     {branding.logoUrl ? (
                         <img src={branding.logoUrl} alt={branding.orgName} className="h-9 max-w-[160px] object-contain object-left mb-1" />
@@ -188,10 +191,10 @@ export default function AppShell({ title, children }: { title: string; children:
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                                            className={`flex items-center gap-3 rounded-lg border-l-[3px] px-3 py-2 text-sm font-medium transition-colors ${
                                                 isActive(item.href, url)
-                                                    ? 'bg-brand text-white'
-                                                    : 'text-white/75 hover:bg-white/10'
+                                                    ? 'border-accent bg-white/10 text-white'
+                                                    : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
                                             }`}
                                         >
                                             <span aria-hidden>{item.icon}</span>
@@ -221,10 +224,10 @@ export default function AppShell({ title, children }: { title: string; children:
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
-                                                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                                                className={`flex items-center gap-3 rounded-lg border-l-[3px] px-3 py-2 text-sm font-medium transition-colors ${
                                                     isActive(item.href, url)
-                                                        ? 'bg-brand text-white'
-                                                        : 'text-white/75 hover:bg-white/10'
+                                                        ? 'border-accent bg-white/10 text-white'
+                                                        : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
                                                 }`}
                                             >
                                                 <span aria-hidden>{item.icon}</span>
@@ -260,7 +263,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     >
                         ☰
                     </button>
-                    <h1 className="text-lg font-bold text-brand-dark truncate flex-1">{title}</h1>
+                    <h1 className="text-xl font-semibold text-brand-dark truncate flex-1 tracking-tight">{title}</h1>
                     <button
                         onClick={() => setSearching(true)}
                         aria-label="Search"
