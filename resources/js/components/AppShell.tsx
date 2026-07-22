@@ -104,15 +104,6 @@ const MOBILE_NAV: NavItem[] = [
     { href: '/more', label: 'More', icon: '⋯' },
 ];
 
-const BADGE_STYLES: Record<string, string> = {
-    brand: 'bg-white/15',
-    'cat-people': 'bg-cat-people/25',
-    'cat-staff': 'bg-cat-staff/25',
-    'cat-ops': 'bg-cat-ops/25',
-    'cat-governance': 'bg-cat-governance/25',
-    'cat-admin': 'bg-cat-admin/25',
-};
-
 function isActive(href: string, url: string) {
     return href === '/' ? url === '/' : url.startsWith(href);
 }
@@ -231,12 +222,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                                     : 'text-white/70 hover:bg-white/5 hover:text-white'
                                             }`}
                                         >
-                                            <span
-                                                className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
-                                                aria-hidden
-                                            >
-                                                {item.icon}
-                                            </span>
+                                            <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
                                             <span className="flex-1">{item.label}</span>
                                             {item.isNew && (
                                                 <span className="rounded bg-accent text-brand-dark text-[9px] font-extrabold px-1.5 py-0.5 tracking-wide">
@@ -252,10 +238,10 @@ export default function AppShell({ title, children }: { title: string; children:
                         const isOpen = openSections[section.title] ?? false;
 
                         return (
-                            <div key={i}>
+                            <div key={i} className="pt-2 mt-1 border-t border-white/10 first:border-t-0 first:mt-0 first:pt-0">
                                 <button
                                     onClick={() => toggleSection(section.title!)}
-                                    className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40 hover:text-white/70"
+                                    className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white/55 hover:text-white"
                                 >
                                     <span>{section.title}</span>
                                     <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`} aria-hidden>
@@ -274,12 +260,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                                         : 'text-white/70 hover:bg-white/5 hover:text-white'
                                                 }`}
                                             >
-                                                <span
-                                                    className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
-                                                    aria-hidden
-                                                >
-                                                    {item.icon}
-                                                </span>
+                                                <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
                                                 <span className="flex-1">{item.label}</span>
                                                 {item.isNew && (
                                                     <span className="rounded bg-accent text-brand-dark text-[9px] font-extrabold px-1.5 py-0.5 tracking-wide">
@@ -393,12 +374,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                                     isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
                                                 }`}
                                             >
-                                                <span
-                                                    className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
-                                                    aria-hidden
-                                                >
-                                                    {item.icon}
-                                                </span>
+                                                <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
                                                 {item.label}
                                             </Link>
                                         ))}
@@ -428,12 +404,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                                         isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
                                                     }`}
                                                 >
-                                                    <span
-                                                        className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
-                                                        aria-hidden
-                                                    >
-                                                        {item.icon}
-                                                    </span>
+                                                    <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
                                                     {item.label}
                                                 </Link>
                                             ))}
