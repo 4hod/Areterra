@@ -11,9 +11,10 @@ interface NavItem {
     cap?: string;
 }
 
-export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
+export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem[] }[] = [
     {
         title: null,
+        color: 'brand',
         items: [
             { href: '/', label: 'Dashboard', icon: '🏠' },
             { href: '/today', label: 'Today', icon: '✅' },
@@ -24,6 +25,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
     },
     {
         title: 'People & animals',
+        color: 'cat-people',
         items: [
             { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
             { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
@@ -34,6 +36,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
     },
     {
         title: 'Staff',
+        color: 'cat-staff',
         items: [
             { href: '/announcements', label: 'Announcements', icon: '📢' },
             { href: '/recognition', label: 'Recognition', icon: '🌟' },
@@ -47,6 +50,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
     },
     {
         title: 'Operations',
+        color: 'cat-ops',
         items: [
             { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
             { href: '/calendar', label: 'Calendar', icon: '🗓️' },
@@ -61,6 +65,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
     },
     {
         title: 'Governance & safety',
+        color: 'cat-governance',
         items: [
             { href: '/policies', label: 'Policies', icon: '📜' },
             { href: '/documents', label: 'Documents', icon: '📁' },
@@ -72,6 +77,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
     },
     {
         title: 'Reporting & admin',
+        color: 'cat-admin',
         items: [
             { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
             { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
@@ -94,6 +100,15 @@ const MOBILE_NAV: NavItem[] = [
     { href: '/announcements', label: 'News', icon: '📢' },
     { href: '/more', label: 'More', icon: '⋯' },
 ];
+
+const BADGE_STYLES: Record<string, string> = {
+    brand: 'bg-white/15',
+    'cat-people': 'bg-cat-people/25',
+    'cat-staff': 'bg-cat-staff/25',
+    'cat-ops': 'bg-cat-ops/25',
+    'cat-governance': 'bg-cat-governance/25',
+    'cat-admin': 'bg-cat-admin/25',
+};
 
 function isActive(href: string, url: string) {
     return href === '/' ? url === '/' : url.startsWith(href);
@@ -197,7 +212,12 @@ export default function AppShell({ title, children }: { title: string; children:
                                                     : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
                                             }`}
                                         >
-                                            <span aria-hidden>{item.icon}</span>
+                                            <span
+                                                className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
+                                                aria-hidden
+                                            >
+                                                {item.icon}
+                                            </span>
                                             {item.label}
                                         </Link>
                                     ))}
@@ -230,7 +250,12 @@ export default function AppShell({ title, children }: { title: string; children:
                                                         : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
                                                 }`}
                                             >
-                                                <span aria-hidden>{item.icon}</span>
+                                                <span
+                                                    className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
+                                                    aria-hidden
+                                                >
+                                                    {item.icon}
+                                                </span>
                                                 {item.label}
                                             </Link>
                                         ))}
@@ -329,7 +354,12 @@ export default function AppShell({ title, children }: { title: string; children:
                                                     isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
                                                 }`}
                                             >
-                                                <span aria-hidden>{item.icon}</span>
+                                                <span
+                                                    className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
+                                                    aria-hidden
+                                                >
+                                                    {item.icon}
+                                                </span>
                                                 {item.label}
                                             </Link>
                                         ))}
@@ -359,7 +389,12 @@ export default function AppShell({ title, children }: { title: string; children:
                                                         isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
                                                     }`}
                                                 >
-                                                    <span aria-hidden>{item.icon}</span>
+                                                    <span
+                                                        className={`h-6 w-6 rounded-md flex items-center justify-center text-[13px] shrink-0 ${BADGE_STYLES[section.color]}`}
+                                                        aria-hidden
+                                                    >
+                                                        {item.icon}
+                                                    </span>
                                                     {item.label}
                                                 </Link>
                                             ))}

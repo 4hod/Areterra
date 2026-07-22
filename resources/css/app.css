@@ -5,36 +5,37 @@
 
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-    --font-display: 'Fraunces', 'Iowan Old Style', ui-serif, Georgia, serif;
 
-    /* Areterra brand — the real identity, not a generic SaaS palette */
+    /* Areterra brand */
     --color-brand: #009de6;
     --color-brand-dark: #00345c;
     --color-accent: #ffd900;
 
-    /* Warm neutrals — parchment instead of stock Tailwind grey */
-    --color-paper: #f6f2e9;
-    --color-paper-dark: #ece5d5;
-    --color-ink: #16231d;
+    /* Clean cool neutral surface — not stark white, not warm parchment */
+    --color-paper: #f5f7fa;
+    --color-ink: #1c2733;
 
-    /* Refined status palette (replaces default emerald/amber/red) */
-    --color-status-green: #4b7a5b;
-    --color-status-amber: #b8842a;
-    --color-status-red: #b6432f;
+    /* Refined status palette */
+    --color-status-green: #16a34a;
+    --color-status-amber: #d97706;
+    --color-status-red: #dc2626;
 
-    --radius-card: 16px;
-    --shadow-card: 0 1px 2px rgba(22, 35, 29, 0.04), 0 8px 24px -12px rgba(22, 35, 29, 0.18);
+    /* Category colours for nav icon badges — chosen to read clearly as
+       chips against the dark navy sidebar, each distinct from brand blue
+       itself so "People" doesn't just look like more brand chrome. */
+    --color-cat-people: #38bdf8;
+    --color-cat-staff: #c084fc;
+    --color-cat-ops: #fb923c;
+    --color-cat-governance: #2dd4bf;
+    --color-cat-admin: #94a3b8;
+
+    --radius-card: 12px;
+    --shadow-card: 0 1px 2px rgba(28, 39, 51, 0.04), 0 4px 16px -6px rgba(28, 39, 51, 0.10);
 }
 
 @layer base {
     body {
         background-color: var(--color-paper);
-    }
-
-    /* Serif display face for page/section titles — the one deliberate typographic
-       choice that separates this from a generic Inter-everywhere admin template. */
-    h1, h2, .font-display {
-        font-family: var(--font-display);
     }
 
     /* 16px inputs prevent iOS zoom; 48px min height for touch (SPEC.md mobile rules) */
