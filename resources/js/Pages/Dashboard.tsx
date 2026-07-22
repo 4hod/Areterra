@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
+import BarChart from '../components/BarChart';
+import ChartCard from '../components/ChartCard';
 import Sparkline from '../components/Sparkline';
+import StatTile from '../components/StatTile';
 import StatusPill from '../components/StatusPill';
 import { ChecklistItem, SharedProps } from '../types';
 
@@ -142,29 +145,42 @@ export default function Dashboard({ orgIsEmpty, stats, welfareAlerts, checklist,
                 {/* ── Main column ── */}
                 <div className="space-y-5 min-w-0">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <Card>
-                            <div className="text-3xl font-extrabold text-brand">
-                                <CountUp value={stats.membersInToday} />
-                                <span className="text-base text-ink/30 font-semibold">/{stats.membersScheduled}</span>
+                        <StatTile
+                            icon="👥"
+                            color="var(--color-brand)"
+                            value={<><CountUp value={stats.membersInToday} />/{stats.membersScheduled}</>}
+                            label="Members in today"
+                        >
+                            <div className="mt-2">
+                                <Sparkline values={stats.attendanceTrend} color="rgba(255,255,255,0.85)" />
                             </div>
-                            <div className="text-sm text-ink/45 font-medium">Members in today</div>
-                            <div className="mt-1.5">
-                                <Sparkline values={stats.attendanceTrend} />
-                            </div>
+                        </StatTile>
+                        <StatTile
+                            icon="🦜"
+                            color={stats.animalsNeedingChecks > 0 ? 'var(--color-cat-ops)' : 'var(--color-status-green)'}
+                            value={<CountUp value={stats.animalsNeedingChecks} />}
+                            label="Animals awaiting checks"
+                        />
+                        <div className="col-span-2 md:col-span-1">
+                            <StatTile
+                                icon="✅"
+                                color="var(--color-brand-dark)"
+                                value={<><CountUp value={done} />/{checklist.length}</>}
+                                label="Today's checklist done"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-3">
+                        <Card title="Weekly attendance">
+                            <BarChart values={stats.attendanceTrend} />
                         </Card>
-                        <Card>
-                            <div className={`text-3xl font-extrabold ${stats.animalsNeedingChecks > 0 ? 'text-status-amber' : 'text-status-green'}`}>
-                                <CountUp value={stats.animalsNeedingChecks} />
-                            </div>
-                            <div className="text-sm text-ink/45 font-medium">Animals awaiting checks</div>
-                        </Card>
-                        <Card className="col-span-2 md:col-span-1">
-                            <div className="text-3xl font-extrabold text-brand-dark">
-                                <CountUp value={done} />
-                                <span className="text-base text-ink/30 font-semibold">/{checklist.length}</span>
-                            </div>
-                            <div className="text-sm text-ink/45 font-medium">Today's checklist done</div>
-                        </Card>
+                        <ChartCard
+                            title="Attendance this week"
+                            value={stats.attendanceTrend.reduce((sum, v) => sum + v, 0)}
+                            values={stats.attendanceTrend}
+                            color="var(--color-brand)"
+                        />
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-3">

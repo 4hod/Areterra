@@ -11,6 +11,7 @@ interface NavItem {
     label: string;
     icon: string;
     cap?: string;
+    isNew?: boolean;
 }
 
 export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem[] }[] = [
@@ -45,7 +46,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/leave', label: 'Leave', icon: '🌴', cap: 'request_leave' },
             { href: '/timeclock', label: 'Time Clock', icon: '⏱️', cap: 'own_timeclock' },
             { href: '/directory', label: 'Directory', icon: '📖' },
-            { href: '/orders', label: 'Orders', icon: '📦', cap: 'request_products' },
+            { href: '/orders', label: 'Orders', icon: '📦', cap: 'request_products', isNew: true },
             { href: '/supervisions', label: 'Supervisions', icon: '🗣️', cap: 'manage_supervisions' },
             { href: '/payroll', label: 'Payroll', icon: '💷', cap: 'manage_payroll' },
         ],
@@ -55,11 +56,11 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
         color: 'cat-ops',
         items: [
             { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
-            { href: '/calendar', label: 'Calendar', icon: '🗓️' },
+            { href: '/calendar', label: 'Calendar', icon: '🗓️', isNew: true },
             { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
-            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations' },
-            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations' },
-            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations' },
+            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations', isNew: true },
+            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations', isNew: true },
+            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations', isNew: true },
             { href: '/referrals', label: 'Referrals', icon: '📨', cap: 'create_members' },
             { href: '/finance', label: 'Finance & Grants', icon: '💰', cap: 'manage_finance' },
             { href: '/invoices', label: 'Invoices', icon: '🧾', cap: 'manage_finance' },
@@ -73,7 +74,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/documents', label: 'Documents', icon: '📁' },
             { href: '/risk-assessments', label: 'Risk Assessments', icon: '⚖️' },
             { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
-            { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents' },
+            { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents', isNew: true },
             { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
         ],
     },
@@ -84,7 +85,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
             { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
             { href: '/audit-log', label: 'Audit Log', icon: '🧾', cap: 'view_audit_log' },
-            { href: '/forms', label: 'Forms', icon: '📝' },
+            { href: '/forms', label: 'Forms', icon: '📝', isNew: true },
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
             { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
             { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
@@ -236,7 +237,12 @@ export default function AppShell({ title, children }: { title: string; children:
                                             >
                                                 {item.icon}
                                             </span>
-                                            {item.label}
+                                            <span className="flex-1">{item.label}</span>
+                                            {item.isNew && (
+                                                <span className="rounded bg-accent text-brand-dark text-[9px] font-extrabold px-1.5 py-0.5 tracking-wide">
+                                                    NEW
+                                                </span>
+                                            )}
                                         </Link>
                                     ))}
                                 </div>
@@ -274,7 +280,12 @@ export default function AppShell({ title, children }: { title: string; children:
                                                 >
                                                     {item.icon}
                                                 </span>
-                                                {item.label}
+                                                <span className="flex-1">{item.label}</span>
+                                                {item.isNew && (
+                                                    <span className="rounded bg-accent text-brand-dark text-[9px] font-extrabold px-1.5 py-0.5 tracking-wide">
+                                                        NEW
+                                                    </span>
+                                                )}
                                             </Link>
                                         ))}
                                     </div>
