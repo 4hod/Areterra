@@ -27,6 +27,10 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            'branding' => [
+                'logoUrl' => \App\Models\Setting::get('logo_url'),
+                'orgName' => \App\Models\Setting::get('org_name') ?? 'Areterra Hub',
+            ],
         ];
     }
 }
