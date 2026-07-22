@@ -117,6 +117,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::get('/notifications', [NotificationController::class, 'edit'])->name('notifications');
     Route::put('/notifications', [NotificationController::class, 'update'])->name('notifications.update');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/push-subscriptions', [NotificationController::class, 'subscribe'])->name('push.subscribe');
     Route::post('/notifications/test', [NotificationController::class, 'test'])->name('notifications.test');
 
@@ -142,6 +143,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_supervisions')->name('supervisions.store');
 
     Route::get('/directory', [DirectoryController::class, 'index'])->name('directory');
+    Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar');
+    Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
 
     Route::get('/policies', [PolicyController::class, 'index'])->name('policies.index');
     Route::get('/policies/{policy}', [PolicyController::class, 'show'])->name('policies.show');
@@ -314,7 +317,39 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::post('/import/commit', [App\Http\Controllers\ImportController::class, 'commit'])->name('import.commit');
     });
 
-    // Ordering — staff request products, managers approve and manage delivery.
+    // Forms — dynamic form builder.
+    Route::get('/forms', [App\Http\Controllers\FormController::class, 'index'])->name('forms');
+    Route::get('/forms/new', [App\Http\Controllers\FormController::class, 'create'])->name('forms.create');
+    Route::post('/forms', [App\Http\Controllers\FormController::class, 'store'])->name('forms.store');
+    Route::get('/forms/{slug}', [App\Http\Controllers\FormController::class, 'show'])->name('forms.show');
+    Route::post('/forms/{slug}/submissions', [App\Http\Controllers\FormController::class, 'submit'])->name('forms.submit');
+    Route::get('/forms/{slug}/submissions', [App\Http\Controllers\FormController::class, 'submissions'])->name('forms.submissions');
+    Route::put('/forms/{form}/toggle', [App\Http\Controllers\FormController::class, 'toggleActive'])->name('forms.toggle');
+
+    // Incidents — any staff can report, managers manage status.
+    Route::middleware('can:report_incidents')->group(function () {
+        Route::get('/incidents', [App\Http\Controllers\IncidentController::class, 'index'])->name('incidents');
+        Route::post('/incidents', [App\Http\Controllers\IncidentController::class, 'store'])->name('incidents.store');
+    });
+    Route::put('/incidents/{incident}', [App\Http\Controllers\IncidentController::class, 'update'])
+        ->middleware('can:manage_incidents')->name('incidents.update');
+    Route::middleware('can:manage_operations')->group(function () {
+        Route::get('/maintenance', [App\Http\Controllers\MaintenanceTaskController::class, 'index'])->name('maintenance');
+        Route::post('/maintenance', [App\Http\Controllers\MaintenanceTaskController::class, 'store'])->name('maintenance.store');
+        Route::put('/maintenance/{task}', [App\Http\Controllers\MaintenanceTaskController::class, 'update'])->name('maintenance.update');
+        Route::post('/maintenance/{task}/complete', [App\Http\Controllers\MaintenanceTaskController::class, 'complete'])->name('maintenance.complete');
+        Route::delete('/maintenance/{task}', [App\Http\Controllers\MaintenanceTaskController::class, 'destroy'])->name('maintenance.destroy');
+
+        Route::get('/projects', [App\Http\Controllers\ProjectController::class, 'index'])->name('projects');
+        Route::post('/projects', [App\Http\Controllers\ProjectController::class, 'store'])->name('projects.store');
+        Route::put('/projects/{project}', [App\Http\Controllers\ProjectController::class, 'update'])->name('projects.update');
+        Route::delete('/projects/{project}', [App\Http\Controllers\ProjectController::class, 'destroy'])->name('projects.destroy');
+
+        Route::get('/funding', [App\Http\Controllers\FundingController::class, 'index'])->name('funding');
+        Route::post('/funding', [App\Http\Controllers\FundingController::class, 'store'])->name('funding.store');
+        Route::put('/funding/{funding}', [App\Http\Controllers\FundingController::class, 'update'])->name('funding.update');
+        Route::delete('/funding/{funding}', [App\Http\Controllers\FundingController::class, 'destroy'])->name('funding.destroy');
+    });
     Route::middleware('can:request_products')->group(function () {
         Route::get('/orders', [App\Http\Controllers\ProductOrderController::class, 'index'])->name('orders');
         Route::post('/orders', [App\Http\Controllers\ProductOrderController::class, 'store'])->name('orders.store');

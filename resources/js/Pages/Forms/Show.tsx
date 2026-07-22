@@ -1,0 +1,85 @@
+import { Head, useForm } from '@inertiajs/react';
+import { FormEvent } from 'react';
+import AppShell from '../../components/AppShell';
+import Card from '../../components/Card';
+
+interface Field {
+    id: number;
+    label: string;
+    type: 'text' | 'textarea' | 'select' | 'checkbox' | 'date' | 'number';
+    options: string[] | null;
+    is_required: boolean;
+}
+
+interface FormDef {
+    id: number;
+    title: string;
+    slug: string;
+    description: string | null;
+    fields: Field[];
+}
+
+export default function Show({ form }: { form: FormDef }) {
+    const initial: Record<string, string> = {};
+    form.fields.forEach((f) => { initial[`field_${f.id}`] = f.type === 'checkbox' ? '' : ''; });
+
+    const { data, setData, post, processing, errors, reset } = useForm(initial);
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        post(`/forms/${form.slug}/submissions`, { onSuccess: () => reset() });
+    }
+
+    return (
+        <AppShell title={form.title}>
+            <Head title={form.title} />
+
+            <Card>
+                {form.description && <p className="text-sm text-slate-500 mb-4">{form.description}</p>}
+                <form onSubmit={submit} className="space-y-4">
+                    {form.fields.map((f) => {
+                        const key = `field_${f.id}`;
+                        return (
+                            <label key={f.id} className="block text-sm font-medium">
+                                {f.label}{f.is_required && <span className="text-red-500"> *</span>}
+
+                                {f.type === 'textarea' && (
+                                    <textarea value={data[key]} onChange={(e) => setData(key, e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={3} required={f.is_required} />
+                                )}
+                                {f.type === 'select' && (
+                                    <select value={data[key]} onChange={(e) => setData(key, e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white" required={f.is_required}>
+                                        <option value="">Select…</option>
+                                        {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                )}
+                                {f.type === 'checkbox' && (
+                                    <div className="mt-1">
+                                        <input
+                                            type="checkbox"
+                                            checked={data[key] === 'yes'}
+                                            onChange={(e) => setData(key, e.target.checked ? 'yes' : '')}
+                                            className="rounded border-slate-300"
+                                        />
+                                    </div>
+                                )}
+                                {f.type === 'date' && (
+                                    <input type="date" value={data[key]} onChange={(e) => setData(key, e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required={f.is_required} />
+                                )}
+                                {f.type === 'number' && (
+                                    <input type="number" value={data[key]} onChange={(e) => setData(key, e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required={f.is_required} />
+                                )}
+                                {f.type === 'text' && (
+                                    <input value={data[key]} onChange={(e) => setData(key, e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required={f.is_required} />
+                                )}
+                                {errors[key] && <span className="text-red-600 text-xs block">{errors[key]}</span>}
+                            </label>
+                        );
+                    })}
+                    <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
+                        Submit
+                    </button>
+                </form>
+            </Card>
+        </AppShell>
+    );
+}

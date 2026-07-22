@@ -14,6 +14,7 @@ $staff = [
     'request_leave',
     'own_timeclock',
     'request_products',
+    'report_incidents',
 ];
 
 $manager = array_merge($staff, [
@@ -34,6 +35,7 @@ $manager = array_merge($staff, [
     'view_vehicles',
     'upload_documents',
     'manage_compliance',
+    'manage_operations',
     'view_all_compliance',
     'manage_directory',
     'view_audit_log',

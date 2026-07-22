@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { ReactNode, useEffect, useState } from 'react';
 import { SharedProps } from '../types';
+import SearchOverlay from './SearchOverlay';
 
 interface NavItem {
     href: string;
@@ -47,6 +48,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
         title: 'Operations',
         items: [
             { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
+            { href: '/calendar', label: 'Calendar', icon: '🗓️' },
             { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
             { href: '/referrals', label: 'Referrals', icon: '📨', cap: 'create_members' },
             { href: '/finance', label: 'Finance & Grants', icon: '💰', cap: 'manage_finance' },
@@ -60,6 +62,11 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
             { href: '/documents', label: 'Documents', icon: '📁' },
             { href: '/risk-assessments', label: 'Risk Assessments', icon: '⚖️' },
             { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
+            { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents' },
+            { href: '/forms', label: 'Forms', icon: '📝' },
+            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations' },
+            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations' },
+            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations' },
             { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
             { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
             { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
@@ -91,11 +98,12 @@ export function allowed(item: NavItem, caps: string[]) {
 }
 
 export default function AppShell({ title, children }: { title: string; children: ReactNode }) {
-    const { auth, flash } = usePage<SharedProps>().props;
+    const { auth, flash, branding } = usePage<SharedProps>().props;
     const url = usePage().url;
     const caps = auth.user?.capabilities ?? [];
     const [toast, setToast] = useState<string | null>(null);
     const [drawer, setDrawer] = useState(false);
+    const [searching, setSearching] = useState(false);
     const [pushPrompt, setPushPrompt] = useState(false);
 
     useEffect(() => {
@@ -129,7 +137,11 @@ export default function AppShell({ title, children }: { title: string; children:
             {/* Desktop sidebar */}
             <aside className="hidden md:flex md:flex-col w-60 shrink-0 bg-brand-dark text-white min-h-screen sticky top-0 overflow-y-auto">
                 <div className="px-5 py-5">
-                    <div className="text-xl font-extrabold">Areterra Hub</div>
+                    {branding.logoUrl ? (
+                        <img src={branding.logoUrl} alt={branding.orgName} className="h-9 max-w-[160px] object-contain object-left mb-1" />
+                    ) : (
+                        <div className="text-xl font-extrabold">{branding.orgName}</div>
+                    )}
                     <div className="text-xs text-white/60 mt-1">Animals. People. Purpose.</div>
                 </div>
                 <nav className="flex-1 px-3 pb-4 space-y-4">
@@ -188,6 +200,13 @@ export default function AppShell({ title, children }: { title: string; children:
                     </button>
                     <h1 className="text-lg font-bold text-brand-dark truncate flex-1">{title}</h1>
                     <button
+                        onClick={() => setSearching(true)}
+                        aria-label="Search"
+                        className="h-11 w-11 rounded-full hover:bg-slate-100 text-lg"
+                    >
+                        🔍
+                    </button>
+                    <button
                         onClick={() => router.post('/logout')}
                         aria-label="Log out"
                         className="md:hidden h-11 w-11 rounded-full hover:bg-slate-100"
@@ -224,7 +243,11 @@ export default function AppShell({ title, children }: { title: string; children:
                         className="absolute inset-y-0 left-0 w-72 bg-brand-dark text-white overflow-y-auto p-4"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="text-lg font-extrabold mb-3">Areterra Hub</div>
+                        {branding.logoUrl ? (
+                            <img src={branding.logoUrl} alt={branding.orgName} className="h-8 max-w-[160px] object-contain object-left mb-3" />
+                        ) : (
+                            <div className="text-lg font-extrabold mb-3">{branding.orgName}</div>
+                        )}
                         {NAV_SECTIONS.map((section, i) => {
                             const items = section.items.filter((item) => allowed(item, caps));
                             if (items.length === 0) return null;
@@ -282,6 +305,8 @@ export default function AppShell({ title, children }: { title: string; children:
                     {toast}
                 </div>
             )}
+
+            {searching && <SearchOverlay onClose={() => setSearching(false)} />}
         </div>
     );
 }
