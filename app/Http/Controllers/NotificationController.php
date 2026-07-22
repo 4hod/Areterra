@@ -73,6 +73,21 @@ class NotificationController extends Controller
         return back()->with('success', 'Test notification sent.');
     }
 
+    public function recent(Request $request)
+    {
+        return response()->json([
+            'notifications' => $request->user()->notifications()->latest()->limit(6)->get()
+                ->map(fn ($n) => [
+                    'id' => $n->id,
+                    'title' => $n->data['title'] ?? '',
+                    'body' => $n->data['body'] ?? '',
+                    'url' => $n->data['url'] ?? '/',
+                    'read' => $n->read_at !== null,
+                    'created_at' => $n->created_at->diffForHumans(),
+                ]),
+        ]);
+    }
+
     public function markRead(Request $request, string $notification)
     {
         $request->user()->notifications()->where('id', $notification)->first()?->markAsRead();

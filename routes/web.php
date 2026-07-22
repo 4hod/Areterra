@@ -116,6 +116,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->name('announcements.read');
 
     Route::get('/notifications', [NotificationController::class, 'edit'])->name('notifications');
+    Route::get('/notifications/recent', [NotificationController::class, 'recent'])->name('notifications.recent');
     Route::put('/notifications', [NotificationController::class, 'update'])->name('notifications.update');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/push-subscriptions', [NotificationController::class, 'subscribe'])->name('push.subscribe');

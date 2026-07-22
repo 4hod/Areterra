@@ -3,6 +3,8 @@ import { ReactNode, useEffect, useState } from 'react';
 import { SharedProps } from '../types';
 import SearchOverlay from './SearchOverlay';
 import DialogHost from './DialogHost';
+import AccountMenu from './AccountMenu';
+import NotificationBell from './NotificationBell';
 
 interface NavItem {
     href: string;
@@ -308,27 +310,12 @@ export default function AppShell({ title, children }: { title: string; children:
                         >
                             🔍
                         </button>
-                        <Link
-                            href="/notifications"
-                            aria-label="Notifications"
-                            className="relative hidden md:flex h-10 w-10 rounded-full hover:bg-black/5 items-center justify-center text-lg"
-                        >
-                            🔔
-                            {unreadNotifications > 0 && (
-                                <span className="absolute top-1 right-1.5 h-4 min-w-4 px-1 rounded-full bg-status-red text-white text-[10px] font-bold flex items-center justify-center">
-                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                                </span>
-                            )}
-                        </Link>
-                        <Link
-                            href="/account"
-                            className="hidden md:flex items-center gap-2 rounded-full pl-1 pr-3 py-1 hover:bg-black/5"
-                        >
-                            <span className="h-8 w-8 rounded-full bg-brand/15 text-brand-dark font-bold text-xs flex items-center justify-center">
-                                {auth.user?.name?.charAt(0)}
-                            </span>
-                            <span className="text-sm font-semibold text-ink/80 max-w-[120px] truncate">{auth.user?.name}</span>
-                        </Link>
+                        <NotificationBell unreadCount={unreadNotifications} />
+                        <AccountMenu
+                            name={auth.user?.name ?? ''}
+                            role={auth.user?.role ?? ''}
+                            canManageSettings={caps.includes('manage_settings')}
+                        />
                         <button
                             onClick={() => router.post('/logout')}
                             aria-label="Log out"
