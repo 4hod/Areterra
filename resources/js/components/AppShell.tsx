@@ -225,10 +225,10 @@ export default function AppShell({ title, children }: { title: string; children:
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            className={`flex items-center gap-3 rounded-lg border-l-[3px] px-3 py-2 text-sm font-medium transition-colors ${
+                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
                                                 isActive(item.href, url)
-                                                    ? 'border-accent bg-white/10 text-white'
-                                                    : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
+                                                    ? 'bg-brand text-white shadow-sm'
+                                                    : 'text-white/70 hover:bg-white/5 hover:text-white'
                                             }`}
                                         >
                                             <span
@@ -268,10 +268,10 @@ export default function AppShell({ title, children }: { title: string; children:
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
-                                                className={`flex items-center gap-3 rounded-lg border-l-[3px] px-3 py-2 text-sm font-medium transition-colors ${
+                                                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
                                                     isActive(item.href, url)
-                                                        ? 'border-accent bg-white/10 text-white'
-                                                        : 'border-transparent text-white/70 hover:bg-white/5 hover:text-white'
+                                                        ? 'bg-brand text-white shadow-sm'
+                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
                                                 }`}
                                             >
                                                 <span
@@ -309,7 +309,7 @@ export default function AppShell({ title, children }: { title: string; children:
             </aside>
 
             <div className="flex-1 min-w-0">
-                <header className="sticky top-0 z-40 bg-white border-b border-black/[0.06] px-4 py-2.5 flex items-center gap-3 md:px-6">
+                <header className="sticky top-0 z-40 bg-white border-b border-black/[0.06] px-4 py-3.5 flex items-center gap-3 md:px-8">
                     <button
                         onClick={() => setDrawer(true)}
                         aria-label="Open menu"
@@ -317,24 +317,14 @@ export default function AppShell({ title, children }: { title: string; children:
                     >
                         ☰
                     </button>
-                    <h1 className="text-lg font-semibold text-brand-dark truncate">{title}</h1>
-
-                    {/* Persistent search bar on desktop — icon-only on mobile */}
-                    <button
-                        onClick={() => setSearching(true)}
-                        className="hidden md:flex items-center gap-2 flex-1 max-w-xs rounded-full border border-black/10 bg-black/[0.03] px-4 py-2 text-sm text-ink/40 hover:bg-black/[0.05] text-left"
-                    >
-                        <span aria-hidden>🔍</span>
-                        Search anything…
-                        <kbd className="ml-auto text-[10px] font-mono bg-black/[0.06] text-ink/40 rounded px-1.5 py-0.5">⌘K</kbd>
-                    </button>
-                    <div className="flex-1 md:hidden" />
+                    <h1 className="text-xl font-semibold text-brand-dark truncate">{title}</h1>
 
                     <div className="flex items-center gap-1 md:gap-2 ml-auto">
                         <button
                             onClick={() => setSearching(true)}
                             aria-label="Search"
-                            className="md:hidden h-11 w-11 rounded-full hover:bg-black/5 text-lg"
+                            title="Search (⌘K)"
+                            className="h-10 w-10 rounded-full hover:bg-black/5 flex items-center justify-center text-lg"
                         >
                             🔍
                         </button>
@@ -354,7 +344,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     </div>
                 </header>
 
-                <main className="p-4 md:p-6 pb-24 md:pb-8 max-w-5xl">{children}</main>
+                <main className="p-4 md:p-8 pb-24 md:pb-8 max-w-5xl">{children}</main>
             </div>
 
             {/* Mobile bottom nav */}
