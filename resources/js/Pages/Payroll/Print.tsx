@@ -1,9 +1,12 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import type { Period } from './Show';
+import { SharedProps } from '../../types';
 
 // Landscape A4 payroll sheet reproduced from the legacy PDF layout (SPEC.md).
 export default function Print({ period }: { period: Period }) {
+    const { branding } = usePage<SharedProps>().props;
+
     useEffect(() => {
         const t = setTimeout(() => window.print(), 400);
         return () => clearTimeout(t);
@@ -18,7 +21,11 @@ export default function Print({ period }: { period: Period }) {
             </Head>
 
             <div className="flex items-start justify-between mb-2">
-                <div className="text-xl font-extrabold underline">Areterra</div>
+                {branding.logoUrl ? (
+                    <img src={branding.logoUrl} alt={branding.orgName} className="h-10 object-contain object-left" />
+                ) : (
+                    <div className="text-xl font-extrabold underline">{branding.orgName}</div>
+                )}
                 <button onClick={() => window.print()} className="no-print rounded bg-slate-800 text-white text-sm font-semibold px-4 py-2">
                     🖨 Print
                 </button>

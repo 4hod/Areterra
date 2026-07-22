@@ -19,6 +19,7 @@ class TransportLedgerEntry extends Model
     {
         return [
             'entry_date' => 'date',
+            'charge_date' => 'date',
             'amount' => 'decimal:2',
         ];
     }

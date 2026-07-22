@@ -1,7 +1,8 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
+import { SharedProps } from '../../types';
 
 interface Props {
     policy: {
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function Show({ policy, canManage }: Props) {
+    const { branding } = usePage<SharedProps>().props;
     const [editing, setEditing] = useState(false);
     const [version, setVersion] = useState(policy.version);
     const [status, setStatus] = useState(policy.status);
@@ -53,7 +55,11 @@ export default function Show({ policy, canManage }: Props) {
 
             {/* Print-only branded header */}
             <div className="print-header hidden justify-between items-start mb-6">
-                <div className="text-2xl font-extrabold" style={{ color: '#00345C' }}>Areterra</div>
+                {branding.logoUrl ? (
+                    <img src={branding.logoUrl} alt={branding.orgName} className="h-10 object-contain object-left" />
+                ) : (
+                    <div className="text-2xl font-extrabold" style={{ color: '#00345C' }}>{branding.orgName}</div>
+                )}
                 <div className="text-right text-xs">
                     <div>Version {policy.version}</div>
                     <div>{new Date(policy.updated_at).toLocaleDateString('en-GB')}</div>

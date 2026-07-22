@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Policy;
+use App\Support\HtmlSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -73,7 +74,7 @@ class PolicyController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'title' => ['required', 'string', 'max:200'],
             'category' => ['nullable', 'string', 'max:100'],
             'body' => ['required', 'string'],
@@ -81,5 +82,9 @@ class PolicyController extends Controller
             'review_date' => ['nullable', 'date'],
             'status' => ['required', 'in:draft,active,archived'],
         ]);
+
+        $data['body'] = HtmlSanitizer::clean($data['body']);
+
+        return $data;
     }
 }

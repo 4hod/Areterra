@@ -70,7 +70,7 @@ export default function Audit({ findings, counts }: { findings: Finding[]; count
 
             <p className="mt-4 text-xs text-slate-400">
                 Checks: member reviews, vet records, welfare statuses, session activity, supervisions, document
-                read-confirmations. Referral checks arrive with the referral module (Phase 4).
+                read-confirmations, pending referrals, overdue compliance items.
             </p>
         </AppShell>
     );

@@ -72,4 +72,11 @@ class NotificationController extends Controller
 
         return back()->with('success', 'Test notification sent.');
     }
+
+    public function markRead(Request $request, string $notification)
+    {
+        $request->user()->notifications()->where('id', $notification)->first()?->markAsRead();
+
+        return back();
+    }
 }

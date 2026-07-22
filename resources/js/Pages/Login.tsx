@@ -1,7 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
-export default function Login({ ssoConfigured }: { ssoConfigured: boolean }) {
+export default function Login({ ssoConfigured, loginPhotoUrl, logoUrl }: { ssoConfigured: boolean; loginPhotoUrl: string | null; logoUrl: string | null }) {
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
@@ -21,7 +21,7 @@ export default function Login({ ssoConfigured }: { ssoConfigured: boolean }) {
                 <div className="flex-1 flex flex-col justify-center px-6 py-10 md:px-16 text-white relative">
                     <div className="max-w-md mx-auto w-full">
                         <img
-                            src="https://areterra.co.uk/wp-content/uploads/2023/01/Areterra-logo-3-transparent_.png"
+                            src={logoUrl || 'https://areterra.co.uk/wp-content/uploads/2023/01/Areterra-logo-3-transparent_.png'}
                             alt="Areterra"
                             className="h-14 mb-6"
                         />
@@ -136,12 +136,21 @@ export default function Login({ ssoConfigured }: { ssoConfigured: boolean }) {
 
                 {/* Right panel (desktop only) */}
                 <div className="hidden lg:block flex-1 relative bg-brand">
-                    <div className="absolute inset-0 bg-gradient-to-br from-brand to-brand-dark" />
+                    {loginPhotoUrl ? (
+                        <>
+                            <img src={loginPhotoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                        </>
+                    ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-brand to-brand-dark" />
+                    )}
                     <div className="absolute bottom-10 left-10 text-white">
-                        <div className="text-5xl mb-3" aria-hidden>
-                            🦜🐰🐹
-                        </div>
-                        <div className="text-2xl font-extrabold">Animals. People. Purpose.</div>
+                        {!loginPhotoUrl && (
+                            <div className="text-5xl mb-3" aria-hidden>
+                                🦜🐰🐹
+                            </div>
+                        )}
+                        <div className="text-2xl font-extrabold drop-shadow">Animals. People. Purpose.</div>
                     </div>
                 </div>
             </div>

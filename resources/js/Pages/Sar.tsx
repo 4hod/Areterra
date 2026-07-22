@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
-import { MOOD_EMOJI, Mood } from '../types';
+import { Head, usePage } from '@inertiajs/react';
+import { MOOD_EMOJI, Mood, SharedProps } from '../types';
 
 // Subject Access Request extract — print-friendly full data record for one member.
 interface Props {
@@ -24,6 +24,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function Sar({ generated_at, member, attendance, endOfDay, reviews, abc, transportLedger }: Props) {
+    const { branding } = usePage<SharedProps>().props;
+
     return (
         <div className="bg-white min-h-screen text-black p-8 max-w-3xl mx-auto text-sm">
             <Head title={`SAR — ${member.name}`}>
@@ -32,7 +34,11 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
 
             <div className="flex items-start justify-between mb-6">
                 <div>
-                    <div className="text-2xl font-extrabold" style={{ color: '#00345C' }}>Areterra</div>
+                    {branding.logoUrl ? (
+                        <img src={branding.logoUrl} alt={branding.orgName} className="h-10 mb-1 object-contain object-left" />
+                    ) : (
+                        <div className="text-2xl font-extrabold" style={{ color: '#00345C' }}>{branding.orgName}</div>
+                    )}
                     <div className="text-xs text-slate-500">Subject Access Request — data extract</div>
                 </div>
                 <button onClick={() => window.print()} className="no-print rounded bg-slate-800 text-white text-sm font-semibold px-4 py-2">

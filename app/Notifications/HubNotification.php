@@ -33,13 +33,19 @@ abstract class HubNotification extends Notification
             return ['mail'];
         }
 
+        // In-app history is always kept — the category toggles below only
+        // govern whether push/email are also sent, per SPEC.md's
+        // Notification Preferences page ("push on/off", "email on/off",
+        // per-category toggles). Losing in-Hub history because someone
+        // muted push for a category would be a worse outcome than just
+        // muting the external channels.
+        $channels = ['database'];
+
         $pref = $notifiable->pref();
 
         if (! $pref->categoryEnabled($this->category())) {
-            return [];
+            return $channels;
         }
-
-        $channels = [];
 
         if ($pref->push_enabled && config('webpush.vapid.public_key') && $notifiable->pushSubscriptions()->exists()) {
             $channels[] = WebPushChannel::class;
@@ -50,6 +56,15 @@ abstract class HubNotification extends Notification
         }
 
         return $channels;
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => $this->title(),
+            'body' => $this->body(),
+            'url' => $this->url(),
+        ];
     }
 
     public function toWebPush(object $notifiable): WebPushMessage

@@ -80,6 +80,9 @@ class TransportController extends Controller
         );
 
         // Charge auto-applies on morning collection, once per day (SPEC.md note 7).
+        // The pre-check below is just a fast path for the common case — the
+        // unique index on (member_id, charge_date) is what actually
+        // guarantees no double-charge, even under near-simultaneous requests.
         if ($data['phase'] === 'morning') {
             $alreadyCharged = TransportLedgerEntry::where('member_id', $member->id)
                 ->where('type', 'charge')
@@ -87,14 +90,19 @@ class TransportController extends Controller
                 ->exists();
 
             if (! $alreadyCharged) {
-                TransportLedgerEntry::create([
-                    'member_id' => $member->id,
-                    'type' => 'charge',
-                    'amount' => TransportLedgerEntry::DAILY_RATE,
-                    'entry_date' => today(),
-                    'notes' => 'Transport day charge',
-                    'user_id' => $request->user()->id,
-                ]);
+                try {
+                    TransportLedgerEntry::create([
+                        'member_id' => $member->id,
+                        'type' => 'charge',
+                        'amount' => TransportLedgerEntry::DAILY_RATE,
+                        'entry_date' => today(),
+                        'charge_date' => today(),
+                        'notes' => 'Transport day charge',
+                        'user_id' => $request->user()->id,
+                    ]);
+                } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+                    // Another request already charged this member today — fine, no-op.
+                }
             }
         }
 

@@ -49,6 +49,15 @@ class DashboardController extends Controller
                     'created_at' => $a->created_at->toDateTimeString(),
                     'read' => $a->readBy($user),
                 ]),
+            'notifications' => $user->notifications()->latest()->limit(8)->get()
+                ->map(fn ($n) => [
+                    'id' => $n->id,
+                    'title' => $n->data['title'] ?? '',
+                    'body' => $n->data['body'] ?? '',
+                    'url' => $n->data['url'] ?? '/',
+                    'read' => $n->read_at !== null,
+                    'created_at' => $n->created_at->diffForHumans(),
+                ]),
         ]);
     }
 }

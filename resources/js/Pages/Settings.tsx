@@ -7,6 +7,7 @@ interface Props {
     settings: {
         org_name: string;
         logo_url: string | null;
+        login_photo_url: string | null;
         reply_to: string;
         banner_text: string | null;
         ms_client_id: string | null;
@@ -19,6 +20,7 @@ export default function Settings({ settings }: Props) {
     const { data, setData, put, processing } = useForm({
         org_name: settings.org_name,
         logo_url: settings.logo_url ?? '',
+        login_photo_url: settings.login_photo_url ?? '',
         reply_to: settings.reply_to,
         banner_text: settings.banner_text ?? '',
         ms_client_id: settings.ms_client_id ?? '',
@@ -45,6 +47,10 @@ export default function Settings({ settings }: Props) {
                         <label className="block text-sm font-medium">
                             Logo URL
                             <input type="url" value={data.logo_url} onChange={(e) => setData('logo_url', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Login page photo URL
+                            <input type="url" value={data.login_photo_url} onChange={(e) => setData('login_photo_url', e.target.value)} placeholder="Photo shown on the right panel of the login screen" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
                         </label>
                         <label className="block text-sm font-medium">
                             Reply-to email
