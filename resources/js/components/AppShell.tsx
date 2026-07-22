@@ -338,7 +338,6 @@ export default function AppShell({ title, children }: { title: string; children:
                         </button>
                     </div>
                 </header>
-                </header>
 
                 <main className="p-4 md:p-6 pb-24 md:pb-8 max-w-5xl">{children}</main>
             </div>
