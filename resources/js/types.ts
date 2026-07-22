@@ -8,6 +8,8 @@ export interface AuthUser {
 export interface SharedProps {
     auth: { user: AuthUser | null };
     flash: { success?: string; error?: string };
+    branding: { logoUrl: string | null; orgName: string };
+    unreadNotifications: number;
     [key: string]: unknown;
 }
 

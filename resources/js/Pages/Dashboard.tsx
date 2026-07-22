@@ -14,6 +14,7 @@ interface Props {
     myShift: { clock_in: string } | null;
     leaveBalance: { entitlement: number; taken: number; remaining: number };
     announcements: { id: number; title: string; author: string; created_at: string; read: boolean }[];
+    notifications: { id: string; title: string; body: string; url: string; read: boolean; created_at: string }[];
 }
 
 function greeting() {
@@ -42,7 +43,28 @@ function CountUp({ value }: { value: number }) {
     return <>{display}</>;
 }
 
-export default function Dashboard({ stats, welfareAlerts, checklist, banner, staffAvatars, myShift, leaveBalance, announcements }: Props) {
+function EmptyState({ icon, text }: { icon: string; text: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center text-center py-8">
+            <span className="text-3xl mb-2 opacity-40" aria-hidden>{icon}</span>
+            <p className="text-sm text-ink/40">{text}</p>
+        </div>
+    );
+}
+
+const QUICK_ACTIONS = [
+    { href: '/register', label: 'Morning Register', icon: '📋', color: 'cat-people' },
+    { href: '/animals', label: 'Welfare Checks', icon: '🦜', color: 'cat-ops' },
+    { href: '/end-of-day', label: 'Log End of Day', icon: '🌙', color: 'cat-staff' },
+] as const;
+
+const QUICK_ACTION_BG: Record<string, string> = {
+    'cat-people': 'bg-cat-people/10 text-cat-people',
+    'cat-ops': 'bg-cat-ops/10 text-cat-ops',
+    'cat-staff': 'bg-cat-staff/10 text-cat-staff',
+};
+
+export default function Dashboard({ stats, welfareAlerts, checklist, banner, staffAvatars, myShift, leaveBalance, announcements, notifications }: Props) {
     const { auth } = usePage<SharedProps>().props;
     const done = checklist.filter((c) => c.done).length;
 
@@ -56,151 +78,187 @@ export default function Dashboard({ stats, welfareAlerts, checklist, banner, sta
                 </div>
             )}
 
-            <p className="text-2xl font-extrabold text-brand-dark">
+            <p className="text-2xl font-bold text-brand-dark">
                 {greeting()}, {auth.user?.name?.split(' ')[0]} 👋
             </p>
-            <p className="text-sm text-slate-500 font-medium mb-3">
+            <p className="text-sm text-ink/45 font-medium mb-4">
                 {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
 
             {/* Staff avatars row */}
-            <div className="flex -space-x-2 mb-4">
-                {staffAvatars.map((name, i) => (
-                    <div
-                        key={i}
-                        title={name}
-                        className={`h-9 w-9 rounded-full ${AVATAR_COLOURS[i % AVATAR_COLOURS.length]} text-white text-sm font-bold flex items-center justify-center ring-2 ring-white`}
+            {staffAvatars.length > 0 && (
+                <div className="flex -space-x-2 mb-5">
+                    {staffAvatars.map((name, i) => (
+                        <div
+                            key={i}
+                            title={name}
+                            className={`h-9 w-9 rounded-full ${AVATAR_COLOURS[i % AVATAR_COLOURS.length]} text-white text-sm font-bold flex items-center justify-center ring-2 ring-white`}
+                        >
+                            {name.charAt(0)}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Quick actions — real button-cards, not tiny pills */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                {QUICK_ACTIONS.map((a) => (
+                    <Link
+                        key={a.href}
+                        href={a.href}
+                        className="flex items-center gap-3 rounded-card bg-white border border-black/[0.06] px-4 py-3.5 hover:border-black/[0.12] transition-colors"
+                        style={{ boxShadow: 'var(--shadow-card)' }}
                     >
-                        {name.charAt(0)}
-                    </div>
+                        <span className={`h-10 w-10 rounded-lg flex items-center justify-center text-lg shrink-0 ${QUICK_ACTION_BG[a.color]}`}>
+                            {a.icon}
+                        </span>
+                        <span className="font-semibold text-sm text-ink/80">{a.label}</span>
+                    </Link>
                 ))}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                <Card>
-                    <div className="text-3xl font-extrabold text-brand">
-                        <CountUp value={stats.membersInToday} />
-                        <span className="text-base text-slate-400 font-semibold">/{stats.membersScheduled}</span>
+            <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
+                {/* ── Main column ── */}
+                <div className="space-y-5 min-w-0">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <Card>
+                            <div className="text-3xl font-extrabold text-brand">
+                                <CountUp value={stats.membersInToday} />
+                                <span className="text-base text-ink/30 font-semibold">/{stats.membersScheduled}</span>
+                            </div>
+                            <div className="text-sm text-ink/45 font-medium">Members in today</div>
+                        </Card>
+                        <Card>
+                            <div className={`text-3xl font-extrabold ${stats.animalsNeedingChecks > 0 ? 'text-status-amber' : 'text-status-green'}`}>
+                                <CountUp value={stats.animalsNeedingChecks} />
+                            </div>
+                            <div className="text-sm text-ink/45 font-medium">Animals awaiting checks</div>
+                        </Card>
+                        <Card className="col-span-2 md:col-span-1">
+                            <div className="text-3xl font-extrabold text-brand-dark">
+                                <CountUp value={done} />
+                                <span className="text-base text-ink/30 font-semibold">/{checklist.length}</span>
+                            </div>
+                            <div className="text-sm text-ink/45 font-medium">Today's checklist done</div>
+                        </Card>
                     </div>
-                    <div className="text-sm text-slate-500 font-medium">Members in today</div>
-                </Card>
-                <Card>
-                    <div className={`text-3xl font-extrabold ${stats.animalsNeedingChecks > 0 ? 'text-status-amber' : 'text-status-green'}`}>
-                        <CountUp value={stats.animalsNeedingChecks} />
-                    </div>
-                    <div className="text-sm text-slate-500 font-medium">Animals awaiting checks</div>
-                </Card>
-                <Card className="col-span-2 md:col-span-1">
-                    <div className="text-3xl font-extrabold text-brand-dark">
-                        <CountUp value={done} />
-                        <span className="text-base text-slate-400 font-semibold">/{checklist.length}</span>
-                    </div>
-                    <div className="text-sm text-slate-500 font-medium">Today's checklist done</div>
-                </Card>
-            </div>
 
-            <div className="grid md:grid-cols-2 gap-3 mb-4">
-                {/* My Shift widget */}
-                <Card title="⏱️ My shift">
-                    {myShift ? (
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm">
-                                Clocked in at <b className="text-brand-dark">{myShift.clock_in}</b>
-                            </span>
-                            <Link href="/timeclock" className="rounded-full bg-red-600 text-white text-xs font-bold px-4 py-2">
-                                Clock out
-                            </Link>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-slate-500">Not clocked in</span>
-                            <button
-                                onClick={() => router.post('/timeclock/in')}
-                                className="rounded-full bg-status-green text-white text-xs font-bold px-4 py-2"
-                            >
-                                Clock in
-                            </button>
-                        </div>
-                    )}
-                </Card>
-
-                {/* Leave balance widget */}
-                <Card title="🌴 Leave balance">
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm">
-                            <b className="text-brand-dark">{leaveBalance.remaining}</b> of {leaveBalance.entitlement} days left
-                            <span className="text-slate-400"> · {leaveBalance.taken} taken</span>
-                        </span>
-                        <Link href="/leave" className="rounded-full bg-brand text-white text-xs font-bold px-4 py-2">
-                            Request leave
-                        </Link>
-                    </div>
-                </Card>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-4">
-                <Link href="/register" className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5">
-                    📋 Morning Register
-                </Link>
-                <Link href="/animals" className="rounded-full bg-brand-dark text-white font-semibold text-sm px-4 py-2.5">
-                    🦜 Welfare Checks
-                </Link>
-                <Link href="/end-of-day" className="rounded-full bg-slate-700 text-white font-semibold text-sm px-4 py-2.5">
-                    🌙 Log End of Day
-                </Link>
-            </div>
-
-            {welfareAlerts.length > 0 && (
-                <Card title="Welfare alerts" className="mb-4 border-l-4 border-l-status-amber">
-                    <ul className="divide-y divide-slate-100">
-                        {welfareAlerts.map((a) => (
-                            <li key={a.id} className="py-2 flex items-center justify-between">
-                                <Link href={`/animals/${a.id}`} className="font-medium text-brand-dark">
-                                    {a.name} <span className="text-slate-400 text-sm">({a.species})</span>
-                                </Link>
-                                <StatusPill status={a.welfare_status} />
-                            </li>
-                        ))}
-                    </ul>
-                </Card>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-3">
-                <Card title="Today" action={<Link href="/today" className="text-sm font-semibold text-brand">View all →</Link>}>
-                    <ul className="space-y-2">
-                        {checklist.map((item) => (
-                            <li key={item.key} className="flex items-center gap-3">
-                                <span
-                                    className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                                        item.done ? 'bg-status-green' : 'bg-slate-300'
-                                    }`}
-                                >
-                                    {item.done ? '✓' : ''}
-                                </span>
-                                <span className={item.done ? 'text-slate-400 line-through' : 'font-medium text-slate-700'}>
-                                    {item.label}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                </Card>
-
-                <Card title="Announcements" action={<Link href="/announcements" className="text-sm font-semibold text-brand">All →</Link>}>
-                    {announcements.length === 0 && <p className="text-sm text-slate-400">No announcements yet.</p>}
-                    <ul className="divide-y divide-slate-100">
-                        {announcements.map((a) => (
-                            <li key={a.id} className="py-2">
-                                <Link href="/announcements" className={`text-sm font-semibold ${a.read ? 'text-slate-400' : 'text-brand-dark'}`}>
-                                    {!a.read && <span className="text-brand mr-1">●</span>}
-                                    {a.title}
-                                </Link>
-                                <div className="text-xs text-slate-400">
-                                    {a.author} · {new Date(a.created_at.replace(' ', 'T')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    <div className="grid md:grid-cols-2 gap-3">
+                        <Card title="⏱️ My shift">
+                            {myShift ? (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm">
+                                        Clocked in at <b className="text-brand-dark">{myShift.clock_in}</b>
+                                    </span>
+                                    <Link href="/timeclock" className="rounded-full bg-status-red text-white text-xs font-bold px-4 py-2">
+                                        Clock out
+                                    </Link>
                                 </div>
-                            </li>
-                        ))}
-                    </ul>
-                </Card>
+                            ) : (
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-ink/45">Not clocked in</span>
+                                    <button
+                                        onClick={() => router.post('/timeclock/in')}
+                                        className="rounded-full bg-status-green text-white text-xs font-bold px-4 py-2"
+                                    >
+                                        Clock in
+                                    </button>
+                                </div>
+                            )}
+                        </Card>
+
+                        <Card title="🌴 Leave balance">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm">
+                                    <b className="text-brand-dark">{leaveBalance.remaining}</b> of {leaveBalance.entitlement} days left
+                                    <span className="text-ink/40"> · {leaveBalance.taken} taken</span>
+                                </span>
+                                <Link href="/leave" className="rounded-full bg-brand text-white text-xs font-bold px-4 py-2">
+                                    Request leave
+                                </Link>
+                            </div>
+                        </Card>
+                    </div>
+
+                    {welfareAlerts.length > 0 && (
+                        <Card title="Welfare alerts" className="border-l-4 border-l-status-amber">
+                            <ul className="divide-y divide-black/[0.04]">
+                                {welfareAlerts.map((a) => (
+                                    <li key={a.id} className="py-2 flex items-center justify-between">
+                                        <Link href={`/animals/${a.id}`} className="font-medium text-brand-dark">
+                                            {a.name} <span className="text-ink/40 text-sm">({a.species})</span>
+                                        </Link>
+                                        <StatusPill status={a.welfare_status} />
+                                    </li>
+                                ))}
+                            </ul>
+                        </Card>
+                    )}
+
+                    <Card title="Today" action={<Link href="/today" className="text-sm font-semibold text-brand">View all →</Link>}>
+                        <ul className="space-y-2">
+                            {checklist.map((item) => (
+                                <li key={item.key} className="flex items-center gap-3">
+                                    <span
+                                        className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                                            item.done ? 'bg-status-green' : 'bg-ink/15'
+                                        }`}
+                                    >
+                                        {item.done ? '✓' : ''}
+                                    </span>
+                                    <span className={item.done ? 'text-ink/35 line-through' : 'font-medium text-ink/75'}>
+                                        {item.label}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </Card>
+                </div>
+
+                {/* ── Right rail ── */}
+                <div className="space-y-5 min-w-0">
+                    <Card title="Announcements" action={<Link href="/announcements" className="text-sm font-semibold text-brand">All →</Link>}>
+                        {announcements.length === 0 ? (
+                            <EmptyState icon="📢" text="No announcements yet." />
+                        ) : (
+                            <ul className="divide-y divide-black/[0.04]">
+                                {announcements.map((a) => (
+                                    <li key={a.id} className="py-2">
+                                        <Link href="/announcements" className={`text-sm font-semibold ${a.read ? 'text-ink/35' : 'text-brand-dark'}`}>
+                                            {!a.read && <span className="text-brand mr-1">●</span>}
+                                            {a.title}
+                                        </Link>
+                                        <div className="text-xs text-ink/40">
+                                            {a.author} · {new Date(a.created_at.replace(' ', 'T')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Card>
+
+                    <Card title="Notifications" action={<Link href="/notifications" className="text-sm font-semibold text-brand">Settings →</Link>}>
+                        {notifications.length === 0 ? (
+                            <EmptyState icon="🔔" text="Nothing to show yet." />
+                        ) : (
+                            <ul className="divide-y divide-black/[0.04]">
+                                {notifications.map((n) => (
+                                    <li key={n.id} className="py-2">
+                                        <Link
+                                            href={n.url}
+                                            onClick={() => !n.read && router.post(`/notifications/${n.id}/read`, {}, { preserveScroll: true, preserveState: true })}
+                                            className={`text-sm font-semibold block ${n.read ? 'text-ink/35' : 'text-brand-dark'}`}
+                                        >
+                                            {!n.read && <span className="text-brand mr-1">●</span>}
+                                            {n.title}
+                                        </Link>
+                                        <div className="text-xs text-ink/40">{n.body} · {n.created_at}</div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Card>
+                </div>
             </div>
         </AppShell>
     );

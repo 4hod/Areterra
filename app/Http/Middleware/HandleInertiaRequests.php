@@ -31,6 +31,7 @@ class HandleInertiaRequests extends Middleware
                 'logoUrl' => \App\Models\Setting::get('logo_url'),
                 'orgName' => \App\Models\Setting::get('org_name') ?? 'Areterra Hub',
             ],
+            'unreadNotifications' => $user ? $user->unreadNotifications()->count() : 0,
         ];
     }
 }

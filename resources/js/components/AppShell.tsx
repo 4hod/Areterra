@@ -119,7 +119,7 @@ export function allowed(item: NavItem, caps: string[]) {
 }
 
 export default function AppShell({ title, children }: { title: string; children: ReactNode }) {
-    const { auth, flash, branding } = usePage<SharedProps>().props;
+    const { auth, flash, branding, unreadNotifications } = usePage<SharedProps>().props;
     const url = usePage().url;
     const caps = auth.user?.capabilities ?? [];
     const [toast, setToast] = useState<string | null>(null);
@@ -280,29 +280,64 @@ export default function AppShell({ title, children }: { title: string; children:
             </aside>
 
             <div className="flex-1 min-w-0">
-                <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center gap-2 md:px-6">
+                <header className="sticky top-0 z-40 bg-white border-b border-black/[0.06] px-4 py-2.5 flex items-center gap-3 md:px-6">
                     <button
                         onClick={() => setDrawer(true)}
                         aria-label="Open menu"
-                        className="md:hidden h-11 w-11 -ml-2 rounded-full hover:bg-slate-100 text-xl"
+                        className="md:hidden h-11 w-11 -ml-2 rounded-full hover:bg-black/5 text-xl"
                     >
                         ☰
                     </button>
-                    <h1 className="text-xl font-semibold text-brand-dark truncate flex-1 tracking-tight">{title}</h1>
+                    <h1 className="text-lg font-semibold text-brand-dark truncate">{title}</h1>
+
+                    {/* Persistent search bar on desktop — icon-only on mobile */}
                     <button
                         onClick={() => setSearching(true)}
-                        aria-label="Search"
-                        className="h-11 w-11 rounded-full hover:bg-slate-100 text-lg"
+                        className="hidden md:flex items-center gap-2 flex-1 max-w-xs rounded-full border border-black/10 bg-black/[0.03] px-4 py-2 text-sm text-ink/40 hover:bg-black/[0.05] text-left"
                     >
-                        🔍
+                        <span aria-hidden>🔍</span>
+                        Search anything…
                     </button>
-                    <button
-                        onClick={() => router.post('/logout')}
-                        aria-label="Log out"
-                        className="md:hidden h-11 w-11 rounded-full hover:bg-slate-100"
-                    >
-                        ⎋
-                    </button>
+                    <div className="flex-1 md:hidden" />
+
+                    <div className="flex items-center gap-1 md:gap-2 ml-auto">
+                        <button
+                            onClick={() => setSearching(true)}
+                            aria-label="Search"
+                            className="md:hidden h-11 w-11 rounded-full hover:bg-black/5 text-lg"
+                        >
+                            🔍
+                        </button>
+                        <Link
+                            href="/notifications"
+                            aria-label="Notifications"
+                            className="relative hidden md:flex h-10 w-10 rounded-full hover:bg-black/5 items-center justify-center text-lg"
+                        >
+                            🔔
+                            {unreadNotifications > 0 && (
+                                <span className="absolute top-1 right-1.5 h-4 min-w-4 px-1 rounded-full bg-status-red text-white text-[10px] font-bold flex items-center justify-center">
+                                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                                </span>
+                            )}
+                        </Link>
+                        <Link
+                            href="/account"
+                            className="hidden md:flex items-center gap-2 rounded-full pl-1 pr-3 py-1 hover:bg-black/5"
+                        >
+                            <span className="h-8 w-8 rounded-full bg-brand/15 text-brand-dark font-bold text-xs flex items-center justify-center">
+                                {auth.user?.name?.charAt(0)}
+                            </span>
+                            <span className="text-sm font-semibold text-ink/80 max-w-[120px] truncate">{auth.user?.name}</span>
+                        </Link>
+                        <button
+                            onClick={() => router.post('/logout')}
+                            aria-label="Log out"
+                            className="md:hidden h-11 w-11 rounded-full hover:bg-black/5"
+                        >
+                            ⎋
+                        </button>
+                    </div>
+                </header>
                 </header>
 
                 <main className="p-4 md:p-6 pb-24 md:pb-8 max-w-5xl">{children}</main>
