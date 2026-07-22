@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
+import { confirmDialog } from '../../utils/dialogs';
 
 export interface Entry {
     id: number | null;
@@ -115,7 +116,7 @@ export default function Show({ period }: { period: Period }) {
                         </>
                     )}
                     <button
-                        onClick={() => confirm('Delete this pay period?') && router.delete(`/payroll/periods/${period.id}`)}
+                        onClick={async () => (await confirmDialog('Delete this pay period?')) && router.delete(`/payroll/periods/${period.id}`)}
                         className="rounded-full bg-red-100 text-red-700 font-semibold text-xs px-4 py-2"
                     >
                         Delete
@@ -188,6 +189,22 @@ export default function Show({ period }: { period: Period }) {
                                 </tr>
                             ))}
                         </tbody>
+                        <tfoot>
+                            <tr className="bg-brand-dark">
+                                <td colSpan={2} className="py-2 pl-2 text-white font-bold text-sm rounded-l-lg">Total</td>
+                                {NUMERIC.map(([k]) => (
+                                    <td key={k} className="py-2 text-right text-accent font-semibold text-sm">
+                                        {k === 'hourly_rate' ? '' : entries.reduce((sum, e) => sum + (Number(e[k]) || 0), 0).toFixed(k === 'total_hours' || k === 'mileage' ? 1 : 2)}
+                                    </td>
+                                ))}
+                                <td className="py-2 text-right text-accent font-semibold text-sm">
+                                    £{entries.reduce((sum, e) => sum + e.basic_pay, 0).toFixed(2)}
+                                </td>
+                                <td className="py-2 pr-2 text-right text-accent font-extrabold text-sm rounded-r-lg" colSpan={2}>
+                                    £{grandTotal.toFixed(2)}
+                                </td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
                 {!locked && (

@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { ReactNode, useEffect, useState } from 'react';
 import { SharedProps } from '../types';
 import SearchOverlay from './SearchOverlay';
+import DialogHost from './DialogHost';
 
 interface NavItem {
     href: string;
@@ -307,6 +308,7 @@ export default function AppShell({ title, children }: { title: string; children:
             )}
 
             {searching && <SearchOverlay onClose={() => setSearching(false)} />}
+            <DialogHost />
         </div>
     );
 }

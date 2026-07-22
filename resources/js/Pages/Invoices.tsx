@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import { confirmDialog, promptDialog } from '../utils/dialogs';
 
 interface Invoice {
     id: number;
@@ -127,10 +128,10 @@ export default function Invoices({ invoices, summary, members }: Props) {
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => {
-                                        const due = prompt('Update due date (YYYY-MM-DD), or leave blank to keep:', i.due_date ?? '');
+                                    onClick={async () => {
+                                        const due = await promptDialog('Update due date (YYYY-MM-DD), or leave blank to keep:', i.due_date ?? '');
                                         if (due === null) return;
-                                        const status = prompt('Status (draft/sent/paid/cancelled):', i.status);
+                                        const status = await promptDialog('Status (draft/sent/paid/cancelled):', i.status);
                                         if (status === null) return;
                                         router.put(`/invoices/${i.id}`, { due_date: due || null, status });
                                     }}
@@ -140,7 +141,7 @@ export default function Invoices({ invoices, summary, members }: Props) {
                                     ✏️
                                 </button>
                                 <button
-                                    onClick={() => confirm(`Remove ${i.qb_reference}?`) && router.delete(`/invoices/${i.id}`)}
+                                    onClick={async () => (await confirmDialog(`Remove ${i.qb_reference}?`)) && router.delete(`/invoices/${i.id}`)}
                                     className="rounded-full bg-slate-100 text-red-500 text-xs font-bold px-2.5 py-1.5"
                                     aria-label="Delete invoice"
                                 >

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import { confirmDialog } from '../utils/dialogs';
 
 interface LedgerEntry {
     id: number;
@@ -366,7 +367,7 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                                             {e.type === 'payment' ? '+' : '−'}{gbp(e.amount)}
                                             {e.type === 'payment' && (
                                                 <button
-                                                    onClick={() => confirm('Delete this payment?') && router.delete(`/transport/payments/${e.id}`, { onSuccess: () => setPaying(null) })}
+                                                    onClick={async () => (await confirmDialog('Delete this payment?')) && router.delete(`/transport/payments/${e.id}`, { onSuccess: () => setPaying(null) })}
                                                     className="text-red-400"
                                                     aria-label="Delete payment"
                                                 >

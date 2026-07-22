@@ -6,6 +6,7 @@ import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import { MOOD_EMOJI, Mood } from '../../types';
+import { confirmDialog, promptDialog } from '../../utils/dialogs';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
 const CONSENT_LABELS: Record<string, string> = {
@@ -169,6 +170,10 @@ export default function Show(props: Props) {
         <AppShell title={member.name}>
             <Head title={member.name} />
 
+            <Link href="/members" className="inline-block text-sm font-semibold text-brand mb-2">
+                ← Back
+            </Link>
+
             {/* Header */}
             <div className="flex items-center gap-4 mb-2">
                 <div className="relative">
@@ -209,6 +214,9 @@ export default function Show(props: Props) {
                     <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
                         🖨 Print
                     </button>
+                    <Link href={`/members/${member.id}/history`} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
+                        📜 Full History
+                    </Link>
                     {canEdit && (
                         <>
                             <a href={`/members/${member.id}/sar`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
@@ -395,7 +403,7 @@ export default function Show(props: Props) {
                                         <span className="text-xs text-slate-400 flex items-center gap-2">
                                             {fmt(c.date)} · {c.user}
                                             <button
-                                                onClick={() => confirm('Delete this entry?') && router.delete(`/members/${member.id}/comms/${c.id}`)}
+                                                onClick={async () => (await confirmDialog('Delete this entry?')) && router.delete(`/members/${member.id}/comms/${c.id}`)}
                                                 className="text-red-400 hover:text-red-600 font-bold"
                                                 aria-label="Delete entry"
                                             >
@@ -489,7 +497,7 @@ export default function Show(props: Props) {
                                     </div>
                                     {canEdit && (
                                         <button
-                                            onClick={() => confirm('Remove this alert?') && router.delete(`/members/${member.id}/alerts/${a.id}`)}
+                                            onClick={async () => (await confirmDialog('Remove this alert?')) && router.delete(`/members/${member.id}/alerts/${a.id}`)}
                                             className="text-red-400 font-bold"
                                             aria-label="Remove alert"
                                         >
@@ -525,7 +533,7 @@ export default function Show(props: Props) {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => confirm('Remove this contact?') && router.delete(`/members/${member.id}/contacts/${c.id}`)}
+                                        onClick={async () => (await confirmDialog('Remove this contact?')) && router.delete(`/members/${member.id}/contacts/${c.id}`)}
                                         className="text-red-400 font-bold shrink-0"
                                         aria-label="Remove contact"
                                     >
@@ -1004,8 +1012,8 @@ export default function Show(props: Props) {
                         <BodyMapFigure
                             view={mapView}
                             markers={newMarkers}
-                            onPlace={(x, y) => {
-                                const note = prompt('Describe this mark (optional):') ?? '';
+                            onPlace={async (x, y) => {
+                                const note = (await promptDialog('Describe this mark (optional):')) ?? '';
                                 setNewMarkers([...newMarkers, { view: mapView, x, y, note }]);
                             }}
                         />

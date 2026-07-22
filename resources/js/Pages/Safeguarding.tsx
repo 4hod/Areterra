@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import { promptDialog } from '../utils/dialogs';
 
 interface Concern {
     id: number;
@@ -72,8 +73,8 @@ export default function Safeguarding({ concerns, members }: Props) {
                                 </span>
                                 {c.status === 'open' && (
                                     <button
-                                        onClick={() => {
-                                            const actions = prompt('Actions taken before closing:', c.actions_taken ?? '');
+                                        onClick={async () => {
+                                            const actions = await promptDialog('Actions taken before closing:', c.actions_taken ?? '');
                                             if (actions !== null) {
                                                 router.put(`/safeguarding/${c.id}`, { status: 'closed', actions_taken: actions });
                                             }

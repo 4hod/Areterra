@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import { promptDialog } from '../utils/dialogs';
 
 interface Defect {
     id: number;
@@ -64,8 +65,8 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
                                     {v.service_due && `Service ${new Date(v.service_due).toLocaleDateString('en-GB')}`}
                                     {!v.mot_due && canManage && (
                                         <button
-                                            onClick={() => {
-                                                const d = prompt('MOT due date (YYYY-MM-DD):');
+                                            onClick={async () => {
+                                                const d = await promptDialog('MOT due date (YYYY-MM-DD):');
                                                 if (d) router.put(`/vehicles/${v.id}`, { mot_due: d });
                                             }}
                                             className="text-brand font-bold"

@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import { confirmDialog } from '../utils/dialogs';
 
 interface OrderRow {
     id: number;
@@ -81,8 +82,8 @@ export default function Orders({ orders, canManage }: { orders: OrderRow[]; canM
         deliverForm.put(`/orders/${delivering.id}/delivered`, { onSuccess: () => setDelivering(null) });
     }
 
-    function cancel(row: OrderRow) {
-        if (confirm(`Cancel the request for ${row.item_name}?`)) {
+    async function cancel(row: OrderRow) {
+        if (await confirmDialog(`Cancel the request for ${row.item_name}?`)) {
             router.delete(`/orders/${row.id}`);
         }
     }

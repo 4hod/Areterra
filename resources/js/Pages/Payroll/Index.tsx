@@ -4,6 +4,7 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
+import { confirmDialog, promptDialog } from '../../utils/dialogs';
 
 interface Period {
     id: number;
@@ -117,10 +118,10 @@ export default function Index({ periods, roster }: { periods: Period[]; roster: 
                                     {s.current_rate !== null ? `£${s.current_rate.toFixed(2)}/hr` : '—'}
                                 </span>
                                 <button
-                                    onClick={() => {
-                                        const rate = prompt(`New hourly rate for ${s.name} (£):`, s.current_rate?.toFixed(2) ?? '');
+                                    onClick={async () => {
+                                        const rate = await promptDialog(`New hourly rate for ${s.name} (£):`, s.current_rate?.toFixed(2) ?? '');
                                         if (!rate) return;
-                                        const contracted = prompt('Contracted hours per week (optional):', s.contracted_hours?.toString() ?? '');
+                                        const contracted = await promptDialog('Contracted hours per week (optional):', s.contracted_hours?.toString() ?? '');
                                         router.post('/payroll/rates', {
                                             key: s.key,
                                             hourly_rate: Number(rate),
@@ -134,10 +135,10 @@ export default function Index({ periods, roster }: { periods: Period[]; roster: 
                                 {!s.has_account && (
                                     <>
                                         <button
-                                            onClick={() => {
-                                                const name = prompt('Name:', s.name);
+                                            onClick={async () => {
+                                                const name = await promptDialog('Name:', s.name);
                                                 if (!name) return;
-                                                const job = prompt('Job title:', s.job_title ?? '') ?? '';
+                                                const job = (await promptDialog('Job title:', s.job_title ?? '')) ?? '';
                                                 router.put(`/payroll/roster/${s.id}`, { name, job_title: job });
                                             }}
                                             className="text-xs font-bold text-slate-400"
@@ -145,7 +146,7 @@ export default function Index({ periods, roster }: { periods: Period[]; roster: 
                                             Edit
                                         </button>
                                         <button
-                                            onClick={() => confirm(`Remove ${s.name} from the roster?`) && router.delete(`/payroll/roster/${s.id}`)}
+                                            onClick={async () => (await confirmDialog(`Remove ${s.name} from the roster?`)) && router.delete(`/payroll/roster/${s.id}`)}
                                             className="text-xs font-bold text-red-400"
                                         >
                                             Remove
