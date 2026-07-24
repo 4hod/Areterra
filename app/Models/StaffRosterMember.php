@@ -34,4 +34,17 @@ class StaffRosterMember extends Model
 
         return $rate ? (float) $rate->hourly_rate : null;
     }
+
+    // Reading an encrypted attribute can throw if it was written under a
+    // different APP_KEY (e.g. after a key rotation). One bad row shouldn't
+    // crash an entire page — surface it as null instead, so it just shows
+    // blank and can be re-entered, rather than a 500.
+    public function safeNiNumber(): ?string
+    {
+        try {
+            return $this->ni_number;
+        } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+            return null;
+        }
+    }
 }

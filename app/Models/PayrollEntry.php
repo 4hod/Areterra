@@ -36,6 +36,16 @@ class PayrollEntry extends Model
         return $this->morphTo();
     }
 
+    // See StaffRosterMember::safeNiNumber() — same defensive reasoning.
+    public function safeNiNumber(): ?string
+    {
+        try {
+            return $this->ni_number;
+        } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+            return null;
+        }
+    }
+
     // basic = rate × hours; total = basic + holiday + SSP + mileage pay.
     public static function computeTotals(array $e): array
     {

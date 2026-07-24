@@ -30,7 +30,7 @@ class PayrollController extends Controller
                 'id' => $s->id,
                 'key' => "roster:{$s->id}",
                 'name' => $s->name,
-                'ni_number' => $s->ni_number,
+                'ni_number' => $s->safeNiNumber(),
                 'job_title' => $s->job_title,
                 'email' => $s->email,
                 'phone' => $s->phone,
@@ -74,7 +74,7 @@ class PayrollController extends Controller
                 'payable_type' => StaffRosterMember::class,
                 'payable_id' => $s->id,
                 'staff_name' => $s->name,
-                'ni_number' => $s->ni_number,
+                'ni_number' => $s->safeNiNumber(),
                 'hourly_rate' => $s->currentRate() ?? 0,
             ]));
 
@@ -249,7 +249,7 @@ class PayrollController extends Controller
             'entries' => $period->entries()->orderBy('staff_name')->get()->map(fn ($e) => [
                 'id' => $e->id,
                 'staff_name' => $e->staff_name,
-                'ni_number' => $e->ni_number,
+                'ni_number' => $e->safeNiNumber(),
                 'hourly_rate' => (float) $e->hourly_rate,
                 'total_hours' => (float) $e->total_hours,
                 'basic_pay' => (float) $e->basic_pay,
