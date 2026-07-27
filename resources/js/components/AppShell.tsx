@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { SharedProps } from '../types';
 import SearchOverlay from './SearchOverlay';
 import DialogHost from './DialogHost';
@@ -119,6 +119,7 @@ export default function AppShell({ title, children }: { title: string; children:
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const [drawer, setDrawer] = useState(false);
     const [searching, setSearching] = useState(false);
+    const sidebarRef = useRef<HTMLElement | null>(null);
     const [pushPrompt, setPushPrompt] = useState(false);
     const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
         let stored: Record<string, boolean> = {};
@@ -136,6 +137,32 @@ export default function AppShell({ title, children }: { title: string; children:
         }
         return stored;
     });
+
+
+    // Keep the desktop navigation's own scroll position between Inertia page visits.
+    // The content page itself is still allowed to return to the top normally.
+    useEffect(() => {
+        const sidebar = sidebarRef.current;
+        if (!sidebar) return;
+
+        const saved = Number(sessionStorage.getItem('ah-sidebar-scroll') ?? '0');
+        if (Number.isFinite(saved)) {
+            sidebar.scrollTop = saved;
+        }
+
+        const rememberPosition = () => {
+            sessionStorage.setItem('ah-sidebar-scroll', String(sidebar.scrollTop));
+        };
+
+        sidebar.addEventListener('scroll', rememberPosition, { passive: true });
+        return () => sidebar.removeEventListener('scroll', rememberPosition);
+    }, []);
+
+    function rememberSidebarPosition() {
+        if (sidebarRef.current) {
+            sessionStorage.setItem('ah-sidebar-scroll', String(sidebarRef.current.scrollTop));
+        }
+    }
 
     function toggleSection(title: string) {
         setOpenSections((prev) => {
@@ -191,7 +218,8 @@ export default function AppShell({ title, children }: { title: string; children:
         <div className="min-h-screen md:flex">
             {/* Desktop sidebar */}
             <aside
-                className="hidden md:flex md:flex-col w-60 shrink-0 text-white min-h-screen sticky top-0 overflow-y-auto"
+                ref={sidebarRef}
+                className="hidden md:flex md:flex-col w-60 shrink-0 text-white h-screen max-h-screen sticky top-0 overflow-y-auto overscroll-contain"
                 style={{ background: 'linear-gradient(180deg, var(--color-brand-dark) 0%, var(--color-ink) 100%)' }}
             >
                 <div className="px-5 py-5">
@@ -214,7 +242,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                 <div key={i} className="space-y-0.5 pb-3">
                                     {items.map((item) => (
                                         <Link
-                                            preserveScroll
+                                            onClick={rememberSidebarPosition}
                                             key={item.href}
                                             href={item.href}
                                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
@@ -253,7 +281,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                     <div className="space-y-0.5 pb-2">
                                         {items.map((item) => (
                                             <Link
-                                                preserveScroll
+                                                onClick={rememberSidebarPosition}
                                                 key={item.href}
                                                 href={item.href}
                                                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
@@ -281,7 +309,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     <div className="font-semibold truncate">{auth.user?.name}</div>
                     <div className="text-white/50 capitalize text-xs">{auth.user?.role?.replace('_', ' ')}</div>
                     <div className="mt-2 flex gap-3 text-xs">
-                        <Link preserveScroll href="/account" className="text-white/70 hover:text-white">
+                        <Link href="/account" className="text-white/70 hover:text-white">
                             My account
                         </Link>
                         <button onClick={() => router.post('/logout')} className="text-white/70 hover:text-white">
@@ -344,7 +372,6 @@ export default function AppShell({ title, children }: { title: string; children:
             <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 flex pb-[env(safe-area-inset-bottom)]">
                 {MOBILE_NAV.filter((item) => allowed(item, caps)).map((item) => (
                     <Link
-                        preserveScroll
                         key={item.href}
                         href={item.href}
                         className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium min-h-11 ${
@@ -380,7 +407,6 @@ export default function AppShell({ title, children }: { title: string; children:
                                     <div key={i} className="mb-3">
                                         {items.map((item) => (
                                             <Link
-                                                preserveScroll
                                                 key={item.href}
                                                 href={item.href}
                                                 onClick={() => setDrawer(false)}
@@ -411,7 +437,6 @@ export default function AppShell({ title, children }: { title: string; children:
                                         <div className="mb-2">
                                             {items.map((item) => (
                                                 <Link
-                                                    preserveScroll
                                                     key={item.href}
                                                     href={item.href}
                                                     onClick={() => setDrawer(false)}
@@ -441,7 +466,6 @@ export default function AppShell({ title, children }: { title: string; children:
                     </p>
                     <div className="flex gap-2 mt-3">
                         <Link
-                            preserveScroll
                             href="/notifications"
                             onClick={dismissPushPrompt}
                             className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2"
