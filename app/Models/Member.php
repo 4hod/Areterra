@@ -76,6 +76,11 @@ class Member extends Model
         return $this->hasMany(MemberInvoice::class);
     }
 
+    public function financeProfile()
+    {
+        return $this->hasOne(MemberFinanceProfile::class);
+    }
+
     public function contacts()
     {
         return $this->hasMany(MemberContact::class);

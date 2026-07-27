@@ -196,7 +196,14 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::post('/finance/grants', [App\Http\Controllers\FinanceController::class, 'storeGrant'])->name('grants.store');
         Route::put('/finance/grants/{grant}', [App\Http\Controllers\FinanceController::class, 'updateGrant'])->name('grants.update');
         Route::post('/finance/grants/{grant}/expenditures', [App\Http\Controllers\FinanceController::class, 'storeExpenditure'])->name('grants.spend');
-        Route::post('/finance/in-kind', [App\Http\Controllers\FinanceController::class, 'storeInKind'])->name('in-kind.store');
+        Route::put('/finance/rates', [App\Http\Controllers\FinanceController::class, 'updateRates'])->name('finance.rates');
+        Route::put('/finance/members/{member}', [App\Http\Controllers\FinanceController::class, 'updateMemberProfile'])->name('finance.members.update');
+        Route::post('/finance/additional-income', [App\Http\Controllers\FinanceController::class, 'storeAdditionalIncome'])->name('finance.additional.store');
+        Route::put('/finance/additional-income/{additionalIncome}', [App\Http\Controllers\FinanceController::class, 'updateAdditionalIncome'])->name('finance.additional.update');
+        Route::delete('/finance/additional-income/{additionalIncome}', [App\Http\Controllers\FinanceController::class, 'destroyAdditionalIncome'])->name('finance.additional.destroy');
+        Route::post('/finance/fixed-costs', [App\Http\Controllers\FinanceController::class, 'storeFixedCost'])->name('finance.costs.store');
+        Route::put('/finance/fixed-costs/{fixedCost}', [App\Http\Controllers\FinanceController::class, 'updateFixedCost'])->name('finance.costs.update');
+        Route::delete('/finance/fixed-costs/{fixedCost}', [App\Http\Controllers\FinanceController::class, 'destroyFixedCost'])->name('finance.costs.destroy');
 
         Route::get('/invoices', [App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices');
         Route::post('/invoices', [App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');

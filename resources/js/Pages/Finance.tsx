@@ -1,267 +1,68 @@
-import { Head, useForm } from '@inertiajs/react';
-import { FormEvent, useState } from 'react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { FormEvent, ReactNode, useMemo, useState } from 'react';
 import AppShell from '../components/AppShell';
-import Card from '../components/Card';
 import Modal from '../components/Modal';
 
-interface Expenditure {
-    id: number;
-    description: string;
-    amount: number;
-    spent_date: string;
-}
-
-interface GrantRow {
-    id: number;
-    title: string;
-    funder: string;
-    amount: number;
-    spent: number;
-    start_date: string | null;
-    end_date: string | null;
-    status: string;
-    expenditures: Expenditure[];
-}
-
-interface InKindRow {
-    id: number;
-    donor: string;
-    type: string | null;
-    category: string | null;
-    estimated_value: number;
-    quantity: number;
-    date: string;
-    grant: string | null;
-}
-
+type Tab = 'overview' | 'members' | 'income' | 'costs' | 'grants' | 'quote' | 'rates';
+interface MemberRow { id:number; name:string; initials:string; days_per_week:number; attendance_days:number[]; attendance_type:string; day_rate:number; one_to_one_hours_per_week:number; one_to_one_rate:number; charge_transport:boolean; transport_rate:number; attendance_income:number; one_to_one_income:number; transport_income:number; four_week_income:number }
+interface RecurringRow { id:number; description:string; category?:string|null; amount:number; frequency:string; four_week_amount:number; active:boolean; notes?:string|null }
+interface GrantRow { id:number; title:string; funder:string; amount:number; spent:number; status:string; end_date:string|null }
 interface Props {
-    grants: GrantRow[];
-    inKind: InKindRow[];
-    summary: { grantIncome: number; grantSpend: number; inKindValue: number; invoiced: number; collected: number };
+    rates:{full_day:number;half_day:number;one_to_one_hourly:number;transport_day:number};
+    members:MemberRow[]; additionalIncome:RecurringRow[]; fixedCosts:RecurringRow[]; grants:GrantRow[];
+    summary:{memberIncome:number;otherIncome:number;totalIncome:number;costs:number;surplus:number;costPercentage:number;grantIncome:number;grantSpend:number;inKindValue:number;invoiced:number;collected:number};
+}
+const money=(n:number)=>`£${Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+const tabs:[Tab,string][]=[['overview','Overview'],['members','Member Income'],['income','Additional Income'],['costs','Fixed Costs'],['grants','Grant Tracker'],['quote','💰 Quote Builder'],['rates','Rates & Settings']];
+const frequencies=['weekly','four_weekly','monthly','quarterly','annually','one_off'];
+
+export default function Finance(props:Props){
+ const {rates,members,additionalIncome,fixedCosts,grants,summary}=props;
+ const [tab,setTab]=useState<Tab>('overview');
+ const [editingMember,setEditingMember]=useState<MemberRow|null>(null);
+ const [incomeModal,setIncomeModal]=useState(false); const [costModal,setCostModal]=useState(false);
+ const rateForm=useForm({...rates});
+ const memberForm=useForm({attendance_type:'full_day',custom_day_rate:'',one_to_one_hours_per_week:0,custom_one_to_one_rate:'',charge_transport:true,custom_transport_rate:'',notes:''});
+ const incomeForm=useForm({description:'',amount:'',frequency:'four_weekly',start_date:'',end_date:'',notes:'',active:true});
+ const costForm=useForm({description:'',category:'',amount:'',frequency:'four_weekly',start_date:'',end_date:'',notes:'',active:true});
+ const [quote,setQuote]=useState({name:'',days:1,dayRate:rates.full_day,oneToOneHours:0,oneToOneRate:rates.one_to_one_hourly,transportDays:0,transportRate:rates.transport_day,weeks:4});
+ const quoteTotal=useMemo(()=>quote.weeks*((quote.days*quote.dayRate)+(quote.oneToOneHours*quote.oneToOneRate)+(quote.transportDays*quote.transportRate)),[quote]);
+ const costsPct=Math.max(0,Math.min(100,summary.costPercentage));
+ function openMember(m:MemberRow){setEditingMember(m);memberForm.setData({attendance_type:m.attendance_type,custom_day_rate:String(m.day_rate),one_to_one_hours_per_week:m.one_to_one_hours_per_week,custom_one_to_one_rate:String(m.one_to_one_rate),charge_transport:m.charge_transport,custom_transport_rate:String(m.transport_rate),notes:''});}
+ function saveMember(e:FormEvent){e.preventDefault();if(!editingMember)return;memberForm.put(`/finance/members/${editingMember.id}`,{onSuccess:()=>setEditingMember(null)});}
+ function saveRates(e:FormEvent){e.preventDefault();rateForm.put('/finance/rates');}
+ function saveIncome(e:FormEvent){e.preventDefault();incomeForm.post('/finance/additional-income',{onSuccess:()=>{setIncomeModal(false);incomeForm.reset();}})}
+ function saveCost(e:FormEvent){e.preventDefault();costForm.post('/finance/fixed-costs',{onSuccess:()=>{setCostModal(false);costForm.reset();}})}
+ return <AppShell title="Finance"><Head title="Finance"/>
+  <div className="finance-page">
+   <div className="finance-heading"><div><h2>Finance</h2><p>4-week income, costs and surplus</p></div><button className="link-btn" onClick={()=>setTab('rates')}>⚙ Rates & Settings</button></div>
+   <div className="finance-tabs">{tabs.map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{label}</button>)}</div>
+
+   {tab==='overview'&&<>
+    <div className="finance-kpis">
+     <div className="finance-kpi blue"><span>TOTAL 4-WEEK INCOME</span><strong>{money(summary.totalIncome)}</strong><small>{money(summary.memberIncome)} members + {money(summary.otherIncome)} other</small></div>
+     <div className="finance-kpi orange"><span>TOTAL 4-WEEK COSTS</span><strong>{money(summary.costs)}</strong><small>fixed recurring costs</small></div>
+     <div className={`finance-kpi ${summary.surplus>=0?'green':'red'}`}><span>4-WEEK {summary.surplus>=0?'SURPLUS':'DEFICIT'}</span><strong>{summary.surplus>=0?'↑ ':'↓ '}{money(Math.abs(summary.surplus))}</strong><small>{summary.surplus>=0?'profit after costs':'shortfall after costs'}</small></div>
+    </div>
+    <section className="finance-card"><b>Income vs Costs</b><div className="bar"><i style={{width:`${costsPct}%`}}/><em style={{width:`${100-costsPct}%`}}/></div><div className="bar-labels"><span>Costs {costsPct}%</span><span>Surplus {Math.max(0,100-costsPct).toFixed(0)}%</span></div></section>
+    <section className="finance-card rates-preview"><b>CURRENT RATES</b><div><span>Full day<strong>{money(rates.full_day)}</strong></span><span>Half day<strong>{money(rates.half_day)}</strong></span><span>1:1 hourly<strong>{money(rates.one_to_one_hourly)}</strong></span><span>Transport/day<strong>{money(rates.transport_day)}</strong></span></div><button className="link-btn" onClick={()=>setTab('rates')}>Edit rates →</button></section>
+   </>}
+
+   {tab==='members'&&<section className="finance-card"><div className="section-head"><div><h3>Member income</h3><p>Calculated over four weeks from attendance, 1:1 support and transport.</p></div></div><div className="finance-table-wrap"><table className="finance-table"><thead><tr><th>Member</th><th>Days/week</th><th>Attendance</th><th>1:1</th><th>Transport</th><th>4-week total</th><th></th></tr></thead><tbody>{members.map(m=><tr key={m.id}><td><div className="member-cell"><i>{m.initials}</i><b>{m.name}</b></div></td><td>{m.days_per_week}</td><td>{money(m.attendance_income)}</td><td>{money(m.one_to_one_income)}</td><td>{money(m.transport_income)}</td><td><b>{money(m.four_week_income)}</b></td><td><button className="mini-btn" onClick={()=>openMember(m)}>Edit</button></td></tr>)}</tbody><tfoot><tr><td colSpan={5}>Total member income</td><td><b>{money(summary.memberIncome)}</b></td><td/></tr></tfoot></table></div></section>}
+
+   {tab==='income'&&<section className="finance-card"><div className="section-head"><div><h3>Additional income</h3><p>Donations, fundraising, room hire and other non-member income.</p></div><button className="primary-btn" onClick={()=>setIncomeModal(true)}>+ Add income</button></div><RecurringTable rows={additionalIncome} total={summary.otherIncome} type="income"/></section>}
+   {tab==='costs'&&<section className="finance-card"><div className="section-head"><div><h3>Fixed costs</h3><p>Recurring wages, rent, utilities, insurance and operating costs.</p></div><button className="primary-btn" onClick={()=>setCostModal(true)}>+ Add cost</button></div><RecurringTable rows={fixedCosts} total={summary.costs} type="cost"/></section>}
+   {tab==='grants'&&<section className="finance-card"><div className="section-head"><div><h3>Grant tracker</h3><p>Existing grant records and expenditure remain connected to the Hub.</p></div></div><div className="grant-grid">{grants.length?grants.map(g=>{const pct=g.amount?Math.min(100,g.spent/g.amount*100):0;return <article key={g.id} className="grant-card"><span>{g.status}</span><h4>{g.title}</h4><p>{g.funder}</p><div className="grant-values"><b>{money(g.spent)} spent</b><b>{money(g.amount)}</b></div><div className="grant-bar"><i style={{width:`${pct}%`}}/></div></article>}):<p className="empty">No grants tracked yet.</p>}</div></section>}
+   {tab==='quote'&&<section className="quote-layout"><div className="finance-card"><h3>Build a support quote</h3><p className="muted">Create a quick four-week estimate without saving it to member records.</p><div className="form-grid"><Field label="Quote for"><input value={quote.name} onChange={e=>setQuote({...quote,name:e.target.value})} placeholder="Name or commissioner"/></Field><Field label="Weeks"><input type="number" min="1" value={quote.weeks} onChange={e=>setQuote({...quote,weeks:Number(e.target.value)})}/></Field><Field label="Days per week"><input type="number" min="0" value={quote.days} onChange={e=>setQuote({...quote,days:Number(e.target.value)})}/></Field><Field label="Day rate"><input type="number" step="0.01" value={quote.dayRate} onChange={e=>setQuote({...quote,dayRate:Number(e.target.value)})}/></Field><Field label="1:1 hours per week"><input type="number" step="0.5" min="0" value={quote.oneToOneHours} onChange={e=>setQuote({...quote,oneToOneHours:Number(e.target.value)})}/></Field><Field label="1:1 hourly rate"><input type="number" step="0.01" value={quote.oneToOneRate} onChange={e=>setQuote({...quote,oneToOneRate:Number(e.target.value)})}/></Field><Field label="Transport days/week"><input type="number" min="0" value={quote.transportDays} onChange={e=>setQuote({...quote,transportDays:Number(e.target.value)})}/></Field><Field label="Transport/day"><input type="number" step="0.01" value={quote.transportRate} onChange={e=>setQuote({...quote,transportRate:Number(e.target.value)})}/></Field></div></div><aside className="quote-result"><span>ESTIMATED TOTAL</span><strong>{money(quoteTotal)}</strong><small>{quote.weeks}-week support package</small><hr/><p>{quote.days} day(s) × {money(quote.dayRate)} × {quote.weeks} weeks</p><p>{quote.oneToOneHours} 1:1 hour(s) × {money(quote.oneToOneRate)} × {quote.weeks} weeks</p><p>{quote.transportDays} transport day(s) × {money(quote.transportRate)} × {quote.weeks} weeks</p><button onClick={()=>window.print()}>Print quote</button></aside></section>}
+   {tab==='rates'&&<section className="finance-card"><h3>Rates & settings</h3><p className="muted">These defaults feed the member income calculator and quote builder. Individual members can override them.</p><form onSubmit={saveRates} className="form-grid rate-form"><Field label="Full day rate"><input type="number" step="0.01" value={rateForm.data.full_day} onChange={e=>rateForm.setData('full_day',Number(e.target.value))}/></Field><Field label="Half day rate"><input type="number" step="0.01" value={rateForm.data.half_day} onChange={e=>rateForm.setData('half_day',Number(e.target.value))}/></Field><Field label="1:1 hourly rate"><input type="number" step="0.01" value={rateForm.data.one_to_one_hourly} onChange={e=>rateForm.setData('one_to_one_hourly',Number(e.target.value))}/></Field><Field label="Transport per day"><input type="number" step="0.01" value={rateForm.data.transport_day} onChange={e=>rateForm.setData('transport_day',Number(e.target.value))}/></Field><div className="full"><button className="primary-btn" disabled={rateForm.processing}>Save rates</button></div></form></section>}
+  </div>
+
+  <Modal open={editingMember!==null} title={`Member finance settings — ${editingMember?.name??''}`} onClose={()=>setEditingMember(null)}><form onSubmit={saveMember} className="modal-form"><Field label="Attendance type"><select value={memberForm.data.attendance_type} onChange={e=>memberForm.setData('attendance_type',e.target.value)}><option value="full_day">Full day</option><option value="half_day">Half day</option></select></Field><Field label="Day rate override"><input type="number" step="0.01" value={memberForm.data.custom_day_rate} onChange={e=>memberForm.setData('custom_day_rate',e.target.value)} /></Field><Field label="1:1 hours per week"><input type="number" step="0.5" value={memberForm.data.one_to_one_hours_per_week} onChange={e=>memberForm.setData('one_to_one_hours_per_week',Number(e.target.value))}/></Field><Field label="1:1 rate override"><input type="number" step="0.01" value={memberForm.data.custom_one_to_one_rate} onChange={e=>memberForm.setData('custom_one_to_one_rate',e.target.value)}/></Field><Field label="Transport rate override"><input type="number" step="0.01" value={memberForm.data.custom_transport_rate} onChange={e=>memberForm.setData('custom_transport_rate',e.target.value)}/></Field><label className="check"><input type="checkbox" checked={memberForm.data.charge_transport} onChange={e=>memberForm.setData('charge_transport',e.target.checked)}/> Charge transport for scheduled days</label><button className="primary-btn">Save member settings</button></form></Modal>
+  <Modal open={incomeModal} title="Add additional income" onClose={()=>setIncomeModal(false)}><RecurringForm form={incomeForm} onSubmit={saveIncome}/></Modal>
+  <Modal open={costModal} title="Add fixed cost" onClose={()=>setCostModal(false)}><RecurringForm form={costForm} onSubmit={saveCost} withCategory/></Modal>
+ </AppShell>
 }
 
-const gbp = (n: number) => `£${n.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
-
-export default function Finance({ grants, inKind, summary }: Props) {
-    const [addingGrant, setAddingGrant] = useState(false);
-    const [addingInKind, setAddingInKind] = useState(false);
-    const [spendingOn, setSpendingOn] = useState<GrantRow | null>(null);
-
-    const grantForm = useForm({ title: '', funder: '', amount: '', start_date: '', end_date: '', status: 'active', notes: '' });
-    const inKindForm = useForm({ donor: '', type: '', category: '', estimated_value: '', quantity: 1, date: new Date().toISOString().slice(0, 10), grant_id: '' as string | number, notes: '' });
-    const spendForm = useForm({ description: '', amount: '', spent_date: new Date().toISOString().slice(0, 10) });
-
-    function submitGrant(e: FormEvent) {
-        e.preventDefault();
-        grantForm.post('/finance/grants', { onSuccess: () => { setAddingGrant(false); grantForm.reset(); } });
-    }
-
-    function submitInKind(e: FormEvent) {
-        e.preventDefault();
-        inKindForm.transform((d) => ({ ...d, grant_id: d.grant_id || null }));
-        inKindForm.post('/finance/in-kind', { onSuccess: () => { setAddingInKind(false); inKindForm.reset(); } });
-    }
-
-    function submitSpend(e: FormEvent) {
-        e.preventDefault();
-        if (!spendingOn) return;
-        spendForm.post(`/finance/grants/${spendingOn.id}/expenditures`, {
-            onSuccess: () => { setSpendingOn(null); spendForm.reset(); },
-        });
-    }
-
-    return (
-        <AppShell title="Finance & Grants">
-            <Head title="Finance" />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <Card>
-                    <div className="text-xl font-extrabold text-brand-dark">{gbp(summary.grantIncome)}</div>
-                    <div className="text-xs text-slate-500 font-medium">Grant income</div>
-                </Card>
-                <Card>
-                    <div className="text-xl font-extrabold text-status-amber">{gbp(summary.grantSpend)}</div>
-                    <div className="text-xs text-slate-500 font-medium">Grant spend</div>
-                </Card>
-                <Card>
-                    <div className="text-xl font-extrabold text-status-green">{gbp(summary.inKindValue)}</div>
-                    <div className="text-xs text-slate-500 font-medium">In-kind value</div>
-                </Card>
-                <Card>
-                    <div className="text-xl font-extrabold text-brand">{gbp(summary.collected)}</div>
-                    <div className="text-xs text-slate-500 font-medium">Fees collected</div>
-                </Card>
-            </div>
-
-            <div className="flex gap-2 mb-4">
-                <button onClick={() => setAddingGrant(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">
-                    + Grant
-                </button>
-                <button onClick={() => setAddingInKind(true)} className="rounded-full bg-brand-dark text-white font-semibold text-sm px-5 py-2.5">
-                    + In-kind donation
-                </button>
-            </div>
-
-            <Card title="Grants" className="mb-4">
-                {grants.length === 0 && <p className="text-sm text-slate-400">No grants tracked yet.</p>}
-                <div className="space-y-3">
-                    {grants.map((g) => {
-                        const pct = g.amount > 0 ? Math.min(100, (g.spent / g.amount) * 100) : 0;
-                        return (
-                            <div key={g.id} className="rounded-lg border border-slate-200 p-3">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="font-bold text-brand-dark">{g.title}</div>
-                                        <div className="text-xs text-slate-400">
-                                            {g.funder} · {g.status}
-                                            {g.end_date && ` · ends ${new Date(g.end_date).toLocaleDateString('en-GB')}`}
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setSpendingOn(g)} className="rounded-full bg-slate-100 text-xs font-bold px-3 py-2">
-                                        + Spend
-                                    </button>
-                                </div>
-                                <div className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
-                                    <div className="h-full bg-brand" style={{ width: `${pct}%` }} />
-                                </div>
-                                <div className="mt-1 text-xs text-slate-500">
-                                    {gbp(g.spent)} spent of {gbp(g.amount)}
-                                </div>
-                                {g.expenditures.length > 0 && (
-                                    <details className="mt-1">
-                                        <summary className="text-xs font-bold text-brand cursor-pointer">Expenditure ({g.expenditures.length})</summary>
-                                        <ul className="mt-1 text-xs text-slate-500 space-y-0.5">
-                                            {g.expenditures.map((e) => (
-                                                <li key={e.id} className="flex justify-between">
-                                                    <span>{new Date(e.spent_date).toLocaleDateString('en-GB')} — {e.description}</span>
-                                                    <b>{gbp(e.amount)}</b>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </details>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            </Card>
-
-            <Card title="In-kind donations">
-                {inKind.length === 0 && <p className="text-sm text-slate-400">No in-kind donations recorded.</p>}
-                <ul className="divide-y divide-slate-100 text-sm">
-                    {inKind.map((d) => (
-                        <li key={d.id} className="py-2 flex items-center justify-between">
-                            <div>
-                                <span className="font-semibold">{d.donor}</span>
-                                <span className="text-slate-400 text-xs">
-                                    {' '}· {d.type}{d.category && ` · ${d.category}`} × {d.quantity}
-                                    {d.grant && ` · ${d.grant}`}
-                                </span>
-                            </div>
-                            <b>{gbp(d.estimated_value)}</b>
-                        </li>
-                    ))}
-                </ul>
-            </Card>
-
-            <Modal open={addingGrant} title="Add grant" onClose={() => setAddingGrant(false)}>
-                <form onSubmit={submitGrant} className="space-y-3">
-                    <label className="block text-sm font-medium">
-                        Title
-                        <input value={grantForm.data.title} onChange={(e) => grantForm.setData('title', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <label className="block text-sm font-medium">
-                            Funder
-                            <input value={grantForm.data.funder} onChange={(e) => grantForm.setData('funder', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Amount (£)
-                            <input type="number" step="0.01" min="0" value={grantForm.data.amount} onChange={(e) => grantForm.setData('amount', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Start
-                            <input type="date" value={grantForm.data.start_date} onChange={(e) => grantForm.setData('start_date', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            End
-                            <input type="date" value={grantForm.data.end_date} onChange={(e) => grantForm.setData('end_date', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
-                        </label>
-                    </div>
-                    <label className="block text-sm font-medium">
-                        Status
-                        <select value={grantForm.data.status} onChange={(e) => grantForm.setData('status', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white">
-                            {['applied', 'active', 'completed', 'declined'].map((s) => <option key={s}>{s}</option>)}
-                        </select>
-                    </label>
-                    <button type="submit" disabled={grantForm.processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
-                        Add grant
-                    </button>
-                </form>
-            </Modal>
-
-            <Modal open={addingInKind} title="Record in-kind donation" onClose={() => setAddingInKind(false)}>
-                <form onSubmit={submitInKind} className="space-y-3">
-                    <label className="block text-sm font-medium">
-                        Donor
-                        <input value={inKindForm.data.donor} onChange={(e) => inKindForm.setData('donor', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <label className="block text-sm font-medium">
-                            Type
-                            <input value={inKindForm.data.type} onChange={(e) => inKindForm.setData('type', e.target.value)} placeholder="goods, services…" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Category
-                            <input value={inKindForm.data.category} onChange={(e) => inKindForm.setData('category', e.target.value)} placeholder="animal feed…" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Value (£)
-                            <input type="number" step="0.01" min="0" value={inKindForm.data.estimated_value} onChange={(e) => inKindForm.setData('estimated_value', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Quantity
-                            <input type="number" min="1" value={inKindForm.data.quantity} onChange={(e) => inKindForm.setData('quantity', Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Date
-                            <input type="date" value={inKindForm.data.date} onChange={(e) => inKindForm.setData('date', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Linked grant
-                            <select value={inKindForm.data.grant_id} onChange={(e) => inKindForm.setData('grant_id', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white">
-                                <option value="">None</option>
-                                {grants.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-                            </select>
-                        </label>
-                    </div>
-                    <button type="submit" disabled={inKindForm.processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
-                        Record donation
-                    </button>
-                </form>
-            </Modal>
-
-            <Modal open={spendingOn !== null} title={`Expenditure — ${spendingOn?.title ?? ''}`} onClose={() => setSpendingOn(null)}>
-                <form onSubmit={submitSpend} className="space-y-3">
-                    <label className="block text-sm font-medium">
-                        Description
-                        <input value={spendForm.data.description} onChange={(e) => spendForm.setData('description', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <label className="block text-sm font-medium">
-                            Amount (£)
-                            <input type="number" step="0.01" min="0.01" value={spendForm.data.amount} onChange={(e) => spendForm.setData('amount', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                        </label>
-                        <label className="block text-sm font-medium">
-                            Date
-                            <input type="date" value={spendForm.data.spent_date} onChange={(e) => spendForm.setData('spent_date', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
-                        </label>
-                    </div>
-                    <button type="submit" disabled={spendForm.processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
-                        Record spend
-                    </button>
-                </form>
-            </Modal>
-        </AppShell>
-    );
-}
+function Field({label,children}:{label:string;children:ReactNode}){return <label className="field"><span>{label}</span>{children}</label>}
+function RecurringTable({rows,total,type}:{rows:RecurringRow[];total:number;type:'income'|'cost'}){return <div className="finance-table-wrap"><table className="finance-table"><thead><tr><th>Description</th>{type==='cost'&&<th>Category</th>}<th>Entered amount</th><th>Frequency</th><th>4-week value</th><th>Status</th><th></th></tr></thead><tbody>{rows.map(r=><tr key={r.id}><td><b>{r.description}</b></td>{type==='cost'&&<td>{r.category||'—'}</td>}<td>{money(r.amount)}</td><td>{r.frequency.replace('_',' ')}</td><td><b>{money(r.four_week_amount)}</b></td><td>{r.active?'Active':'Paused'}</td><td><button className="danger-link" onClick={()=>confirm('Remove this item?')&&router.delete(`/finance/${type==='income'?'additional-income':'fixed-costs'}/${r.id}`)}>Remove</button></td></tr>)}</tbody><tfoot><tr><td colSpan={type==='cost'?4:3}>Total 4-week {type}</td><td><b>{money(total)}</b></td><td colSpan={2}/></tr></tfoot></table>{rows.length===0&&<p className="empty">No items added yet.</p>}</div>}
+function RecurringForm({form,onSubmit,withCategory=false}:{form:any;onSubmit:(e:FormEvent)=>void;withCategory?:boolean}){return <form onSubmit={onSubmit} className="modal-form"><Field label="Description"><input value={form.data.description} onChange={(e:any)=>form.setData('description',e.target.value)} required/></Field>{withCategory&&<Field label="Category"><input value={form.data.category} onChange={(e:any)=>form.setData('category',e.target.value)} placeholder="Wages, rent, utilities…"/></Field>}<Field label="Amount"><input type="number" step="0.01" min="0" value={form.data.amount} onChange={(e:any)=>form.setData('amount',e.target.value)} required/></Field><Field label="Frequency"><select value={form.data.frequency} onChange={(e:any)=>form.setData('frequency',e.target.value)}>{frequencies.map(f=><option key={f} value={f}>{f.replace('_',' ')}</option>)}</select></Field><label className="check"><input type="checkbox" checked={form.data.active} onChange={(e:any)=>form.setData('active',e.target.checked)}/> Include in current calculations</label><button className="primary-btn">Save</button></form>}

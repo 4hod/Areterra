@@ -325,8 +325,18 @@ export default function AppShell({ title, children }: { title: string; children:
                     </div>
                 </header>
 
-                <main className="p-4 md:p-8 pb-24 md:pb-8 max-w-5xl">{children}</main>
+                <main className="p-4 md:p-8 pb-28 md:pb-20 max-w-[1600px]">{children}</main>
             </div>
+
+            <a
+                href="https://rockitfox.co.uk"
+                target="_blank"
+                rel="noreferrer"
+                className="fixed right-4 bottom-20 md:bottom-4 z-30 rounded-full border border-slate-200/80 bg-slate-800/80 px-4 py-2 text-[11px] font-medium text-white/70 shadow-lg backdrop-blur transition hover:bg-slate-800 hover:text-white"
+                aria-label="Website designed and built by RockitFox"
+            >
+                Site designed &amp; built by <span className="font-extrabold text-orange-300">🚀 RockitFox</span>
+            </a>
 
             {/* Mobile bottom nav */}
             <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 flex pb-[env(safe-area-inset-bottom)]">
