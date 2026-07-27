@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Member;
 use App\Models\MemberNote;
 use App\Models\Setting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
@@ -16,17 +17,14 @@ class WordPressSyncService
 {
     public function testConnection(): array
     {
-        $response = $this->request()->get($this->endpoint('members'), [
-            'page' => 1,
-            'per_page' => 1,
-            'status' => '',
-        ]);
-
-        $payload = $this->unwrap($response);
+        $payload = $this->unwrap($this->get($this->endpoint('sync/members'), [
+            'summary' => 1,
+        ]));
 
         return [
             'connected' => true,
-            'members_available' => (int) data_get($payload, 'meta.total', count($payload['data'])),
+            'members_available' => (int) data_get($payload, 'meta.total', 0),
+            'sync_version' => (int) data_get($payload, 'meta.sync_version', 0),
         ];
     }
 
@@ -111,39 +109,43 @@ class WordPressSyncService
 
     private function downloadMembers(): array
     {
+        $response = $this->get($this->endpoint('sync/members'));
+
+        if ($response->status() === 404) {
+            throw new RuntimeException(
+                'The WordPress bulk-sync endpoint is not installed. Upload and activate the Areterra Hub WordPress 1.0.1 patch, then test the connection again.'
+            );
+        }
+
+        $payload = $this->unwrap($response);
+        $records = $payload['data'];
+
+        if (! is_array($records)) {
+            throw new RuntimeException('WordPress returned an invalid bulk member export.');
+        }
+
         $members = [];
-        $page = 1;
 
-        do {
-            $payload = $this->unwrap($this->request()->get($this->endpoint('members'), [
-                'page' => $page,
-                'per_page' => 100,
-                'status' => '',
-            ]));
-
-            foreach ($payload['data'] as $summary) {
-                $id = (int) ($summary['id'] ?? 0);
-                if ($id < 1) {
-                    continue;
-                }
-
-                $detail = $this->unwrap($this->request()->get($this->endpoint("members/{$id}")))['data'];
-                $notes = $this->unwrap($this->request()->get($this->endpoint("members/{$id}/notes")))['data'];
-                $history = $this->unwrap($this->request()->get(
-                    $this->endpoint("members/{$id}/history"),
-                    ['per_page' => 100],
-                ))['data'];
-
-                $members[] = [
-                    'member' => $detail,
-                    'notes' => $this->normaliseMemberNotes(is_array($notes) ? $notes : []),
-                    'session_notes' => $this->normaliseSessionNotes(is_array($history) ? $history : []),
-                ];
+        foreach ($records as $record) {
+            if (! is_array($record) || ! is_array($record['member'] ?? null)) {
+                continue;
             }
 
-            $totalPages = max(1, (int) data_get($payload, 'meta.total_pages', 1));
-            $page++;
-        } while ($page <= $totalPages);
+            $memberId = (int) data_get($record, 'member.id', 0);
+            if ($memberId < 1) {
+                continue;
+            }
+
+            $members[] = [
+                'member' => $record['member'],
+                'notes' => $this->normaliseMemberNotes(
+                    is_array($record['notes'] ?? null) ? $record['notes'] : [],
+                ),
+                'session_notes' => $this->normaliseSessionNotes(
+                    is_array($record['session_notes'] ?? null) ? $record['session_notes'] : [],
+                ),
+            ];
+        }
 
         return $members;
     }
@@ -288,8 +290,49 @@ class WordPressSyncService
 
         return Http::acceptJson()
             ->withBasicAuth($username, $password)
-            ->timeout(30)
-            ->retry(2, 300);
+            ->withHeaders([
+                'X-Areterra-Sync' => 'Laravel-Cloud',
+            ])
+            ->connectTimeout(10)
+            ->timeout(60);
+    }
+
+    /**
+     * Send a GET request without creating a rapid retry burst. Shared WordPress
+     * hosts commonly return 429 when several requests arrive together, so any
+     * retry waits before trying again and honours a short Retry-After header.
+     */
+    private function get(string $url, array $query = []): Response
+    {
+        $attempt = 0;
+        $maxAttempts = 3;
+
+        while (true) {
+            $attempt++;
+
+            try {
+                $response = $this->request()->get($url, $query);
+            } catch (ConnectionException $exception) {
+                if ($attempt >= $maxAttempts) {
+                    throw $exception;
+                }
+
+                sleep($attempt * 2);
+                continue;
+            }
+
+            $shouldRetry = $response->status() === 429 || $response->serverError();
+            if (! $shouldRetry || $attempt >= $maxAttempts) {
+                return $response;
+            }
+
+            $retryAfter = (int) $response->header('Retry-After');
+            $delay = $retryAfter > 0
+                ? min(10, max(2, $retryAfter))
+                : $attempt * 3;
+
+            sleep($delay);
+        }
     }
 
     private function endpoint(string $path): string
@@ -328,6 +371,12 @@ class WordPressSyncService
     private function unwrap(Response $response): array
     {
         if (! $response->successful()) {
+            if ($response->status() === 429) {
+                throw new RuntimeException(
+                    'The WordPress host is temporarily rate-limiting requests (HTTP 429). The bulk-sync fix is installed, so wait a few minutes for the block to clear and press Sync again.'
+                );
+            }
+
             $message = data_get($response->json(), 'message')
                 ?? "WordPress returned HTTP {$response->status()}.";
             throw new RuntimeException((string) $message);

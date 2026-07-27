@@ -12,7 +12,7 @@ class WordPressSyncController extends Controller
         try {
             $result = $sync->testConnection();
 
-            return back()->with('success', "WordPress connected. {$result['members_available']} member records are available.");
+            return back()->with('success', "WordPress bulk sync connected. {$result['members_available']} member records are available.");
         } catch (Throwable $e) {
             report($e);
 
