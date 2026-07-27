@@ -1,12 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useState } from 'react';
 import AppShell from '../components/AppShell';
-import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
-import BarChart from '../components/BarChart';
-import ChartCard from '../components/ChartCard';
-import Sparkline from '../components/Sparkline';
-import StatTile from '../components/StatTile';
 import StatusPill from '../components/StatusPill';
 import { ChecklistItem, SharedProps } from '../types';
 
@@ -24,70 +19,89 @@ interface Props {
 }
 
 function greeting() {
-    const h = new Date().getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
     return 'Good evening';
 }
 
-const AVATAR_COLOURS = ['bg-brand', 'bg-brand-dark', 'bg-emerald-600', 'bg-purple-600', 'bg-rose-500', 'bg-amber-500'];
-
-// Count-up animation for the stat tiles (SPEC checklist).
 function CountUp({ value }: { value: number }) {
     const [display, setDisplay] = useState(0);
+
     useEffect(() => {
-        if (value === 0) return setDisplay(0);
+        if (value === 0) {
+            setDisplay(0);
+            return;
+        }
+
         let frame = 0;
-        const frames = 20;
-        const timer = setInterval(() => {
-            frame++;
+        const frames = 18;
+        const timer = window.setInterval(() => {
+            frame += 1;
             setDisplay(Math.round((value * frame) / frames));
-            if (frame >= frames) clearInterval(timer);
-        }, 30);
-        return () => clearInterval(timer);
+            if (frame >= frames) window.clearInterval(timer);
+        }, 32);
+
+        return () => window.clearInterval(timer);
     }, [value]);
+
     return <>{display}</>;
 }
 
-const QUICK_ACTIONS = [
-    { href: '/register', label: 'Morning Register', icon: '📋', color: 'cat-people' },
-    { href: '/animals', label: 'Welfare Checks', icon: '🦜', color: 'cat-ops' },
-    { href: '/end-of-day', label: 'Log End of Day', icon: '🌙', color: 'cat-staff' },
-] as const;
+const quickActions = [
+    { href: '/register', label: 'Morning register', description: 'Record arrivals and attendance', icon: '📋' },
+    { href: '/monitoring', label: 'Daily monitoring', description: 'Add member observations', icon: '📊' },
+    { href: '/animals', label: 'Animal welfare', description: 'Complete welfare checks', icon: '🦜' },
+    { href: '/end-of-day', label: 'End of day', description: 'Close today’s records', icon: '🌙' },
+];
 
-const QUICK_ACTION_BG: Record<string, string> = {
-    'cat-people': 'bg-cat-people/10 text-cat-people',
-    'cat-ops': 'bg-cat-ops/10 text-cat-ops',
-    'cat-staff': 'bg-cat-staff/10 text-cat-staff',
-};
+const avatarColours = ['dashboard-avatar-blue', 'dashboard-avatar-green', 'dashboard-avatar-purple', 'dashboard-avatar-orange'];
 
-export default function Dashboard({ orgIsEmpty, stats, welfareAlerts, checklist, banner, staffAvatars, myShift, leaveBalance, announcements, notifications }: Props) {
+export default function Dashboard({
+    orgIsEmpty,
+    stats,
+    welfareAlerts,
+    checklist,
+    banner,
+    staffAvatars,
+    myShift,
+    leaveBalance,
+    announcements,
+    notifications,
+}: Props) {
     const { auth } = usePage<SharedProps>().props;
-    const done = checklist.filter((c) => c.done).length;
+    const firstName = auth.user?.name?.split(' ')[0] ?? 'there';
+    const completed = checklist.filter((item) => item.done).length;
+    const completion = checklist.length ? Math.round((completed / checklist.length) * 100) : 0;
+    const weeklyTotal = stats.attendanceTrend.reduce((sum, value) => sum + value, 0);
+    const attendanceRate = stats.membersScheduled > 0
+        ? Math.round((stats.membersInToday / stats.membersScheduled) * 100)
+        : 0;
+
+    const chartPoints = useMemo(() => {
+        const values = stats.attendanceTrend.length ? stats.attendanceTrend : [0, 0, 0, 0, 0];
+        const max = Math.max(...values, 1);
+        return values.map((value, index) => {
+            const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
+            const y = 84 - (value / max) * 64;
+            return `${x},${y}`;
+        }).join(' ');
+    }, [stats.attendanceTrend]);
 
     if (orgIsEmpty) {
         return (
             <AppShell title="Dashboard">
                 <Head title="Dashboard" />
-                <div className="flex flex-col items-center justify-center text-center py-20 max-w-md mx-auto">
-                    <span className="text-5xl mb-4" aria-hidden>🦜🐰🐹</span>
-                    <h2 className="text-2xl font-bold text-brand-dark mb-2">
-                        Welcome, {auth.user?.name?.split(' ')[0]}!
-                    </h2>
-                    <p className="text-sm text-ink/50 mb-6">
-                        Your hub is set up but doesn't have any members or animals yet. Add your first ones to get
-                        started — everything else (registers, welfare checks, end-of-day records) will come to life
-                        from there.
-                    </p>
-                    <div className="flex gap-2">
-                        <Link href="/members" className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">
-                            + Add a member
-                        </Link>
-                        <Link href="/animals" className="rounded-full bg-brand-dark text-white font-semibold text-sm px-5 py-2.5">
-                            + Add an animal
-                        </Link>
+                <section className="dashboard-empty-state">
+                    <div className="dashboard-empty-illustration">🦜🐰🐹</div>
+                    <p className="dashboard-kicker">Your new workspace</p>
+                    <h2>Welcome to Areterra Hub, {firstName}.</h2>
+                    <p>Add your first members and animals to bring attendance, welfare, records and daily operations to life.</p>
+                    <div className="dashboard-empty-actions">
+                        <Link href="/members">+ Add a member</Link>
+                        <Link href="/animals">+ Add an animal</Link>
                     </div>
-                </div>
+                </section>
             </AppShell>
         );
     }
@@ -96,209 +110,190 @@ export default function Dashboard({ orgIsEmpty, stats, welfareAlerts, checklist,
         <AppShell title="Dashboard">
             <Head title="Dashboard" />
 
-            {banner && (
-                <div className="rounded-card bg-accent/20 border border-accent text-brand-dark font-semibold text-sm px-4 py-3 mb-4">
-                    📣 {banner}
-                </div>
-            )}
+            <div className="dashboard-page">
+                {banner && <div className="dashboard-banner">📣 {banner}</div>}
 
-            <p className="text-2xl font-bold text-brand-dark">
-                {greeting()}, {auth.user?.name?.split(' ')[0]} 👋
-            </p>
-            <p className="text-sm text-ink/45 font-medium mb-4">
-                {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-
-            {/* Staff avatars row */}
-            {staffAvatars.length > 0 && (
-                <div className="flex -space-x-2 mb-5">
-                    {staffAvatars.map((name, i) => (
-                        <div
-                            key={i}
-                            title={name}
-                            className={`h-9 w-9 rounded-full ${AVATAR_COLOURS[i % AVATAR_COLOURS.length]} text-white text-sm font-bold flex items-center justify-center ring-2 ring-white`}
-                        >
-                            {name.charAt(0)}
+                <section className="dashboard-hero">
+                    <div className="dashboard-hero-copy">
+                        <p className="dashboard-kicker">Live service overview</p>
+                        <h2>{greeting()}, {firstName}.</h2>
+                        <p className="dashboard-hero-summary">
+                            {stats.membersInToday} members are in today, {completed} of {checklist.length} daily actions are complete,
+                            and {welfareAlerts.length === 0 ? 'there are no current welfare alerts.' : `${welfareAlerts.length} welfare alert${welfareAlerts.length === 1 ? '' : 's'} need attention.`}
+                        </p>
+                        <div className="dashboard-hero-actions">
+                            <Link href="/today" className="dashboard-primary-button">Open today’s overview</Link>
+                            <Link href="/register" className="dashboard-secondary-button">Take register</Link>
                         </div>
-                    ))}
-                </div>
-            )}
+                    </div>
 
-            {/* Quick actions — real button-cards, not tiny pills */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-                {QUICK_ACTIONS.map((a) => (
-                    <Link
-                        key={a.href}
-                        href={a.href}
-                        className="flex items-center gap-3 rounded-card bg-white border border-black/[0.06] px-4 py-3.5 hover:border-black/[0.12] transition-colors"
-                        style={{ boxShadow: 'var(--shadow-card)' }}
-                    >
-                        <span className={`h-10 w-10 rounded-lg flex items-center justify-center text-lg shrink-0 ${QUICK_ACTION_BG[a.color]}`}>
-                            {a.icon}
-                        </span>
-                        <span className="font-semibold text-sm text-ink/80">{a.label}</span>
-                    </Link>
-                ))}
-            </div>
-
-            <div className="grid lg:grid-cols-[1fr_320px] gap-5 items-start">
-                {/* ── Main column ── */}
-                <div className="space-y-5 min-w-0">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <StatTile
-                            icon="👥"
-                            color="var(--color-brand)"
-                            value={<><CountUp value={stats.membersInToday} />/{stats.membersScheduled}</>}
-                            label="Members in today"
-                        >
-                            <div className="mt-2">
-                                <Sparkline values={stats.attendanceTrend} color="rgba(255,255,255,0.85)" />
+                    <div className="dashboard-live-orbit" aria-label="Today’s service completion">
+                        <div className="dashboard-orbit-ring" style={{ '--dashboard-progress': `${completion * 3.6}deg` } as CSSProperties}>
+                            <div>
+                                <strong>{completion}%</strong>
+                                <span>daily actions complete</span>
                             </div>
-                        </StatTile>
-                        <StatTile
-                            icon="🦜"
-                            color={stats.animalsNeedingChecks > 0 ? 'var(--color-cat-ops)' : 'var(--color-status-green)'}
-                            value={<CountUp value={stats.animalsNeedingChecks} />}
-                            label="Animals awaiting checks"
-                        />
-                        <div className="col-span-2 md:col-span-1">
-                            <StatTile
-                                icon="✅"
-                                color="var(--color-brand-dark)"
-                                value={<><CountUp value={done} />/{checklist.length}</>}
-                                label="Today's checklist done"
-                            />
                         </div>
+                        <div className="dashboard-live-label"><i /> Live now</div>
                     </div>
+                </section>
 
-                    <div className="grid md:grid-cols-2 gap-3">
-                        <Card title="Weekly attendance">
-                            <BarChart values={stats.attendanceTrend} />
-                        </Card>
-                        <ChartCard
-                            title="Attendance this week"
-                            value={stats.attendanceTrend.reduce((sum, v) => sum + v, 0)}
-                            values={stats.attendanceTrend}
-                            color="var(--color-brand)"
-                        />
-                    </div>
+                <section className="dashboard-stat-grid">
+                    <article className="dashboard-stat-card dashboard-stat-primary">
+                        <div className="dashboard-stat-icon">👥</div>
+                        <div><span>Members in today</span><strong><CountUp value={stats.membersInToday} /><small>/{stats.membersScheduled}</small></strong></div>
+                        <div className="dashboard-stat-meta">{attendanceRate}% of today’s schedule</div>
+                    </article>
+                    <article className="dashboard-stat-card">
+                        <div className="dashboard-stat-icon">🦜</div>
+                        <div><span>Welfare checks</span><strong><CountUp value={stats.animalsNeedingChecks} /></strong></div>
+                        <div className="dashboard-stat-meta">{stats.animalsNeedingChecks ? 'Still awaiting completion' : 'All currently complete'}</div>
+                    </article>
+                    <article className="dashboard-stat-card">
+                        <div className="dashboard-stat-icon">✅</div>
+                        <div><span>Daily checklist</span><strong><CountUp value={completed} /><small>/{checklist.length}</small></strong></div>
+                        <div className="dashboard-stat-meta">{checklist.length - completed} action{checklist.length - completed === 1 ? '' : 's'} remaining</div>
+                    </article>
+                    <article className="dashboard-stat-card">
+                        <div className="dashboard-stat-icon">📈</div>
+                        <div><span>Weekly attendance</span><strong><CountUp value={weeklyTotal} /></strong></div>
+                        <div className="dashboard-stat-meta">Across the current week</div>
+                    </article>
+                </section>
 
-                    <div className="grid md:grid-cols-2 gap-3">
-                        <Card title="⏱️ My shift">
-                            {myShift ? (
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">
-                                        Clocked in at <b className="text-brand-dark">{myShift.clock_in}</b>
-                                    </span>
-                                    <Link href="/timeclock" className="rounded-full bg-status-red text-white text-xs font-bold px-4 py-2">
-                                        Clock out
-                                    </Link>
+                <section className="dashboard-main-grid">
+                    <div className="dashboard-main-column">
+                        <article className="dashboard-panel dashboard-attendance-panel">
+                            <div className="dashboard-panel-heading">
+                                <div><p className="dashboard-kicker">Attendance intelligence</p><h3>This week at Areterra</h3></div>
+                                <Link href="/reports">View reports →</Link>
+                            </div>
+                            <div className="dashboard-chart-layout">
+                                <div className="dashboard-chart-number"><strong>{weeklyTotal}</strong><span>total attendances</span><em>Live data from the register</em></div>
+                                <div className="dashboard-line-chart">
+                                    <div className="dashboard-chart-grid" />
+                                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Weekly attendance trend">
+                                        <defs>
+                                            <linearGradient id="dashboardArea" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="var(--color-brand)" stopOpacity="0.26" />
+                                                <stop offset="100%" stopColor="var(--color-brand)" stopOpacity="0" />
+                                            </linearGradient>
+                                        </defs>
+                                        <polygon points={`0,100 ${chartPoints} 100,100`} fill="url(#dashboardArea)" />
+                                        <polyline points={chartPoints} fill="none" stroke="var(--color-brand)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                    <div className="dashboard-chart-days"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
                                 </div>
-                            ) : (
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm text-ink/45">Not clocked in</span>
-                                    <button
-                                        onClick={() => router.post('/timeclock/in')}
-                                        className="rounded-full bg-status-green text-white text-xs font-bold px-4 py-2"
-                                    >
-                                        Clock in
-                                    </button>
+                            </div>
+                        </article>
+
+                        <article className="dashboard-panel">
+                            <div className="dashboard-panel-heading">
+                                <div><p className="dashboard-kicker">Today’s workflow</p><h3>What needs doing</h3></div>
+                                <Link href="/today">Open full list →</Link>
+                            </div>
+                            <div className="dashboard-checklist">
+                                {checklist.map((item, index) => (
+                                    <div key={item.key} className={`dashboard-check-item ${item.done ? 'is-complete' : ''}`}>
+                                        <div className="dashboard-check-marker">{item.done ? '✓' : index + 1}</div>
+                                        <div><strong>{item.label}</strong><span>{item.done ? 'Completed today' : 'Still needs attention'}</span></div>
+                                        <div className="dashboard-check-status">{item.done ? 'Done' : 'Open'}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </article>
+
+                        {welfareAlerts.length > 0 && (
+                            <article className="dashboard-panel dashboard-alert-panel">
+                                <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">Welfare</p><h3>Alerts requiring attention</h3></div><Link href="/animals">All animals →</Link></div>
+                                <div className="dashboard-alert-list">
+                                    {welfareAlerts.map((alert) => (
+                                        <Link href={`/animals/${alert.id}`} key={alert.id} className="dashboard-alert-row">
+                                            <div className="dashboard-alert-avatar">{alert.name.charAt(0)}</div>
+                                            <div><strong>{alert.name}</strong><span>{alert.species}</span></div>
+                                            <StatusPill status={alert.welfare_status} />
+                                        </Link>
+                                    ))}
+                                </div>
+                            </article>
+                        )}
+                    </div>
+
+                    <aside className="dashboard-side-column">
+                        <article className="dashboard-panel">
+                            <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">Quick launch</p><h3>Common actions</h3></div></div>
+                            <div className="dashboard-action-grid">
+                                {quickActions.map((action) => (
+                                    <Link key={action.href} href={action.href} className="dashboard-action-card">
+                                        <span>{action.icon}</span><strong>{action.label}</strong><small>{action.description}</small>
+                                    </Link>
+                                ))}
+                            </div>
+                        </article>
+
+                        <article className="dashboard-panel dashboard-team-panel">
+                            <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">Team status</p><h3>Today’s staff</h3></div><Link href="/directory">Directory →</Link></div>
+                            {staffAvatars.length > 0 ? (
+                                <div className="dashboard-team-list">
+                                    {staffAvatars.map((name, index) => (
+                                        <div key={`${name}-${index}`} className="dashboard-team-row">
+                                            <div className={`dashboard-team-avatar ${avatarColours[index % avatarColours.length]}`}>{name.charAt(0)}</div>
+                                            <div><strong>{name}</strong><span>On today’s team</span></div>
+                                            <i />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <EmptyState icon="👥" text="No staff are scheduled yet." />}
+                        </article>
+
+                        <article className="dashboard-panel dashboard-personal-panel">
+                            <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">My workspace</p><h3>Shift and leave</h3></div></div>
+                            <div className="dashboard-personal-row">
+                                <div className="dashboard-personal-icon">⏱️</div>
+                                <div><strong>{myShift ? `Clocked in at ${myShift.clock_in}` : 'Not clocked in'}</strong><span>Time clock status</span></div>
+                                {myShift ? <Link href="/timeclock">Open</Link> : <button onClick={() => router.post('/timeclock/in')}>Clock in</button>}
+                            </div>
+                            <div className="dashboard-personal-row">
+                                <div className="dashboard-personal-icon">🌴</div>
+                                <div><strong>{leaveBalance.remaining} days remaining</strong><span>{leaveBalance.taken} of {leaveBalance.entitlement} used</span></div>
+                                <Link href="/leave">Manage</Link>
+                            </div>
+                        </article>
+
+                        <article className="dashboard-panel">
+                            <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">Latest updates</p><h3>Announcements</h3></div><Link href="/announcements">All →</Link></div>
+                            {announcements.length === 0 ? <EmptyState icon="📢" text="No announcements yet." /> : (
+                                <div className="dashboard-feed">
+                                    {announcements.slice(0, 4).map((announcement) => (
+                                        <Link href="/announcements" key={announcement.id} className="dashboard-feed-item">
+                                            <i className={announcement.read ? '' : 'is-unread'} />
+                                            <div><strong>{announcement.title}</strong><span>{announcement.author} · {new Date(announcement.created_at.replace(' ', 'T')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span></div>
+                                        </Link>
+                                    ))}
                                 </div>
                             )}
-                        </Card>
+                        </article>
 
-                        <Card title="🌴 Leave balance">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">
-                                    <b className="text-brand-dark">{leaveBalance.remaining}</b> of {leaveBalance.entitlement} days left
-                                    <span className="text-ink/40"> · {leaveBalance.taken} taken</span>
-                                </span>
-                                <Link href="/leave" className="rounded-full bg-brand text-white text-xs font-bold px-4 py-2">
-                                    Request leave
-                                </Link>
-                            </div>
-                        </Card>
-                    </div>
-
-                    {welfareAlerts.length > 0 && (
-                        <Card title="Welfare alerts" className="border-l-4 border-l-status-amber">
-                            <ul className="divide-y divide-black/[0.04]">
-                                {welfareAlerts.map((a) => (
-                                    <li key={a.id} className="py-2 flex items-center justify-between">
-                                        <Link href={`/animals/${a.id}`} className="font-medium text-brand-dark">
-                                            {a.name} <span className="text-ink/40 text-sm">({a.species})</span>
-                                        </Link>
-                                        <StatusPill status={a.welfare_status} />
-                                    </li>
-                                ))}
-                            </ul>
-                        </Card>
-                    )}
-
-                    <Card title="Today" action={<Link href="/today" className="text-sm font-semibold text-brand">View all →</Link>}>
-                        <ul className="space-y-2">
-                            {checklist.map((item) => (
-                                <li key={item.key} className="flex items-center gap-3">
-                                    <span
-                                        className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                                            item.done ? 'bg-status-green' : 'bg-ink/15'
-                                        }`}
-                                    >
-                                        {item.done ? '✓' : ''}
-                                    </span>
-                                    <span className={item.done ? 'text-ink/35 line-through' : 'font-medium text-ink/75'}>
-                                        {item.label}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </Card>
-                </div>
-
-                {/* ── Right rail ── */}
-                <div className="space-y-5 min-w-0">
-                    <Card title="Announcements" action={<Link href="/announcements" className="text-sm font-semibold text-brand">All →</Link>}>
-                        {announcements.length === 0 ? (
-                            <EmptyState icon="📢" text="No announcements yet." />
-                        ) : (
-                            <ul className="divide-y divide-black/[0.04]">
-                                {announcements.map((a) => (
-                                    <li key={a.id} className="py-2">
-                                        <Link href="/announcements" className={`text-sm font-semibold ${a.read ? 'text-ink/35' : 'text-brand-dark'}`}>
-                                            {!a.read && <span className="text-brand mr-1">●</span>}
-                                            {a.title}
-                                        </Link>
-                                        <div className="text-xs text-ink/40">
-                                            {a.author} · {new Date(a.created_at.replace(' ', 'T')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </Card>
-
-                    <Card title="Notifications" action={<Link href="/notifications" className="text-sm font-semibold text-brand">Settings →</Link>}>
-                        {notifications.length === 0 ? (
-                            <EmptyState icon="🔔" text="Nothing to show yet." />
-                        ) : (
-                            <ul className="divide-y divide-black/[0.04]">
-                                {notifications.map((n) => (
-                                    <li key={n.id} className="py-2">
+                        {notifications.length > 0 && (
+                            <article className="dashboard-panel">
+                                <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">Inbox</p><h3>Recent notifications</h3></div><Link href="/notifications">All →</Link></div>
+                                <div className="dashboard-feed">
+                                    {notifications.slice(0, 3).map((notification) => (
                                         <Link
-                                            href={n.url}
-                                            onClick={() => !n.read && router.post(`/notifications/${n.id}/read`, {}, { preserveScroll: true, preserveState: true })}
-                                            className={`text-sm font-semibold block ${n.read ? 'text-ink/35' : 'text-brand-dark'}`}
+                                            href={notification.url}
+                                            key={notification.id}
+                                            onClick={() => !notification.read && router.post(`/notifications/${notification.id}/read`, {}, { preserveScroll: true, preserveState: true })}
+                                            className="dashboard-feed-item"
                                         >
-                                            {!n.read && <span className="text-brand mr-1">●</span>}
-                                            {n.title}
+                                            <i className={notification.read ? '' : 'is-unread'} />
+                                            <div><strong>{notification.title}</strong><span>{notification.body}</span></div>
                                         </Link>
-                                        <div className="text-xs text-ink/40">{n.body} · {n.created_at}</div>
-                                    </li>
-                                ))}
-                            </ul>
+                                    ))}
+                                </div>
+                            </article>
                         )}
-                    </Card>
-                </div>
+                    </aside>
+                </section>
             </div>
         </AppShell>
     );
