@@ -214,6 +214,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                 <div key={i} className="space-y-0.5 pb-3">
                                     {items.map((item) => (
                                         <Link
+                                            preserveScroll
                                             key={item.href}
                                             href={item.href}
                                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
@@ -252,6 +253,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                     <div className="space-y-0.5 pb-2">
                                         {items.map((item) => (
                                             <Link
+                                                preserveScroll
                                                 key={item.href}
                                                 href={item.href}
                                                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
@@ -279,7 +281,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     <div className="font-semibold truncate">{auth.user?.name}</div>
                     <div className="text-white/50 capitalize text-xs">{auth.user?.role?.replace('_', ' ')}</div>
                     <div className="mt-2 flex gap-3 text-xs">
-                        <Link href="/account" className="text-white/70 hover:text-white">
+                        <Link preserveScroll href="/account" className="text-white/70 hover:text-white">
                             My account
                         </Link>
                         <button onClick={() => router.post('/logout')} className="text-white/70 hover:text-white">
@@ -342,6 +344,7 @@ export default function AppShell({ title, children }: { title: string; children:
             <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 flex pb-[env(safe-area-inset-bottom)]">
                 {MOBILE_NAV.filter((item) => allowed(item, caps)).map((item) => (
                     <Link
+                        preserveScroll
                         key={item.href}
                         href={item.href}
                         className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium min-h-11 ${
@@ -377,6 +380,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                     <div key={i} className="mb-3">
                                         {items.map((item) => (
                                             <Link
+                                                preserveScroll
                                                 key={item.href}
                                                 href={item.href}
                                                 onClick={() => setDrawer(false)}
@@ -407,6 +411,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                         <div className="mb-2">
                                             {items.map((item) => (
                                                 <Link
+                                                    preserveScroll
                                                     key={item.href}
                                                     href={item.href}
                                                     onClick={() => setDrawer(false)}
@@ -436,6 +441,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     </p>
                     <div className="flex gap-2 mt-3">
                         <Link
+                            preserveScroll
                             href="/notifications"
                             onClick={dismissPushPrompt}
                             className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2"

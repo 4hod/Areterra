@@ -28,6 +28,11 @@ export default function Finance(props:Props){
  const [quote,setQuote]=useState({name:'',days:1,dayRate:rates.full_day,oneToOneHours:0,oneToOneRate:rates.one_to_one_hourly,transportDays:0,transportRate:rates.transport_day,weeks:4});
  const quoteTotal=useMemo(()=>quote.weeks*((quote.days*quote.dayRate)+(quote.oneToOneHours*quote.oneToOneRate)+(quote.transportDays*quote.transportRate)),[quote]);
  const costsPct=Math.max(0,Math.min(100,summary.costPercentage));
+ function changeTab(next:Tab){
+  const scrollY=window.scrollY;
+  setTab(next);
+  requestAnimationFrame(()=>window.scrollTo({top:scrollY,left:0,behavior:'auto'}));
+ }
  function openMember(m:MemberRow){setEditingMember(m);memberForm.setData({attendance_type:m.attendance_type,custom_day_rate:String(m.day_rate),one_to_one_hours_per_week:m.one_to_one_hours_per_week,custom_one_to_one_rate:String(m.one_to_one_rate),charge_transport:m.charge_transport,custom_transport_rate:String(m.transport_rate),notes:''});}
  function saveMember(e:FormEvent){e.preventDefault();if(!editingMember)return;memberForm.put(`/finance/members/${editingMember.id}`,{onSuccess:()=>setEditingMember(null)});}
  function saveRates(e:FormEvent){e.preventDefault();rateForm.put('/finance/rates');}
@@ -35,8 +40,8 @@ export default function Finance(props:Props){
  function saveCost(e:FormEvent){e.preventDefault();costForm.post('/finance/fixed-costs',{onSuccess:()=>{setCostModal(false);costForm.reset();}})}
  return <AppShell title="Finance"><Head title="Finance"/>
   <div className="finance-page">
-   <div className="finance-heading"><div><h2>Finance</h2><p>4-week income, costs and surplus</p></div><button className="link-btn" onClick={()=>setTab('rates')}>⚙ Rates & Settings</button></div>
-   <div className="finance-tabs">{tabs.map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{label}</button>)}</div>
+   <div className="finance-heading"><div><h2>Finance</h2><p>4-week income, costs and surplus</p></div><button className="link-btn" onClick={()=>changeTab('rates')}>⚙ Rates & Settings</button></div>
+   <div className="finance-tabs">{tabs.map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>changeTab(id)}>{label}</button>)}</div>
 
    {tab==='overview'&&<>
     <div className="finance-kpis">
@@ -45,7 +50,7 @@ export default function Finance(props:Props){
      <div className={`finance-kpi ${summary.surplus>=0?'green':'red'}`}><span>4-WEEK {summary.surplus>=0?'SURPLUS':'DEFICIT'}</span><strong>{summary.surplus>=0?'↑ ':'↓ '}{money(Math.abs(summary.surplus))}</strong><small>{summary.surplus>=0?'profit after costs':'shortfall after costs'}</small></div>
     </div>
     <section className="finance-card"><b>Income vs Costs</b><div className="bar"><i style={{width:`${costsPct}%`}}/><em style={{width:`${100-costsPct}%`}}/></div><div className="bar-labels"><span>Costs {costsPct}%</span><span>Surplus {Math.max(0,100-costsPct).toFixed(0)}%</span></div></section>
-    <section className="finance-card rates-preview"><b>CURRENT RATES</b><div><span>Full day<strong>{money(rates.full_day)}</strong></span><span>Half day<strong>{money(rates.half_day)}</strong></span><span>1:1 hourly<strong>{money(rates.one_to_one_hourly)}</strong></span><span>Transport/day<strong>{money(rates.transport_day)}</strong></span></div><button className="link-btn" onClick={()=>setTab('rates')}>Edit rates →</button></section>
+    <section className="finance-card rates-preview"><b>CURRENT RATES</b><div><span>Full day<strong>{money(rates.full_day)}</strong></span><span>Half day<strong>{money(rates.half_day)}</strong></span><span>1:1 hourly<strong>{money(rates.one_to_one_hourly)}</strong></span><span>Transport/day<strong>{money(rates.transport_day)}</strong></span></div><button className="link-btn" onClick={()=>changeTab('rates')}>Edit rates →</button></section>
    </>}
 
    {tab==='members'&&<section className="finance-card"><div className="section-head"><div><h3>Member income</h3><p>Calculated over four weeks from attendance, 1:1 support and transport.</p></div></div><div className="finance-table-wrap"><table className="finance-table"><thead><tr><th>Member</th><th>Days/week</th><th>Attendance</th><th>1:1</th><th>Transport</th><th>4-week total</th><th></th></tr></thead><tbody>{members.map(m=><tr key={m.id}><td><div className="member-cell"><i>{m.initials}</i><b>{m.name}</b></div></td><td>{m.days_per_week}</td><td>{money(m.attendance_income)}</td><td>{money(m.one_to_one_income)}</td><td>{money(m.transport_income)}</td><td><b>{money(m.four_week_income)}</b></td><td><button className="mini-btn" onClick={()=>openMember(m)}>Edit</button></td></tr>)}</tbody><tfoot><tr><td colSpan={5}>Total member income</td><td><b>{money(summary.memberIncome)}</b></td><td/></tr></tfoot></table></div></section>}
