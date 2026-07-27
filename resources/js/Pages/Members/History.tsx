@@ -33,11 +33,26 @@ interface AttRow {
     notes: string | null;
 }
 
+interface WordPressNoteRow {
+    id: number;
+    note_type: string;
+    note: string;
+    author_name: string | null;
+    noted_at: string | null;
+}
+
 interface PageLink { url: string | null; label: string; active: boolean }
 interface Paginated<T> { data: T[]; links: PageLink[] }
 
 const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const INTAKE_LABEL: Record<string, string> = { good: 'Good', some: 'Some', poor: 'Poor', refused: 'Refused' };
+const NOTE_TYPE_LABELS: Record<string, string> = {
+    end_of_day: 'End of Day Record',
+    general: 'General note',
+    concern: 'Concern note',
+    progress: 'Progress note',
+    handover: 'Handover note',
+};
 
 function Pagination({ links }: { links: PageLink[] }) {
     return (
@@ -61,10 +76,12 @@ export default function History({
     member,
     endOfDay,
     attendance,
+    wordpressNotes,
 }: {
     member: { id: number; name: string };
     endOfDay: Paginated<EodRow>;
     attendance: Paginated<AttRow>;
+    wordpressNotes: Paginated<WordPressNoteRow>;
 }) {
     return (
         <AppShell title={`${member.name} — full history`}>
@@ -76,7 +93,28 @@ export default function History({
                 { label: 'Full history' },
             ]} />
 
-            <Card title="End of day history" className="mb-4">
+            <Card title="Imported WordPress history" className="mb-4">
+                {wordpressNotes.data.length === 0 && <p className="text-sm text-slate-400">No WordPress session or staff notes found.</p>}
+                <ul className="divide-y divide-slate-100">
+                    {wordpressNotes.data.map((note) => (
+                        <li key={note.id} className="py-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="font-semibold text-sm text-brand-dark">
+                                    {NOTE_TYPE_LABELS[note.note_type] ?? note.note_type}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                    {note.noted_at ? fmt(note.noted_at) : 'Date not recorded'}
+                                    {note.author_name && ` · ${note.author_name}`}
+                                </span>
+                            </div>
+                            <p className="text-sm mt-1 whitespace-pre-wrap">{note.note}</p>
+                        </li>
+                    ))}
+                </ul>
+                <Pagination links={wordpressNotes.links} />
+            </Card>
+
+            <Card title="End of day history created in this Hub" className="mb-4">
                 {endOfDay.data.length === 0 && <p className="text-sm text-slate-400">No end-of-day records yet.</p>}
                 <ul className="divide-y divide-slate-100">
                     {endOfDay.data.map((r) => (

@@ -82,36 +82,15 @@ class WordPressSyncService
                 $byName->put($nameKey, $member);
 
                 foreach ($remote['notes'] as $remoteNote) {
-                    $wordpressNoteId = (int) $remoteNote['id'];
-                    $notePayload = [
-                        'member_id' => $member->id,
-                        'note_type' => $this->normaliseNoteType($remoteNote['note_type'] ?? null),
-                        'note' => (string) ($remoteNote['note'] ?? ''),
-                        'author_name' => $this->nullableString($remoteNote['author_name'] ?? null),
-                        'noted_at' => $this->nullableString($remoteNote['created_at'] ?? null),
-                        'source' => 'wordpress',
-                    ];
+                    $change = $this->syncMemberNote($member, $remoteNote);
+                    $notesCreated += $change === 'created' ? 1 : 0;
+                    $notesUpdated += $change === 'updated' ? 1 : 0;
+                }
 
-                    $note = MemberNote::where('wordpress_note_id', $wordpressNoteId)->first();
-                    if ($note === null) {
-                        MemberNote::create([
-                            'wordpress_note_id' => $wordpressNoteId,
-                            ...$notePayload,
-                        ]);
-                        $notesCreated++;
-                        continue;
-                    }
-
-                    $changed = $note->member_id !== $notePayload['member_id']
-                        || $note->note_type !== $notePayload['note_type']
-                        || $note->note !== $notePayload['note']
-                        || $note->author_name !== $notePayload['author_name']
-                        || $note->noted_at?->format('Y-m-d H:i:s') !== $notePayload['noted_at'];
-
-                    if ($changed) {
-                        $note->update($notePayload);
-                        $notesUpdated++;
-                    }
+                foreach ($remote['session_notes'] as $remoteNote) {
+                    $change = $this->syncMemberNote($member, $remoteNote);
+                    $notesCreated += $change === 'created' ? 1 : 0;
+                    $notesUpdated += $change === 'updated' ? 1 : 0;
                 }
             }
 
@@ -150,10 +129,15 @@ class WordPressSyncService
 
                 $detail = $this->unwrap($this->request()->get($this->endpoint("members/{$id}")))['data'];
                 $notes = $this->unwrap($this->request()->get($this->endpoint("members/{$id}/notes")))['data'];
+                $history = $this->unwrap($this->request()->get(
+                    $this->endpoint("members/{$id}/history"),
+                    ['per_page' => 100],
+                ))['data'];
 
                 $members[] = [
                     'member' => $detail,
-                    'notes' => is_array($notes) ? $notes : [],
+                    'notes' => $this->normaliseMemberNotes(is_array($notes) ? $notes : []),
+                    'session_notes' => $this->normaliseSessionNotes(is_array($history) ? $history : []),
                 ];
             }
 
@@ -162,6 +146,111 @@ class WordPressSyncService
         } while ($page <= $totalPages);
 
         return $members;
+    }
+
+    private function normaliseMemberNotes(array $notes): array
+    {
+        $normalised = [];
+
+        foreach ($notes as $note) {
+            $id = (int) ($note['id'] ?? 0);
+            if ($id < 1) {
+                continue;
+            }
+
+            $normalised[] = [
+                'source_key' => "member-note:{$id}",
+                'legacy_wordpress_note_id' => $id,
+                'note_type' => $this->normaliseNoteType($note['note_type'] ?? null),
+                'note' => (string) ($note['note'] ?? ''),
+                'author_name' => $this->nullableString($note['author_name'] ?? null),
+                'noted_at' => $this->nullableString($note['created_at'] ?? null),
+            ];
+        }
+
+        return $normalised;
+    }
+
+    private function normaliseSessionNotes(array $history): array
+    {
+        $normalised = [];
+
+        foreach ($history as $entry) {
+            if (($entry['type'] ?? null) !== 'handover') {
+                continue;
+            }
+
+            $id = (int) ($entry['ref_id'] ?? 0);
+            if ($id < 1) {
+                continue;
+            }
+
+            $body = trim((string) ($entry['body'] ?? ''));
+            if ($body === '') {
+                $body = trim((string) ($entry['title'] ?? 'End of Day Record'));
+            }
+
+            $normalised[] = [
+                'source_key' => "session-handover:{$id}",
+                'legacy_wordpress_note_id' => null,
+                'note_type' => 'end_of_day',
+                'note' => $body,
+                'author_name' => $this->nullableString($entry['author'] ?? null),
+                'noted_at' => $this->nullableString($entry['date'] ?? null),
+            ];
+        }
+
+        return $normalised;
+    }
+
+    private function syncMemberNote(Member $member, array $remoteNote): string
+    {
+        $sourceKey = (string) $remoteNote['source_key'];
+        $legacyId = $remoteNote['legacy_wordpress_note_id'];
+
+        $note = MemberNote::where('wordpress_source_key', $sourceKey)->first();
+
+        // Stage 1 stored ordinary staff notes by their numeric WordPress ID.
+        // Reuse those rows so the corrected sync does not create duplicates.
+        if ($note === null && $legacyId !== null) {
+            $note = MemberNote::where('wordpress_note_id', $legacyId)->first();
+        }
+
+        $notePayload = [
+            'member_id' => $member->id,
+            'wordpress_source_key' => $sourceKey,
+            'wordpress_note_id' => $legacyId,
+            'note_type' => (string) $remoteNote['note_type'],
+            'note' => (string) $remoteNote['note'],
+            'author_name' => $remoteNote['author_name'],
+            'noted_at' => $remoteNote['noted_at'],
+            'source' => 'wordpress',
+        ];
+
+        if ($note === null) {
+            MemberNote::create($notePayload);
+
+            return 'created';
+        }
+
+        // Compare the decrypted note text before updating. Calling fill() first would
+        // re-encrypt the text with a fresh IV and make an unchanged note look dirty.
+        $changed = $note->member_id !== $notePayload['member_id']
+            || $note->wordpress_source_key !== $notePayload['wordpress_source_key']
+            || $note->wordpress_note_id !== $notePayload['wordpress_note_id']
+            || $note->note_type !== $notePayload['note_type']
+            || $note->note !== $notePayload['note']
+            || $note->author_name !== $notePayload['author_name']
+            || $note->noted_at?->format('Y-m-d H:i:s') !== $notePayload['noted_at']
+            || $note->source !== $notePayload['source'];
+
+        if (! $changed) {
+            return 'unchanged';
+        }
+
+        $note->update($notePayload);
+
+        return 'updated';
     }
 
     private function memberPayload(array $remote, bool $isNew): array

@@ -73,6 +73,21 @@ class WordPressSyncTest extends TestCase
                 ]);
             }
 
+            if (str_contains($url, '/members/42/history')) {
+                return Http::response([
+                    'success' => true,
+                    'data' => [[
+                        'type' => 'handover',
+                        'subtype' => 'handover',
+                        'date' => '2026-06-18 14:00:00',
+                        'author' => 'robbodley',
+                        'title' => 'End of Day Record',
+                        'body' => 'Did coop shop and collected bunnies supplies then had a crafty afternoon.',
+                        'ref_id' => 77,
+                    ]],
+                ]);
+            }
+
             if (str_ends_with($url, '/members/42')) {
                 return Http::response([
                     'success' => true,
@@ -111,14 +126,19 @@ class WordPressSyncTest extends TestCase
         $this->assertSame('Benefits from clear verbal prompts.', $member->support_needs);
         $this->assertSame('Animals and gardening.', $member->interests);
 
-        $this->assertSame(1, MemberNote::count());
-        $note = MemberNote::first();
+        $this->assertSame(2, MemberNote::count());
+        $note = MemberNote::where('note_type', 'progress')->firstOrFail();
         $this->assertSame(9001, $note->wordpress_note_id);
         $this->assertSame('progress', $note->note_type);
         $this->assertSame('Ethan', $note->author_name);
         $this->assertStringContainsString('Enjoyed animal care', $note->note);
 
-        $this->assertSame(1, $first['notes_created']);
+        $sessionNote = MemberNote::where('note_type', 'end_of_day')->firstOrFail();
+        $this->assertSame('session-handover:77', $sessionNote->wordpress_source_key);
+        $this->assertSame('robbodley', $sessionNote->author_name);
+        $this->assertStringContainsString('coop shop', $sessionNote->note);
+
+        $this->assertSame(2, $first['notes_created']);
         $this->assertSame(0, $second['notes_created']);
     }
 

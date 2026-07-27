@@ -22,6 +22,13 @@ class MemberHistoryController extends Controller
             ->paginate(20, pageName: 'attendance_page')
             ->withQueryString();
 
+        $wordpressNotes = $member->notes()
+            ->where('source', 'wordpress')
+            ->orderByDesc('noted_at')
+            ->orderByDesc('id')
+            ->paginate(30, pageName: 'wordpress_page')
+            ->withQueryString();
+
         return Inertia::render('Members/History', [
             'member' => ['id' => $member->id, 'name' => $member->displayName()],
             'endOfDay' => $eod->through(fn ($r) => [
@@ -50,6 +57,13 @@ class MemberHistoryController extends Controller
                 'checked_in_at' => $a->checked_in_at?->toTimeString(),
                 'arrival_mood' => $a->arrival_mood,
                 'notes' => $a->notes,
+            ]),
+            'wordpressNotes' => $wordpressNotes->through(fn ($note) => [
+                'id' => $note->id,
+                'note_type' => $note->note_type,
+                'note' => $note->note,
+                'author_name' => $note->author_name,
+                'noted_at' => $note->noted_at?->toIso8601String(),
             ]),
         ]);
     }

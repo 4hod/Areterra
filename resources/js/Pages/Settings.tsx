@@ -103,7 +103,7 @@ export default function Settings({ settings }: Props) {
 
                 <Card title="WordPress member sync">
                     <p className="text-sm text-slate-500 mb-3">
-                        Pull dates of birth, medical/profile notes, interests and staff notes from the original WordPress Hub. Existing members are matched by name, so they are updated rather than duplicated.
+                        Pull dates of birth, medical/profile notes, interests, staff notes and end-of-day session notes from the original WordPress Hub. Existing members are matched by name, so they are updated rather than duplicated.
                     </p>
                     <div className="space-y-3">
                         <label className="block text-sm font-medium">
