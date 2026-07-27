@@ -4,7 +4,7 @@ import { SharedProps } from '../types';
 
 // Public referral form — no login required.
 export default function Refer() {
-    const { flash } = usePage<SharedProps>().props;
+    const { flash, branding } = usePage<SharedProps>().props;
     const { data, setData, post, processing, errors, reset } = useForm({
         referrer_name: '',
         referrer_email: '',
@@ -25,7 +25,11 @@ export default function Refer() {
             <div className="min-h-screen bg-brand-dark py-10 px-4">
                 <div className="max-w-xl mx-auto">
                     <div className="text-center text-white mb-6">
-                        <div className="text-2xl font-extrabold">Areterra</div>
+                        {branding.logoUrl ? (
+                            <img src={branding.logoUrl} alt={branding.orgName} className="h-10 mx-auto mb-1 object-contain" />
+                        ) : (
+                            <div className="text-2xl font-extrabold">{branding.orgName}</div>
+                        )}
                         <div className="text-white/60 text-sm">Animals. People. Purpose.</div>
                         <h1 className="text-xl font-bold mt-4">Make a referral</h1>
                         <p className="text-white/70 text-sm mt-1">

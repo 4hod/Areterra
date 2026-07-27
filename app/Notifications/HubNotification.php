@@ -2,9 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Mail\BrandedEmail;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
@@ -76,13 +76,11 @@ abstract class HubNotification extends Notification
             ->data(['url' => $this->url()]);
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(object $notifiable): BrandedEmail
     {
-        return (new MailMessage)
-            ->subject($this->title())
-            ->greeting('Hello '.explode(' ', $notifiable->name)[0].',')
-            ->line($this->body())
-            ->action('Open Areterra Hub', url($this->url()))
-            ->salutation('— Areterra Hub');
+        $firstName = explode(' ', $notifiable->name)[0];
+        $body = "Hello {$firstName},\n\n{$this->body()}\n\nOpen Areterra Hub: ".url($this->url())."\n\n— Areterra Hub";
+
+        return new BrandedEmail($this->title(), $body);
     }
 }

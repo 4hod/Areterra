@@ -6,8 +6,12 @@
             <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
                 <tr>
                     <td style="background:#00345C;padding:20px 28px;">
-                        <span style="color:#ffffff;font-size:20px;font-weight:800;">Areterra</span>
-                        <span style="color:#009DE6;font-size:12px;display:block;margin-top:2px;">Animals. People. Purpose.</span>
+                        @if($logoUrl)
+                            <img src="{{ $logoUrl }}" alt="{{ $orgName }}" style="height:32px;display:block;">
+                        @else
+                            <span style="color:#ffffff;font-size:20px;font-weight:800;">{{ $orgName }}</span>
+                        @endif
+                        <span style="color:#009DE6;font-size:12px;display:block;margin-top:6px;">Animals. People. Purpose.</span>
                     </td>
                 </tr>
                 <tr>

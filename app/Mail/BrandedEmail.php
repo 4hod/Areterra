@@ -29,6 +29,10 @@ class BrandedEmail extends Mailable
 
     public function content(): Content
     {
-        return new Content(view: 'emails.branded', with: ['bodyText' => $this->bodyText]);
+        return new Content(view: 'emails.branded', with: [
+            'bodyText' => $this->bodyText,
+            'logoUrl' => Setting::get('logo_url'),
+            'orgName' => Setting::get('org_name') ?? 'Areterra Hub',
+        ]);
     }
 }
