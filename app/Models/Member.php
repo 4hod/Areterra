@@ -18,6 +18,8 @@ class Member extends Model
             'dob' => 'date',
             'nhs_number' => 'encrypted',
             'support_needs' => 'encrypted',
+            'medical_notes' => 'encrypted',
+            'interests' => 'encrypted',
             'diagnoses' => 'encrypted',
             'medication' => 'encrypted',
             'emergency_contacts' => 'encrypted:array',
@@ -27,6 +29,11 @@ class Member extends Model
     public function settings()
     {
         return $this->hasOne(MemberSetting::class);
+    }
+
+    public function notes()
+    {
+        return $this->hasMany(MemberNote::class);
     }
 
     public function attendances()

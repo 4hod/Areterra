@@ -26,6 +26,7 @@ interface GoalRow { id: number; title: string; description: string | null; statu
 interface OutcomeRow { id: number; date: string; outcome: string; goal: string | null; user: string }
 interface AlertRow { id: number; type: string; text: string; severity: string }
 interface ConsentRow { consent_type: string; granted: boolean; recorded_on: string; notes: string | null }
+interface MemberNoteRow { id: number; note_type: string; note: string; author_name: string | null; noted_at: string | null; source: string }
 
 interface Props {
     member: {
@@ -38,6 +39,8 @@ interface Props {
         dob: string | null;
         nhs_number: string | null;
         support_needs: string | null;
+        medical_notes: string | null;
+        interests: string | null;
         diagnoses: string | null;
         medication: string | null;
         emergency_contacts: EmergencyContact[];
@@ -53,6 +56,7 @@ interface Props {
         gp_phone: string | null;
         settings: { transport_required: boolean; attendance_days: number[]; key_worker: string | null };
     };
+    memberNotes: MemberNoteRow[];
     recentAttendance: { id: number; date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null }[];
     recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean; incident: boolean }[];
     abcObservations: { id: number; observed_at: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null; concern: boolean; user: string }[];
@@ -80,7 +84,7 @@ function isBirthday(dob: string | null) {
 }
 
 export default function Show(props: Props) {
-    const { member, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, alerts, consents, canEdit } = props;
+    const { member, memberNotes, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, alerts, consents, canEdit } = props;
     const [tab, setTab] = useState<(typeof TABS)[number]>('Profile');
     const photoInput = useRef<HTMLInputElement>(null);
 
@@ -303,7 +307,33 @@ export default function Show(props: Props) {
                                 <dt className="text-slate-400 font-medium">Support needs</dt>
                                 <dd className="font-medium whitespace-pre-wrap">{member.support_needs || '—'}</dd>
                             </div>
+                            <div>
+                                <dt className="text-slate-400 font-medium">Medical notes from WordPress</dt>
+                                <dd className="font-medium whitespace-pre-wrap">{member.medical_notes || '—'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-slate-400 font-medium">Interests</dt>
+                                <dd className="font-medium whitespace-pre-wrap">{member.interests || '—'}</dd>
+                            </div>
                         </dl>
+                    </Card>
+
+                    <Card title="Imported WordPress notes" className="md:col-span-2">
+                        {memberNotes.length === 0 && <p className="text-sm text-slate-400">No WordPress notes were found for this member.</p>}
+                        <ul className="divide-y divide-slate-100 text-sm">
+                            {memberNotes.map((note) => (
+                                <li key={note.id} className="py-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                                        <span className="font-bold uppercase tracking-wide text-brand">{note.note_type}</span>
+                                        <span>
+                                            {note.noted_at ? fmt(note.noted_at) : 'Date not recorded'}
+                                            {note.author_name && ` · ${note.author_name}`}
+                                        </span>
+                                    </div>
+                                    <p className="mt-1 whitespace-pre-wrap text-slate-700">{note.note}</p>
+                                </li>
+                            ))}
+                        </ul>
                     </Card>
 
                     <Card title="Emergency contacts" className="md:col-span-2">

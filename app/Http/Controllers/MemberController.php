@@ -53,6 +53,8 @@ class MemberController extends Controller
                 'dob' => $detailed ? $member->dob?->toDateString() : null,
                 'nhs_number' => $detailed ? $member->nhs_number : null,
                 'support_needs' => $detailed ? $member->support_needs : null,
+                'medical_notes' => $detailed ? $member->medical_notes : null,
+                'interests' => $detailed ? $member->interests : null,
                 'diagnoses' => $detailed ? $member->diagnoses : null,
                 'emergency_contacts' => $detailed ? ($member->emergency_contacts ?? []) : [],
                 'phone' => $member->phone,
@@ -73,6 +75,17 @@ class MemberController extends Controller
                     'key_worker_id' => $member->settings?->key_worker_id,
                 ],
             ],
+            'memberNotes' => $detailed
+                ? $member->notes()->orderByDesc('noted_at')->orderByDesc('id')->get()
+                    ->map(fn ($note) => [
+                        'id' => $note->id,
+                        'note_type' => $note->note_type,
+                        'note' => $note->note,
+                        'author_name' => $note->author_name,
+                        'noted_at' => $note->noted_at?->toIso8601String(),
+                        'source' => $note->source,
+                    ])
+                : [],
             'recentAttendance' => $member->attendances()->orderByDesc('date')->limit(10)
                 ->get(['id', 'date', 'checked_in', 'arrival_mood', 'notes']),
             'recentEndOfDay' => $member->endOfDayRecords()->orderByDesc('date')->limit(10)

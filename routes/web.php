@@ -253,6 +253,10 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_settings')->name('settings');
     Route::put('/settings', [App\Http\Controllers\SettingsController::class, 'update'])
         ->middleware('can:manage_settings')->name('settings.update');
+    Route::post('/settings/wordpress/test', [App\Http\Controllers\WordPressSyncController::class, 'test'])
+        ->middleware('can:manage_settings')->name('settings.wordpress.test');
+    Route::post('/settings/wordpress/sync', [App\Http\Controllers\WordPressSyncController::class, 'sync'])
+        ->middleware('can:manage_settings')->name('settings.wordpress.sync');
 
     // ── Checklist gap-fill ───────────────────────────────────────────────
 
