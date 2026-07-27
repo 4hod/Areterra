@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Props {
     prefs: {
@@ -81,6 +82,7 @@ export default function NotificationPrefs({ prefs, vapidPublicKey, hasSubscripti
     return (
         <AppShell title="Notifications">
             <Head title="Notifications" />
+            <ModuleHero eyebrow="Stay informed" title="Notification preferences" description="Choose what deserves your attention and how you want to hear about it." icon="🔔" tone="blue" />
 
             <Card title="This device" className="mb-4">
                 {subscribed ? (

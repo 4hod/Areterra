@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface History {
     id: number;
@@ -56,6 +57,7 @@ export default function Supervisions({ staff, types }: { staff: StaffRow[]; type
     return (
         <AppShell title="Supervisions & Appraisals">
             <Head title="Supervisions" />
+            <ModuleHero eyebrow="Staff development" title="Supervisions" description="Plan meaningful conversations, actions and professional growth." icon="🗣️" tone="blue" />
 
             <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
                 + Record supervision

@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface Row {
     id: number;
@@ -26,6 +27,7 @@ export default function Recognition({ recognitions }: { recognitions: Row[] }) {
     return (
         <AppShell title="Recognition">
             <Head title="Recognition" />
+            <ModuleHero eyebrow="Celebrate the team" title="Recognition" description="Notice great work and make appreciation part of everyday culture." icon="🌟" tone="amber" />
 
             <button onClick={() => setPosting(true)} className="rounded-full bg-accent text-brand-dark font-bold text-sm px-5 py-2.5 mb-4">
                 🌟 Give a shoutout

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface Entry {
     id: number;
@@ -33,6 +34,7 @@ export default function Timeclock({ openEntry, myEntries, isManager, weekEntries
     return (
         <AppShell title="Time Clock">
             <Head title="Time Clock" />
+            <ModuleHero eyebrow="Working time" title="Time clock" description="Clock in, clock out and keep an accurate record of working hours." icon="⏱️" tone="blue" />
 
             <Card className="mb-4 text-center">
                 {openEntry ? (

@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
+import ModuleHero from '../../components/ModuleHero';
 
 interface FieldDraft {
     label: string;
@@ -52,6 +53,7 @@ export default function Builder() {
     return (
         <AppShell title="New form">
             <Head title="New form" />
+            <ModuleHero eyebrow="Form studio" title="Form builder" description="Build practical digital forms without losing sight of the people using them." icon="🧩" tone="purple" />
 
             <form onSubmit={submit} className="space-y-4">
                 <Card>

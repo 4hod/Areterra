@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { confirmDialog } from '../utils/dialogs';
+import ModuleHero from '../components/ModuleHero';
 
 interface OrderRow {
     id: number;
@@ -160,6 +161,7 @@ export default function Orders({ orders, canManage }: { orders: OrderRow[]; canM
     return (
         <AppShell title="Orders">
             <Head title="Orders" />
+            <ModuleHero eyebrow="Supplies & requests" title="Orders" description="Request, approve and track the items the service needs." icon="📦" tone="amber" />
 
             <button
                 onClick={() => setRequesting(true)}

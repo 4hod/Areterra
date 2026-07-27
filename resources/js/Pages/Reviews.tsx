@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface MemberRow {
     id: number;
@@ -48,6 +49,7 @@ export default function Reviews({ members, reviews, canManage }: { members: Memb
     return (
         <AppShell title="Member Reviews">
             <Head title="Member Reviews" />
+            <ModuleHero eyebrow="Person-centred planning" title="Member reviews" description="Prepare, complete and follow up reviews with a clear view of progress." icon="🔄" tone="teal" />
 
             {canManage && (
                 <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">

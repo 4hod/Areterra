@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Staff {
     name: string;
@@ -15,6 +16,7 @@ export default function Directory({ staff }: { staff: Staff[] }) {
     return (
         <AppShell title="Staff Directory">
             <Head title="Directory" />
+            <ModuleHero eyebrow="Your team" title="Staff directory" description="Find the right person, role and contact details quickly." icon="📖" tone="blue" />
             <div className="space-y-2">
                 {staff.map((s, i) => (
                     <Card key={i}>

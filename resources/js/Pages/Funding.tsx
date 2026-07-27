@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface Entry {
     id: number;
@@ -35,6 +36,7 @@ export default function Funding({ entries, canManage }: { entries: Entry[]; canM
     return (
         <AppShell title="Funding">
             <Head title="Funding" />
+            <ModuleHero eyebrow="Growth & sustainability" title="Funding" description="Track opportunities, deadlines and applications from first idea to decision." icon="🌱" tone="green" />
 
             {canManage && (
                 <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">

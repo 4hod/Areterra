@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
+import ModuleHero from '../../components/ModuleHero';
 
 interface FormRow {
     id: number;
@@ -16,6 +17,7 @@ export default function Index({ forms, canBuild }: { forms: FormRow[]; canBuild:
     return (
         <AppShell title="Forms">
             <Head title="Forms" />
+            <ModuleHero eyebrow="Digital records" title="Forms" description="Create, manage and launch the forms your team needs." icon="📝" tone="purple" />
 
             {canBuild && (
                 <Link href="/forms/new" className="inline-block rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">

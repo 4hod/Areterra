@@ -1,6 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import { SharedProps } from '../types';
+import ModuleHero from '../components/ModuleHero';
 
 // Public referral form — no login required.
 export default function Refer() {
@@ -22,6 +23,7 @@ export default function Refer() {
     return (
         <>
             <Head title="Make a referral" />
+            <ModuleHero eyebrow="New enquiry" title="Make a referral" description="Capture the right information and give every enquiry a confident start." icon="🤝" tone="teal" />
             <div className="min-h-screen bg-brand-dark py-10 px-4">
                 <div className="max-w-xl mx-auto">
                     <div className="text-center text-white mb-6">

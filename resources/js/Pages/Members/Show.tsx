@@ -9,6 +9,7 @@ import TabBar from '../../components/TabBar';
 import { MOOD_EMOJI, Mood } from '../../types';
 import { confirmDialog, promptDialog } from '../../utils/dialogs';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
+import ModuleHero from '../../components/ModuleHero';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
 const CONSENT_LABELS: Record<string, string> = {
@@ -187,6 +188,7 @@ export default function Show(props: Props) {
     return (
         <AppShell title={member.name}>
             <Head title={member.name} />
+            <ModuleHero eyebrow="Member profile" title="Member record" description="Everything the team needs to understand and support this person well." icon="💚" tone="teal" />
 
             <Link href="/members" className="inline-block text-sm font-semibold text-brand mb-2">
                 ← Back

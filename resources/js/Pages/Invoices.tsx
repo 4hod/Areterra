@@ -6,6 +6,7 @@ import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import SegmentedControl from '../components/SegmentedControl';
 import { confirmDialog, promptDialog } from '../utils/dialogs';
+import ModuleHero from '../components/ModuleHero';
 
 interface Invoice {
     id: number;
@@ -73,6 +74,7 @@ export default function Invoices({ invoices, summary, members }: Props) {
     return (
         <AppShell title="Invoice Tracker">
             <Head title="Invoices" />
+            <ModuleHero eyebrow="Income management" title="Invoices" description="Create, track and manage invoices without losing sight of what is outstanding." icon="🧾" tone="green" />
 
             <p className="text-xs text-slate-400 mb-3">
                 Invoices are raised in QuickBooks — the Hub tracks references and payment status.

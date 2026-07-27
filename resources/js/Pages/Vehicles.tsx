@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { promptDialog } from '../utils/dialogs';
+import ModuleHero from '../components/ModuleHero';
 
 interface Defect {
     id: number;
@@ -45,6 +46,7 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
     return (
         <AppShell title="Vehicles">
             <Head title="Vehicles" />
+            <ModuleHero eyebrow="Fleet care" title="Vehicles" description="Keep vehicle checks, servicing and key information organised." icon="🚚" tone="amber" />
 
             <div className="space-y-3">
                 {vehicles.map((v) => (

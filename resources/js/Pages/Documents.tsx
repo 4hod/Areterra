@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface Doc {
     id: number;
@@ -40,6 +41,7 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
     return (
         <AppShell title="Documents">
             <Head title="Documents" />
+            <ModuleHero eyebrow="Knowledge centre" title="Documents" description="Store, find and organise the files your service relies on." icon="📁" tone="slate" />
 
             {canUpload && (
                 <button onClick={() => setUploading(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">

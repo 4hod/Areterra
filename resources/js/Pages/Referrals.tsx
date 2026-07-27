@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Row {
     id: number;
@@ -26,6 +27,7 @@ export default function Referrals({ referrals }: { referrals: Row[] }) {
     return (
         <AppShell title="Referrals">
             <Head title="Referrals" />
+            <ModuleHero eyebrow="Growth pipeline" title="Referrals" description="Track enquiries from first contact through assessment and decision." icon="📨" tone="teal" />
 
             <p className="text-xs text-slate-400 mb-3">
                 Submissions from the public referral form at <b>/refer</b>. Accepting creates a member profile.

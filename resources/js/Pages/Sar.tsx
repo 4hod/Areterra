@@ -1,5 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import { MOOD_EMOJI, Mood, SharedProps } from '../types';
+import ModuleHero from '../components/ModuleHero';
 
 // Subject Access Request extract — print-friendly full data record for one member.
 interface Props {
@@ -31,6 +32,7 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
             <Head title={`SAR — ${member.name}`}>
                 <style>{`@media print { .no-print { display: none } } @page { margin: 15mm }`}</style>
             </Head>
+            <ModuleHero eyebrow="Information rights" title="Subject access requests" description="Track requests, deadlines and disclosure work in one secure place." icon="🔐" tone="slate" />
 
             <div className="flex items-start justify-between mb-6">
                 <div>

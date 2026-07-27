@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
+import ModuleHero from '../../components/ModuleHero';
 
 interface Field {
     id: number;
@@ -33,6 +34,7 @@ export default function Show({ form }: { form: FormDef }) {
     return (
         <AppShell title={form.title}>
             <Head title={form.title} />
+            <ModuleHero eyebrow="Complete a record" title="Form" description="Capture accurate information in a calm, focused workspace." icon="✍️" tone="purple" />
 
             <Card>
                 {form.description && <p className="text-sm text-slate-500 mb-4">{form.description}</p>}

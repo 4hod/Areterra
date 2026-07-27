@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface Row {
     id: number;
@@ -30,6 +31,7 @@ export default function Announcements({ announcements, canPost }: { announcement
     return (
         <AppShell title="Announcements">
             <Head title="Announcements" />
+            <ModuleHero eyebrow="Team communications" title="Announcements" description="Share important updates and keep the whole team aligned." icon="📢" tone="blue" />
 
             {canPost && (
                 <button

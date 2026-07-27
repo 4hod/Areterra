@@ -5,6 +5,7 @@ import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import { WelfareStatus } from '../../types';
+import ModuleHero from '../../components/ModuleHero';
 
 const SPECIES_EMOJI: Record<string, string> = {
     Macaw: '🦜',
@@ -62,6 +63,7 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
     return (
         <AppShell title="Animals">
             <Head title="Animals" />
+            <ModuleHero eyebrow="Animal care" title="Animals" description="See every animal, their care status and what needs attention today." icon="🦜" tone="green" />
 
             <div className="space-y-4">
                 {Object.entries(bySpecies).map(([species, animals]) => {

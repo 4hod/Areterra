@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface Item {
     id: number;
@@ -32,6 +33,7 @@ export default function Compliance({ items, summary, canManage }: Props) {
     return (
         <AppShell title="Compliance">
             <Head title="Compliance" />
+            <ModuleHero eyebrow="Governance" title="Compliance" description="Stay ahead of renewals, checks and evidence requirements." icon="✅" tone="amber" />
 
             <div className="grid grid-cols-3 gap-3 mb-4">
                 <Card>

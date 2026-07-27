@@ -3,6 +3,7 @@ import { FormEvent, useRef } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import { SharedProps } from '../types';
+import ModuleHero from '../components/ModuleHero';
 
 interface Profile {
     name: string;
@@ -49,6 +50,7 @@ export default function Account({ profile }: { profile: Profile }) {
     return (
         <AppShell title="My Account">
             <Head title="My Account" />
+            <ModuleHero eyebrow="Your workspace" title="Account" description="Manage your profile, security and personal workspace preferences." icon="👤" tone="slate" />
 
             <Card className="mb-4">
                 <div className="flex items-center gap-4">

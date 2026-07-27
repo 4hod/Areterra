@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Template {
     id: number;
@@ -46,6 +47,7 @@ export default function EmailComposer({ members, member, contacts, templates }: 
     return (
         <AppShell title="Email Composer">
             <Head title="Email Composer" />
+            <ModuleHero eyebrow="Member communications" title="Email composer" description="Create clear, consistent updates using live member information." icon="✉️" tone="blue" />
 
             <form onSubmit={submit} className="space-y-4">
                 <Card title="Who's it about?">

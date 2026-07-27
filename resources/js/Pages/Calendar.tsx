@@ -3,6 +3,7 @@ import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface CalEvent {
     date: string;
@@ -63,6 +64,7 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
     return (
         <AppShell title="Calendar">
             <Head title="Calendar" />
+            <ModuleHero eyebrow="Plan ahead" title="Calendar" description="Bring events, appointments, activities and deadlines into one clear view." icon="🗓️" tone="purple" />
 
             {canManageLeave && pendingLeave.length > 0 && (
                 <button onClick={() => setReviewing(true)} className="rounded-full bg-amber-100 text-amber-800 font-semibold text-sm px-5 py-2.5 mb-4">

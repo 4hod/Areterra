@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface IncidentRow {
     id: number;
@@ -58,6 +59,7 @@ export default function Incidents({ incidents, canManage }: { incidents: Inciden
     return (
         <AppShell title="Incidents">
             <Head title="Incidents" />
+            <ModuleHero eyebrow="Safety management" title="Incidents" description="Record events properly, coordinate follow-up and learn from patterns." icon="🚨" tone="rose" />
 
             <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
                 + Report incident

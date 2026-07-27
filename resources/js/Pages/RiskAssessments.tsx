@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import StatusPill from '../components/StatusPill';
+import ModuleHero from '../components/ModuleHero';
 
 interface Assessment {
     id: number;
@@ -79,6 +80,7 @@ export default function RiskAssessments({ assessments, canManage }: { assessment
     return (
         <AppShell title="Risk Assessments">
             <Head title="Risk Assessments" />
+            <ModuleHero eyebrow="Safety planning" title="Risk assessments" description="Balance independence and safety with clear, living assessments." icon="⚖️" tone="amber" />
 
             {canManage && (
                 <button onClick={() => open('new')} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">

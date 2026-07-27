@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface ActivityRow {
     id: number;
@@ -66,6 +67,7 @@ export default function Activities({ month, activities, upcoming, prevMonth, nex
     return (
         <AppShell title="Activities">
             <Head title="Activities" />
+            <ModuleHero eyebrow="Programme delivery" title="Activities" description="Plan meaningful sessions, track participation and keep the weekly programme moving." icon="🎨" tone="green" />
 
             <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
                 + Add activity

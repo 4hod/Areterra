@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { SharedProps } from '../types';
 import { confirmDialog } from '../utils/dialogs';
+import ModuleHero from '../components/ModuleHero';
 
 interface LedgerEntry {
     id: number;
@@ -90,6 +91,7 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
     return (
         <AppShell title="Transport">
             <Head title="Transport" />
+            <ModuleHero eyebrow="Daily journeys" title="Transport" description="Coordinate collections, drop-offs and transport payments in one live workspace." icon="🚐" tone="purple" />
 
             {/* Date picker */}
             <div className="flex items-center gap-2 mb-3">

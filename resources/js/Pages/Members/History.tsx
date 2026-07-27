@@ -3,6 +3,7 @@ import AppShell from '../../components/AppShell';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import Card from '../../components/Card';
 import { MOOD_EMOJI, Mood } from '../../types';
+import ModuleHero from '../../components/ModuleHero';
 
 interface EodRow {
     id: number;
@@ -87,6 +88,7 @@ export default function History({
     return (
         <AppShell title={`${member.name} — full history`}>
             <Head title={`${member.name} — history`} />
+            <ModuleHero eyebrow="Member journey" title="History" description="A chronological view of support, attendance and meaningful events." icon="🕰️" tone="teal" />
 
             <Breadcrumbs items={[
                 { label: 'Members', href: '/members' },

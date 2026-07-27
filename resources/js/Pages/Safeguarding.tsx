@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { promptDialog } from '../utils/dialogs';
+import ModuleHero from '../components/ModuleHero';
 
 interface Concern {
     id: number;
@@ -41,6 +42,7 @@ export default function Safeguarding({ concerns, members }: Props) {
     return (
         <AppShell title="Safeguarding">
             <Head title="Safeguarding" />
+            <ModuleHero eyebrow="Protect people" title="Safeguarding" description="Record concerns securely and keep actions, decisions and oversight clear." icon="🛡️" tone="rose" />
 
             <p className="text-xs text-red-700 font-semibold mb-3">
                 🛡️ Restricted section — access is logged. {open.length} open concern{open.length === 1 ? '' : 's'}.

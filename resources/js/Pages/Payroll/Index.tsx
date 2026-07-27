@@ -5,6 +5,7 @@ import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import { confirmDialog, promptDialog } from '../../utils/dialogs';
+import ModuleHero from '../../components/ModuleHero';
 
 interface Period {
     id: number;
@@ -63,6 +64,7 @@ export default function Index({ periods, roster }: { periods: Period[]; roster: 
     return (
         <AppShell title="Payroll">
             <Head title="Payroll" />
+            <ModuleHero eyebrow="Staff finance" title="Payroll" description="Review pay periods, hours and payroll status with confidence." icon="💷" tone="green" />
 
             <div className="flex gap-2 mb-4">
                 <button onClick={() => setCreating(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">

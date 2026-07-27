@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Props {
     from: string;
@@ -34,6 +35,7 @@ export default function Reports({ from, to, impact }: Props) {
     return (
         <AppShell title="Reports">
             <Head title="Reports" />
+            <ModuleHero eyebrow="Service intelligence" title="Reports" description="Turn day-to-day records into useful insight and evidence." icon="📈" tone="blue" />
 
             <div className="flex flex-wrap items-center gap-2 mb-4">
                 <input type="date" value={from} onChange={(e) => setRange(e.target.value, to)} className="rounded-lg border border-slate-300 px-3 bg-white" />

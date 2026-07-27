@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Entry {
     id: number;
@@ -31,6 +32,7 @@ export default function AuditLog({ entries, subjects, filter }: Props) {
     return (
         <AppShell title="Audit Log">
             <Head title="Audit Log" />
+            <ModuleHero eyebrow="System oversight" title="Audit log" description="A clear, searchable record of important activity across the Hub." icon="🧾" tone="slate" />
 
             <select
                 value={filter ?? ''}

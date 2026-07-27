@@ -6,6 +6,7 @@ import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import { WelfareStatus } from '../../types';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
+import ModuleHero from '../../components/ModuleHero';
 
 interface Monitoring {
     id?: number;
@@ -98,6 +99,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     return (
         <AppShell title={animal.name}>
             <Head title={animal.name} />
+            <ModuleHero eyebrow="Animal profile" title="Animal record" description="Care notes, routines, health information and history in one place." icon="🐾" tone="green" />
 
             <div className="flex items-center gap-4 mb-4">
                 <div>

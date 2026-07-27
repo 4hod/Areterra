@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Preview {
     kind: string;
@@ -31,6 +32,7 @@ export default function Import() {
     return (
         <AppShell title="CSV Import">
             <Head title="Import" />
+            <ModuleHero eyebrow="Data tools" title="Import" description="Bring existing information into the Hub safely and clearly." icon="⬆️" tone="slate" />
 
             <Card title="1 · Upload" className="mb-4">
                 <div className="flex flex-wrap items-end gap-3">

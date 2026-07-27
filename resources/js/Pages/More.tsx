@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import AppShell, { NAV_SECTIONS, allowed } from '../components/AppShell';
 import Card from '../components/Card';
 import { SharedProps } from '../types';
+import ModuleHero from '../components/ModuleHero';
 
 export default function More() {
     const { auth } = usePage<SharedProps>().props;
@@ -10,6 +11,7 @@ export default function More() {
     return (
         <AppShell title="More">
             <Head title="More" />
+            <ModuleHero eyebrow="More tools" title="Workspace" description="Access the additional tools and settings that support your service." icon="✨" tone="slate" />
             <div className="space-y-4">
                 {NAV_SECTIONS.map((section, i) => {
                     const items = section.items.filter((item) => allowed(item, caps));

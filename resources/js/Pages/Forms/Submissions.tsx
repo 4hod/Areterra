@@ -3,6 +3,7 @@ import AppShell from '../../components/AppShell';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
+import ModuleHero from '../../components/ModuleHero';
 
 interface Submission {
     id: number;
@@ -20,6 +21,7 @@ export default function Submissions({ form, submissions }: Props) {
     return (
         <AppShell title={`${form.title} — responses`}>
             <Head title={`${form.title} — responses`} />
+            <ModuleHero eyebrow="Submitted records" title="Form submissions" description="Review completed forms, outcomes and follow-up actions." icon="📚" tone="purple" />
 
             <Breadcrumbs items={[
                 { label: 'Forms', href: '/forms' },

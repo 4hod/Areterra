@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface SyncSummary {
     members_received?: number;
@@ -74,6 +75,7 @@ export default function Settings({ settings }: Props) {
     return (
         <AppShell title="Hub Settings">
             <Head title="Hub Settings" />
+            <ModuleHero eyebrow="Hub configuration" title="Settings" description="Shape how the Hub works for your organisation and team." icon="⚙️" tone="slate" />
 
             <form onSubmit={submit} className="space-y-4">
                 <Card title="Organisation">

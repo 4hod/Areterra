@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import { SharedProps } from '../../types';
+import ModuleHero from '../../components/ModuleHero';
 
 interface Props {
     policy: {
@@ -52,6 +53,7 @@ export default function Show({ policy, canManage }: Props) {
                     .print-header { display: flex !important }
                 }`}</style>
             </Head>
+            <ModuleHero eyebrow="Policy detail" title="Policy" description="Read the current version, key details and acknowledgement status." icon="📖" tone="amber" />
 
             {/* Print-only branded header */}
             <div className="print-header hidden justify-between items-start mb-6">

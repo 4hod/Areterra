@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
+import ModuleHero from '../components/ModuleHero';
 
 interface Project {
     id: number;
@@ -34,6 +35,7 @@ export default function Projects({ projects, canManage }: { projects: Project[];
     return (
         <AppShell title="Projects">
             <Head title="Projects" />
+            <ModuleHero eyebrow="Deliver change" title="Projects" description="Turn service improvements into visible plans, owners and progress." icon="🗂️" tone="purple" />
 
             {canManage && (
                 <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">

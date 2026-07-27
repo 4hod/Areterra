@@ -4,6 +4,7 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { confirmDialog } from '../../utils/dialogs';
+import ModuleHero from '../../components/ModuleHero';
 
 export interface Entry {
     id: number | null;
@@ -91,6 +92,7 @@ export default function Show({ period }: { period: Period }) {
     return (
         <AppShell title={period.label}>
             <Head title={`Payroll — ${period.label}`} />
+            <ModuleHero eyebrow="Payroll detail" title="Pay period" description="Check individual calculations and resolve anything unusual." icon="🧮" tone="green" />
 
             <Breadcrumbs items={[
                 { label: 'Payroll', href: '/payroll' },

@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import ModuleHero from '../components/ModuleHero';
 
 interface Finding {
     severity: 'critical' | 'warning' | 'info';
@@ -21,6 +22,7 @@ export default function Audit({ findings, counts }: { findings: Finding[]; count
     return (
         <AppShell title="System Audit">
             <Head title="System Audit" />
+            <ModuleHero eyebrow="Quality assurance" title="Audit centre" description="Review checks, evidence and actions across the service." icon="🔍" tone="slate" />
 
             <div className="flex items-center justify-between mb-3">
                 <span className="text-xs text-slate-400">Last checked {checkedAt} — checks run live on every load.</span>

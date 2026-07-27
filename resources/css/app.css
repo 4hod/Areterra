@@ -181,3 +181,52 @@ body{background:radial-gradient(circle at 83% -20%,rgba(0,157,230,.08),transpare
 
 @media(max-width:1100px){.members-grid-4a,.register-grid-4a,.eod-grid-4a{grid-template-columns:repeat(2,minmax(0,1fr))}.members-toolbar-4a{grid-template-columns:1fr}.register-hero-4a,.eod-hero-4a{align-items:start}.register-hero-stats-4a{grid-template-columns:repeat(3,90px)}}
 @media(max-width:760px){.members-hero-4a,.register-hero-4a,.eod-hero-4a{display:grid;align-items:start;min-height:0;padding:22px}.members-metrics-4a{grid-template-columns:1fr}.members-filters-4a{overflow-x:auto}.members-bulkbar-4a{align-items:start;flex-wrap:wrap}.members-bulkbar-4a>div{width:100%;margin-left:0;overflow-x:auto}.members-grid-4a,.register-grid-4a,.eod-grid-4a{grid-template-columns:1fr}.today-hero-4a{grid-template-columns:1fr;padding:24px}.today-progress-4a{width:150px;height:150px}.today-progress-4a:after{width:112px;height:112px}.today-focus-4a{align-items:start;flex-direction:column}.today-step-4a{grid-template-columns:40px 1fr auto}.today-step-icon-4a{display:none}.today-step-copy-4a p{display:none}.register-hero-stats-4a{grid-template-columns:repeat(3,1fr)}.register-progress-card-4a{grid-template-columns:1fr}.eod-summary-4a{grid-template-columns:1fr 1fr}.eod-completion-4a{min-width:0}.register-others-4a>button{grid-template-columns:1fr auto}.register-others-4a>button i{grid-column:1/-1}}
+
+/* Update 5 — purpose-built module identity system */
+.module-hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    overflow: hidden;
+    margin: 0 0 1.1rem;
+    padding: 1.35rem 1.5rem;
+    border: 1px solid rgba(255,255,255,.68);
+    border-radius: 24px;
+    color: white;
+    box-shadow: 0 18px 42px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.22);
+}
+.module-hero--teal { background: linear-gradient(125deg,#073f44 0%,#08747a 58%,#16a6a0 100%); }
+.module-hero--blue { background: linear-gradient(125deg,#102a56 0%,#215fa6 58%,#3f8ed8 100%); }
+.module-hero--purple { background: linear-gradient(125deg,#332059 0%,#6944a5 58%,#956bd0 100%); }
+.module-hero--amber { background: linear-gradient(125deg,#5b3505 0%,#a86812 58%,#d99b2b 100%); }
+.module-hero--rose { background: linear-gradient(125deg,#5c1830 0%,#a52f52 58%,#d65f78 100%); }
+.module-hero--green { background: linear-gradient(125deg,#123f30 0%,#287a57 58%,#49a878 100%); }
+.module-hero--slate { background: linear-gradient(125deg,#172133 0%,#34445e 58%,#63728a 100%); }
+.module-hero__glow { position:absolute; inset:auto -4rem -7rem auto; width:18rem; height:18rem; border-radius:999px; background:rgba(255,255,255,.13); filter:blur(2px); z-index:-1; }
+.module-hero__glow::after { content:""; position:absolute; width:8rem; height:8rem; border:1px solid rgba(255,255,255,.22); border-radius:999px; left:-5rem; top:-2rem; }
+.module-hero__body { display:flex; align-items:center; gap:1rem; min-width:0; }
+.module-hero__icon { flex:0 0 auto; display:grid; place-items:center; width:3.65rem; height:3.65rem; border-radius:18px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.22); font-size:1.65rem; box-shadow:inset 0 1px 0 rgba(255,255,255,.18); }
+.module-hero__copy { min-width:0; }
+.module-hero__eyebrow { margin-bottom:.22rem; font-size:.68rem; line-height:1; font-weight:850; text-transform:uppercase; letter-spacing:.16em; color:rgba(255,255,255,.7); }
+.module-hero h1 { margin:0; font-size:clamp(1.35rem,2.2vw,1.9rem); line-height:1.1; font-weight:850; letter-spacing:-.035em; color:#fff; }
+.module-hero p { max-width:48rem; margin:.42rem 0 0; font-size:.86rem; line-height:1.45; color:rgba(255,255,255,.78); }
+.module-hero__actions { display:flex; align-items:center; gap:.55rem; flex:0 0 auto; }
+.module-hero__actions .btn, .module-hero__actions button, .module-hero__actions a { background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.25); }
+
+/* Give each module's first content block a more intentional, app-like landing */
+.module-hero + .card,
+.module-hero + [class*="grid"],
+.module-hero + [class*="flex"],
+.module-hero + form {
+    animation: moduleRise .32s ease-out both;
+}
+@keyframes moduleRise { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:none; } }
+@media (max-width: 720px) {
+    .module-hero { align-items:flex-start; padding:1.1rem; border-radius:20px; }
+    .module-hero__icon { width:3rem; height:3rem; border-radius:15px; font-size:1.35rem; }
+    .module-hero p { font-size:.8rem; }
+    .module-hero__actions { width:100%; }
+}

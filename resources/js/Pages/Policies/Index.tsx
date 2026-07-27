@@ -4,6 +4,7 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
+import ModuleHero from '../../components/ModuleHero';
 
 interface PolicyRow {
     id: number;
@@ -50,6 +51,7 @@ export default function Index({ policies, canManage }: { policies: PolicyRow[]; 
     return (
         <AppShell title="Policies">
             <Head title="Policies" />
+            <ModuleHero eyebrow="Governance library" title="Policies" description="Keep current guidance easy to find, review and acknowledge." icon="📜" tone="amber" />
 
             {canManage && (
                 <button onClick={() => setCreating(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">

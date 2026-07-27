@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import StatusPill from '../components/StatusPill';
+import ModuleHero from '../components/ModuleHero';
 
 interface LeaveRow {
     id: number;
@@ -60,6 +61,7 @@ export default function Leave({ balance, myRequests, types, isManager, pending, 
     return (
         <AppShell title="Leave">
             <Head title="Leave" />
+            <ModuleHero eyebrow="People planning" title="Leave" description="Make time-off requests and team availability easy to understand." icon="🌴" tone="blue" />
 
             <div className="grid grid-cols-3 gap-3 mb-4">
                 <Card>
