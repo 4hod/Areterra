@@ -215,11 +215,11 @@ export default function AppShell({ title, children }: { title: string; children:
     }
 
     return (
-        <div className="min-h-screen md:flex">
+        <div className="min-h-screen md:flex hub-app-shell">
             {/* Desktop sidebar */}
             <aside
                 ref={sidebarRef}
-                className="hidden md:flex md:flex-col w-60 shrink-0 text-white h-screen max-h-screen sticky top-0 overflow-y-auto overscroll-contain"
+                className="hub-sidebar hidden md:flex md:flex-col w-60 shrink-0 text-white h-screen max-h-screen sticky top-0 overflow-y-auto overscroll-contain"
                 style={{ background: 'linear-gradient(180deg, var(--color-brand-dark) 0%, var(--color-ink) 100%)' }}
             >
                 <div className="px-5 py-5">
@@ -319,8 +319,8 @@ export default function AppShell({ title, children }: { title: string; children:
                 </div>
             </aside>
 
-            <div className="flex-1 min-w-0">
-                <header className="sticky top-0 z-40 bg-white border-b border-black/[0.06] px-4 py-3.5 flex items-center gap-3 md:px-8">
+            <div className="hub-main-column flex-1 min-w-0">
+                <header className="hub-topbar sticky top-0 z-40 px-4 py-3.5 flex items-center gap-3 md:px-8">
                     <button
                         onClick={() => setDrawer(true)}
                         aria-label="Open menu"
@@ -328,7 +328,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     >
                         ☰
                     </button>
-                    <h1 className="text-xl font-semibold text-brand-dark truncate">{title}</h1>
+                    <h1 className="hub-topbar-title text-xl font-semibold text-brand-dark truncate">{title}</h1>
 
                     <div className="flex items-center gap-1 md:gap-2 ml-auto">
                         <button
@@ -355,7 +355,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     </div>
                 </header>
 
-                <main className="p-4 md:p-8 pb-28 md:pb-20 max-w-[1600px]">{children}</main>
+                <main className="hub-page-content p-4 md:p-8 pb-28 md:pb-20 max-w-[1600px]">{children}</main>
             </div>
 
             <a
