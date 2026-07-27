@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\EndOfDayRecord;
 use App\Models\Member;
 use App\Models\MemberNote;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\WordPressSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -27,9 +29,14 @@ class WordPressSyncTest extends TestCase
         Setting::set('wordpress_url', 'https://wordpress.test');
         Setting::set('wordpress_username', 'sync-user');
         Setting::set('wordpress_application_password', encrypt('abcd efgh ijkl mnop'));
+
+        User::factory()->create([
+            'name' => 'Rob Bodley',
+            'role' => 'manager',
+        ]);
     }
 
-    public function test_bulk_sync_updates_existing_member_and_imports_notes_without_duplicates(): void
+    public function test_bulk_sync_uses_native_profile_and_end_of_day_fields_without_duplicates(): void
     {
         $member = Member::create([
             'first_name' => 'Amy',
@@ -57,7 +64,7 @@ class WordPressSyncTest extends TestCase
                         'gp_name' => null,
                         'gp_phone' => null,
                         'gp_address' => null,
-                        'medical_notes' => 'No known allergies.',
+                        'medical_notes' => "MEDICATION:\n- Levothyroxine 75mcg daily\n\nCONDITIONS: Hypothyroidism\nALLERGIES: No known allergies.",
                         'support_needs' => 'Benefits from clear verbal prompts.',
                         'interests' => 'Animals and gardening.',
                     ],
@@ -76,13 +83,24 @@ class WordPressSyncTest extends TestCase
                         'date' => '2026-06-18 14:00:00',
                         'author' => 'robbodley',
                         'title' => 'End of Day Record',
-                        'body' => 'Did coop shop and collected bunnies supplies then had a crafty afternoon.',
+                        'body' => 'Fallback timeline body.',
                         'ref_id' => 77,
+                        'session_date' => '2026-06-18',
+                        'support_type' => 'group',
+                        'mood_overall' => 'good',
+                        'activities' => 'Craft and animal care.',
+                        'diary_achievements' => 'Collected supplies.',
+                        'personal_outcomes' => '',
+                        'daily_note' => 'Had a positive afternoon.',
+                        'fluid_intake' => 'Drank well',
+                        'food_eaten' => 'Lunch eaten',
+                        'concerns' => false,
+                        'concern_detail' => '',
                     ]],
                 ]],
                 'meta' => [
                     'total' => 1,
-                    'sync_version' => 2,
+                    'sync_version' => 3,
                     'request_count' => 1,
                 ],
             ]);
@@ -96,26 +114,38 @@ class WordPressSyncTest extends TestCase
         $this->assertSame(1, Member::count());
         $this->assertSame(42, $member->wordpress_id);
         $this->assertSame('1994-03-12', $member->dob->toDateString());
-        $this->assertSame('No known allergies.', $member->medical_notes);
+        $this->assertSame('- Levothyroxine 75mcg daily', $member->medication);
+        $this->assertSame('Hypothyroidism', $member->diagnoses);
+        $this->assertSame('Allergies: No known allergies.', $member->medical_notes);
         $this->assertSame('Benefits from clear verbal prompts.', $member->support_needs);
         $this->assertSame('Animals and gardening.', $member->interests);
 
-        $this->assertSame(2, MemberNote::count());
-        $note = MemberNote::where('note_type', 'progress')->firstOrFail();
+        $this->assertSame(1, MemberNote::count());
+        $note = MemberNote::firstOrFail();
         $this->assertSame(9001, $note->wordpress_note_id);
         $this->assertSame('progress', $note->note_type);
         $this->assertSame('Ethan', $note->author_name);
         $this->assertStringContainsString('Enjoyed animal care', $note->note);
 
-        $sessionNote = MemberNote::where('note_type', 'end_of_day')->firstOrFail();
-        $this->assertSame('session-handover:77', $sessionNote->wordpress_source_key);
-        $this->assertSame('robbodley', $sessionNote->author_name);
-        $this->assertStringContainsString('coop shop', $sessionNote->note);
+        $this->assertSame(1, EndOfDayRecord::count());
+        $session = EndOfDayRecord::firstOrFail();
+        $this->assertSame(77, $session->wordpress_handover_id);
+        $this->assertSame('wordpress', $session->source);
+        $this->assertSame('robbodley', $session->source_author_name);
+        $this->assertSame('2026-06-18', $session->date->toDateString());
+        $this->assertSame('Group session', $session->session_type);
+        $this->assertSame('happy', $session->end_mood);
+        $this->assertSame('Craft and animal care.', $session->activities);
+        $this->assertStringContainsString('Collected supplies.', $session->notes);
+        $this->assertStringContainsString('Had a positive afternoon.', $session->notes);
+        $this->assertStringContainsString('Fluid intake: Drank well', $session->notes);
 
-        $this->assertSame(2, $first['notes_created']);
+        $this->assertSame(1, $first['notes_created']);
+        $this->assertSame(1, $first['sessions_created']);
         $this->assertSame(0, $second['notes_created']);
+        $this->assertSame(0, $second['sessions_created']);
 
-        // One bulk request per sync, rather than three requests per member.
+        // One bulk request per sync, rather than several requests per member.
         Http::assertSentCount(2);
     }
 
@@ -127,7 +157,7 @@ class WordPressSyncTest extends TestCase
                 'data' => [],
                 'meta' => [
                     'total' => 11,
-                    'sync_version' => 2,
+                    'sync_version' => 3,
                 ],
             ]),
         ]);
@@ -136,7 +166,7 @@ class WordPressSyncTest extends TestCase
 
         $this->assertTrue($result['connected']);
         $this->assertSame(11, $result['members_available']);
-        $this->assertSame(2, $result['sync_version']);
+        $this->assertSame(3, $result['sync_version']);
 
         Http::assertSent(function (Request $request) {
             return str_contains($request->url(), '/sync/members')

@@ -88,8 +88,20 @@ class MemberController extends Controller
                 : [],
             'recentAttendance' => $member->attendances()->orderByDesc('date')->limit(10)
                 ->get(['id', 'date', 'checked_in', 'arrival_mood', 'notes']),
-            'recentEndOfDay' => $member->endOfDayRecords()->orderByDesc('date')->limit(10)
-                ->get(['id', 'date', 'arrival_mood', 'end_mood', 'session_type', 'activities', 'notes', 'concern', 'incident']),
+            'recentEndOfDay' => $member->endOfDayRecords()->with('user:id,name')->orderByDesc('date')->limit(10)
+                ->get()
+                ->map(fn ($record) => [
+                    'id' => $record->id,
+                    'date' => $record->date->toDateString(),
+                    'arrival_mood' => $record->arrival_mood,
+                    'end_mood' => $record->end_mood,
+                    'session_type' => $record->session_type,
+                    'activities' => $record->activities,
+                    'notes' => $record->notes,
+                    'concern' => $record->concern,
+                    'incident' => $record->incident,
+                    'author' => $record->source_author_name ?: $record->user?->name,
+                ]),
             'abcObservations' => $detailed
                 ? $member->abcObservations()->with('user:id,name')->orderByDesc('observed_at')->limit(20)->get()
                     ->map(fn ($o) => [

@@ -22,6 +22,7 @@ interface EodRow {
     notes: string | null;
     concern: boolean;
     concern_detail: string | null;
+    author: string | null;
 }
 
 interface AttRow {
@@ -33,7 +34,7 @@ interface AttRow {
     notes: string | null;
 }
 
-interface WordPressNoteRow {
+interface StaffNoteRow {
     id: number;
     note_type: string;
     note: string;
@@ -76,12 +77,12 @@ export default function History({
     member,
     endOfDay,
     attendance,
-    wordpressNotes,
+    staffNotes,
 }: {
     member: { id: number; name: string };
     endOfDay: Paginated<EodRow>;
     attendance: Paginated<AttRow>;
-    wordpressNotes: Paginated<WordPressNoteRow>;
+    staffNotes: Paginated<StaffNoteRow>;
 }) {
     return (
         <AppShell title={`${member.name} — full history`}>
@@ -93,10 +94,10 @@ export default function History({
                 { label: 'Full history' },
             ]} />
 
-            <Card title="Imported WordPress history" className="mb-4">
-                {wordpressNotes.data.length === 0 && <p className="text-sm text-slate-400">No WordPress session or staff notes found.</p>}
+            <Card title="Staff notes" className="mb-4">
+                {staffNotes.data.length === 0 && <p className="text-sm text-slate-400">No staff notes recorded.</p>}
                 <ul className="divide-y divide-slate-100">
-                    {wordpressNotes.data.map((note) => (
+                    {staffNotes.data.map((note) => (
                         <li key={note.id} className="py-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span className="font-semibold text-sm text-brand-dark">
@@ -111,10 +112,10 @@ export default function History({
                         </li>
                     ))}
                 </ul>
-                <Pagination links={wordpressNotes.links} />
+                <Pagination links={staffNotes.links} />
             </Card>
 
-            <Card title="End of day history created in this Hub" className="mb-4">
+            <Card title="End-of-day history" className="mb-4">
                 {endOfDay.data.length === 0 && <p className="text-sm text-slate-400">No end-of-day records yet.</p>}
                 <ul className="divide-y divide-slate-100">
                     {endOfDay.data.map((r) => (
@@ -131,6 +132,7 @@ export default function History({
                                 </span>
                             </div>
                             {r.session_type && <div className="text-sm text-slate-500 mt-1">{r.session_type}</div>}
+                            {r.author && <div className="text-xs text-slate-400">by {r.author}</div>}
                             {r.activities && <div className="text-sm text-slate-500">{r.activities}</div>}
 
                             {(r.food_intake || r.fluid_intake) && (

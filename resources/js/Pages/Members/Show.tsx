@@ -58,7 +58,7 @@ interface Props {
     };
     memberNotes: MemberNoteRow[];
     recentAttendance: { id: number; date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null }[];
-    recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean; incident: boolean }[];
+    recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean; incident: boolean; author: string | null }[];
     abcObservations: { id: number; observed_at: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null; concern: boolean; user: string }[];
     bodyMaps: { id: number; recorded_at: string; markers: { view: 'front' | 'back'; x: number; y: number; note?: string | null }[]; notes: string | null; user: string }[];
     commsLog: CommsRow[];
@@ -94,8 +94,7 @@ export default function Show(props: Props) {
     const { member, memberNotes, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, alerts, consents, canEdit } = props;
     const [tab, setTab] = useState<(typeof TABS)[number]>('Profile');
     const photoInput = useRef<HTMLInputElement>(null);
-    const importedEndOfDay = memberNotes.filter((note) => note.note_type === 'end_of_day');
-    const importedStaffNotes = memberNotes.filter((note) => note.note_type !== 'end_of_day');
+    const staffNotes = memberNotes.filter((note) => note.note_type !== 'end_of_day');
 
     useEffect(() => {
         recordRecentlyViewed({ title: member.name, url: `/members/${member.id}`, type: 'Member' });
@@ -317,7 +316,7 @@ export default function Show(props: Props) {
                                 <dd className="font-medium whitespace-pre-wrap">{member.support_needs || '—'}</dd>
                             </div>
                             <div>
-                                <dt className="text-slate-400 font-medium">Medical notes from WordPress</dt>
+                                <dt className="text-slate-400 font-medium">Medical notes</dt>
                                 <dd className="font-medium whitespace-pre-wrap">{member.medical_notes || '—'}</dd>
                             </div>
                             <div>
@@ -327,10 +326,10 @@ export default function Show(props: Props) {
                         </dl>
                     </Card>
 
-                    <Card title="Imported WordPress staff notes" className="md:col-span-2">
-                        {importedStaffNotes.length === 0 && <p className="text-sm text-slate-400">No separate staff notes were found. Session notes are shown under the Sessions tab.</p>}
+                    <Card title="Staff notes" className="md:col-span-2">
+                        {staffNotes.length === 0 && <p className="text-sm text-slate-400">No staff notes recorded.</p>}
                         <ul className="divide-y divide-slate-100 text-sm">
-                            {importedStaffNotes.map((note) => (
+                            {staffNotes.map((note) => (
                                 <li key={note.id} className="py-3">
                                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                                         <span className="font-bold tracking-wide text-brand">{NOTE_TYPE_LABELS[note.note_type] ?? note.note_type}</span>
@@ -371,24 +370,7 @@ export default function Show(props: Props) {
                     >
                         View full history →
                     </Link>
-                    <Card title={`Imported WordPress end-of-day records (${importedEndOfDay.length})`}>
-                        {importedEndOfDay.length === 0 && <p className="text-sm text-slate-400">No WordPress session notes were found for this member.</p>}
-                        <ul className="divide-y divide-slate-100 text-sm">
-                            {importedEndOfDay.map((note) => (
-                                <li key={note.id} className="py-3">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <span className="font-bold text-brand-dark">End of Day Record</span>
-                                        <span className="text-xs text-slate-400">
-                                            {note.noted_at ? fmt(note.noted_at) : 'Date not recorded'}
-                                            {note.author_name && ` · ${note.author_name}`}
-                                        </span>
-                                    </div>
-                                    <p className="mt-1 whitespace-pre-wrap text-slate-700">{note.note}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    </Card>
-                    <Card title="Recent end-of-day records created in this Hub">
+                    <Card title="End-of-day records">
                         {recentEndOfDay.length === 0 && <p className="text-sm text-slate-400">No records yet.</p>}
                         <ul className="divide-y divide-slate-100">
                             {recentEndOfDay.map((r) => (
@@ -405,6 +387,7 @@ export default function Show(props: Props) {
                                         </span>
                                     </div>
                                     {r.session_type && <div className="text-sm text-slate-500">{r.session_type}</div>}
+                                    {r.author && <div className="text-xs text-slate-400">by {r.author}</div>}
                                     {r.activities && <div className="text-sm text-slate-500">{r.activities}</div>}
                                     {r.notes && <div className="text-sm mt-1">{r.notes}</div>}
                                 </li>

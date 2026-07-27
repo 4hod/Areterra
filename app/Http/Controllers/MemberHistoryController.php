@@ -12,7 +12,7 @@ class MemberHistoryController extends Controller
 {
     public function show(Request $request, Member $member)
     {
-        $eod = EndOfDayRecord::where('member_id', $member->id)
+        $eod = EndOfDayRecord::with('user:id,name')->where('member_id', $member->id)
             ->orderByDesc('date')
             ->paginate(15, pageName: 'eod_page')
             ->withQueryString();
@@ -22,11 +22,11 @@ class MemberHistoryController extends Controller
             ->paginate(20, pageName: 'attendance_page')
             ->withQueryString();
 
-        $wordpressNotes = $member->notes()
-            ->where('source', 'wordpress')
+        $staffNotes = $member->notes()
+            ->where('note_type', '!=', 'end_of_day')
             ->orderByDesc('noted_at')
             ->orderByDesc('id')
-            ->paginate(30, pageName: 'wordpress_page')
+            ->paginate(30, pageName: 'staff_notes_page')
             ->withQueryString();
 
         return Inertia::render('Members/History', [
@@ -49,6 +49,7 @@ class MemberHistoryController extends Controller
                 'notes' => $r->notes,
                 'concern' => $r->concern,
                 'concern_detail' => $r->concern_detail,
+                'author' => $r->source_author_name ?: $r->user?->name,
             ]),
             'attendance' => $attendance->through(fn ($a) => [
                 'id' => $a->id,
@@ -58,7 +59,7 @@ class MemberHistoryController extends Controller
                 'arrival_mood' => $a->arrival_mood,
                 'notes' => $a->notes,
             ]),
-            'wordpressNotes' => $wordpressNotes->through(fn ($note) => [
+            'staffNotes' => $staffNotes->through(fn ($note) => [
                 'id' => $note->id,
                 'note_type' => $note->note_type,
                 'note' => $note->note,

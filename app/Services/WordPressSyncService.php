@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\EndOfDayRecord;
 use App\Models\Member;
 use App\Models\MemberNote;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -31,12 +33,16 @@ class WordPressSyncService
     public function syncMembers(): array
     {
         $remoteMembers = $this->downloadMembers();
+        [$usersByName, $fallbackUserId] = $this->userLookup();
 
-        $result = DB::transaction(function () use ($remoteMembers) {
+        $result = DB::transaction(function () use ($remoteMembers, $usersByName, $fallbackUserId) {
             $created = 0;
             $updated = 0;
             $notesCreated = 0;
             $notesUpdated = 0;
+            $sessionsCreated = 0;
+            $sessionsUpdated = 0;
+            $legacySessionNotesRemoved = 0;
 
             $existing = Member::withTrashed()->get();
             $byWordPressId = $existing
@@ -85,11 +91,24 @@ class WordPressSyncService
                     $notesUpdated += $change === 'updated' ? 1 : 0;
                 }
 
-                foreach ($remote['session_notes'] as $remoteNote) {
-                    $change = $this->syncMemberNote($member, $remoteNote);
-                    $notesCreated += $change === 'created' ? 1 : 0;
-                    $notesUpdated += $change === 'updated' ? 1 : 0;
+                foreach ($remote['session_notes'] as $remoteSession) {
+                    $change = $this->syncEndOfDayRecord(
+                        $member,
+                        $remoteSession,
+                        $usersByName,
+                        $fallbackUserId,
+                    );
+                    $sessionsCreated += $change === 'created' ? 1 : 0;
+                    $sessionsUpdated += $change === 'updated' ? 1 : 0;
                 }
+
+                // Stage 1.1 displayed WordPress handovers in a separate imported
+                // notes card. They are now normal end-of-day records, so remove
+                // those legacy display rows after the native record is present.
+                $legacySessionNotesRemoved += MemberNote::where('member_id', $member->id)
+                    ->where('source', 'wordpress')
+                    ->where('note_type', 'end_of_day')
+                    ->delete();
             }
 
             return [
@@ -98,6 +117,9 @@ class WordPressSyncService
                 'members_updated' => $updated,
                 'notes_created' => $notesCreated,
                 'notes_updated' => $notesUpdated,
+                'sessions_created' => $sessionsCreated,
+                'sessions_updated' => $sessionsUpdated,
+                'legacy_session_notes_removed' => $legacySessionNotesRemoved,
             ];
         });
 
@@ -113,7 +135,7 @@ class WordPressSyncService
 
         if ($response->status() === 404) {
             throw new RuntimeException(
-                'The WordPress bulk-sync endpoint is not installed. Upload and activate the Areterra Hub WordPress 1.0.1 patch, then test the connection again.'
+                'The WordPress bulk-sync endpoint is not installed. Upload and activate the latest Areterra Hub WordPress plugin, then test the connection again.'
             );
         }
 
@@ -182,27 +204,66 @@ class WordPressSyncService
                 continue;
             }
 
-            $id = (int) ($entry['ref_id'] ?? 0);
+            $id = (int) ($entry['ref_id'] ?? $entry['id'] ?? 0);
             if ($id < 1) {
                 continue;
             }
 
-            $body = trim((string) ($entry['body'] ?? ''));
-            if ($body === '') {
-                $body = trim((string) ($entry['title'] ?? 'End of Day Record'));
+            $date = $this->nullableString($entry['session_date'] ?? null);
+            if ($date === null) {
+                $date = substr((string) ($entry['date'] ?? ''), 0, 10);
+            }
+            if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                continue;
             }
 
+            $notes = $this->sessionNotesText($entry);
+
             $normalised[] = [
-                'source_key' => "session-handover:{$id}",
-                'legacy_wordpress_note_id' => null,
-                'note_type' => 'end_of_day',
-                'note' => $body,
-                'author_name' => $this->nullableString($entry['author'] ?? null),
-                'noted_at' => $this->nullableString($entry['date'] ?? null),
+                'wordpress_handover_id' => $id,
+                'date' => $date,
+                'author_name' => $this->nullableString($entry['author'] ?? $entry['author_name'] ?? null),
+                'session_type' => $this->normaliseSessionType($entry['support_type'] ?? null),
+                'end_mood' => $this->normaliseMood($entry['mood_overall'] ?? null),
+                'activities' => $this->nullableString($entry['activities'] ?? null),
+                'notes' => $notes,
+                'concern' => (bool) ($entry['concerns'] ?? false),
+                'concern_detail' => $this->nullableString($entry['concern_detail'] ?? null),
             ];
         }
 
         return $normalised;
+    }
+
+    private function sessionNotesText(array $entry): ?string
+    {
+        $parts = [];
+
+        foreach (['diary_achievements', 'personal_outcomes', 'daily_note'] as $field) {
+            $value = $this->nullableString($entry[$field] ?? null);
+            if ($value !== null && ! in_array($value, $parts, true)) {
+                $parts[] = $value;
+            }
+        }
+
+        $fluid = $this->nullableString($entry['fluid_intake'] ?? null);
+        if ($fluid !== null) {
+            $parts[] = 'Fluid intake: '.$fluid;
+        }
+
+        $food = $this->nullableString($entry['food_eaten'] ?? null);
+        if ($food !== null) {
+            $parts[] = 'Food: '.$food;
+        }
+
+        if ($parts === []) {
+            $body = $this->nullableString($entry['body'] ?? null);
+            if ($body !== null) {
+                $parts[] = $body;
+            }
+        }
+
+        return $parts === [] ? null : implode("\n", $parts);
     }
 
     private function syncMemberNote(Member $member, array $remoteNote): string
@@ -235,8 +296,8 @@ class WordPressSyncService
             return 'created';
         }
 
-        // Compare the decrypted note text before updating. Calling fill() first would
-        // re-encrypt the text with a fresh IV and make an unchanged note look dirty.
+        // Compare decrypted text before updating. Calling fill() first would
+        // re-encrypt it with a fresh IV and make unchanged text appear dirty.
         $changed = $note->member_id !== $notePayload['member_id']
             || $note->wordpress_source_key !== $notePayload['wordpress_source_key']
             || $note->wordpress_note_id !== $notePayload['wordpress_note_id']
@@ -255,15 +316,105 @@ class WordPressSyncService
         return 'updated';
     }
 
+    private function syncEndOfDayRecord(
+        Member $member,
+        array $remote,
+        array $usersByName,
+        int $fallbackUserId,
+    ): string {
+        $wordpressId = (int) $remote['wordpress_handover_id'];
+        $record = EndOfDayRecord::where('wordpress_handover_id', $wordpressId)->first();
+
+        if ($record === null) {
+            $record = EndOfDayRecord::where('member_id', $member->id)
+                ->whereDate('date', $remote['date'])
+                ->first();
+        }
+
+        $authorName = $remote['author_name'];
+        $authorKey = $this->personKey((string) $authorName);
+        $userId = $usersByName[$authorKey] ?? $fallbackUserId;
+
+        $payload = [
+            'member_id' => $member->id,
+            'wordpress_handover_id' => $wordpressId,
+            'source' => 'wordpress',
+            'source_author_name' => $authorName,
+            'date' => $remote['date'],
+            'user_id' => $userId,
+            'end_mood' => $remote['end_mood'],
+            'session_type' => $remote['session_type'],
+            'activities' => $remote['activities'],
+            'notes' => $remote['notes'],
+            'concern' => $remote['concern'],
+            'concern_detail' => $remote['concern_detail'],
+        ];
+
+        if ($record === null) {
+            EndOfDayRecord::create($payload);
+
+            return 'created';
+        }
+
+        // Never overwrite a record genuinely created in the standalone Hub.
+        // Link it to the old WordPress row and fill only gaps instead.
+        if (($record->source ?? 'hub') !== 'wordpress') {
+            $safePayload = [
+                'wordpress_handover_id' => $wordpressId,
+                'source_author_name' => $record->source_author_name ?: $authorName,
+            ];
+
+            foreach (['end_mood', 'session_type', 'activities', 'notes', 'concern_detail'] as $field) {
+                if (($record->{$field} === null || $record->{$field} === '') && $payload[$field] !== null) {
+                    $safePayload[$field] = $payload[$field];
+                }
+            }
+
+            if (! $record->concern && $payload['concern']) {
+                $safePayload['concern'] = true;
+            }
+
+            $record->fill($safePayload);
+        } else {
+            $record->fill($payload);
+        }
+
+        if (! $record->isDirty()) {
+            return 'unchanged';
+        }
+
+        $record->save();
+
+        return 'updated';
+    }
+
     private function memberPayload(array $remote, bool $isNew): array
     {
+        $medical = $this->splitMedicalProfile($remote['medical_notes'] ?? null);
+
         $payload = [
             'wordpress_id' => (int) $remote['id'],
             'dob' => $this->nullableString($remote['date_of_birth'] ?? null),
-            'support_needs' => $this->nullableString($remote['support_needs'] ?? null),
-            'medical_notes' => $this->nullableString($remote['medical_notes'] ?? null),
-            'interests' => $this->nullableString($remote['interests'] ?? null),
+            'support_needs' => $this->mergeText(
+                $remote['support_needs'] ?? null,
+                $medical['support_needs'],
+            ),
+            'medical_notes' => $medical['medical_notes'],
+            'interests' => $this->mergeText(
+                $remote['interests'] ?? null,
+                $medical['interests'],
+            ),
         ];
+
+        // Only replace native medication/diagnosis fields when WordPress
+        // actually supplies a matching section. This preserves any standalone
+        // data for profiles whose old medical note did not contain a section.
+        if ($isNew || $medical['medication'] !== null) {
+            $payload['medication'] = $medical['medication'];
+        }
+        if ($isNew || $medical['diagnoses'] !== null) {
+            $payload['diagnoses'] = $medical['diagnoses'];
+        }
 
         if (! $isNew) {
             return $payload;
@@ -282,6 +433,127 @@ class WordPressSyncService
             'gp_practice' => $this->nullableString($remote['gp_address'] ?? null),
             'gp_phone' => $this->nullableString($remote['gp_phone'] ?? null),
         ];
+    }
+
+    /**
+     * WordPress used one free-text medical box containing headings such as
+     * MEDICATION, CONDITIONS and ALLERGIES. Split recognised headings into the
+     * standalone Hub's real fields and leave all other medical text in notes.
+     */
+    private function splitMedicalProfile(mixed $value): array
+    {
+        $text = $this->nullableString($value);
+        $result = [
+            'medication' => null,
+            'diagnoses' => null,
+            'support_needs' => null,
+            'interests' => null,
+            'medical_notes' => null,
+        ];
+
+        if ($text === null) {
+            return $result;
+        }
+
+        $buckets = [
+            'medication' => [],
+            'diagnoses' => [],
+            'support_needs' => [],
+            'interests' => [],
+            'medical_notes' => [],
+        ];
+        $current = 'medical_notes';
+
+        foreach (preg_split('/\R/u', str_replace(["\r\n", "\r"], "\n", $text)) ?: [] as $line) {
+            if (preg_match('/^\s*([A-Z][A-Z0-9 &\/-]{2,})\s*:\s*(.*)$/iu', $line, $matches)) {
+                $heading = mb_strtoupper(trim($matches[1]));
+                $mapped = match ($heading) {
+                    'MEDICATION', 'MEDICATIONS' => 'medication',
+                    'DIAGNOSIS', 'DIAGNOSES', 'CONDITION', 'CONDITIONS' => 'diagnoses',
+                    'SUPPORT NEED', 'SUPPORT NEEDS' => 'support_needs',
+                    'INTEREST', 'INTERESTS' => 'interests',
+                    default => 'medical_notes',
+                };
+
+                $current = $mapped;
+                $remainder = trim($matches[2]);
+
+                if ($mapped === 'medical_notes' && $remainder !== '') {
+                    $buckets[$current][] = ucfirst(mb_strtolower($heading)).': '.$remainder;
+                } elseif ($mapped === 'medical_notes') {
+                    $buckets[$current][] = ucfirst(mb_strtolower($heading)).':';
+                } elseif ($remainder !== '') {
+                    $buckets[$current][] = $remainder;
+                }
+
+                continue;
+            }
+
+            $buckets[$current][] = rtrim($line);
+        }
+
+        foreach ($buckets as $key => $lines) {
+            $clean = trim(implode("\n", $lines));
+            $result[$key] = $clean === '' ? null : $clean;
+        }
+
+        return $result;
+    }
+
+    private function mergeText(mixed ...$values): ?string
+    {
+        $parts = [];
+
+        foreach ($values as $value) {
+            $text = $this->nullableString($value);
+            if ($text !== null && ! in_array($text, $parts, true)) {
+                $parts[] = $text;
+            }
+        }
+
+        return $parts === [] ? null : implode("\n\n", $parts);
+    }
+
+    private function userLookup(): array
+    {
+        $users = User::query()->get(['id', 'name', 'role']);
+        $fallback = $users->first(fn (User $user) => in_array($user->role, ['manager', 'administrator'], true))
+            ?? $users->first();
+
+        if ($fallback === null) {
+            throw new RuntimeException('The standalone Hub needs at least one user before historical session records can be synced.');
+        }
+
+        $byName = [];
+        foreach ($users as $user) {
+            $key = $this->personKey($user->name);
+            if ($key !== '') {
+                $byName[$key] = $user->id;
+            }
+        }
+
+        return [$byName, $fallback->id];
+    }
+
+    private function normaliseSessionType(mixed $type): ?string
+    {
+        return match (strtolower(trim((string) $type))) {
+            'individual' => 'Individual support',
+            'group' => 'Group session',
+            'community' => 'Community session',
+            default => null,
+        };
+    }
+
+    private function normaliseMood(mixed $mood): ?string
+    {
+        return match (strtolower(trim((string) $mood))) {
+            'excellent', 'good' => 'happy',
+            'okay' => 'neutral',
+            'low' => 'sad',
+            'distressed' => 'anxious',
+            default => null,
+        };
     }
 
     private function request(): PendingRequest
@@ -373,7 +645,7 @@ class WordPressSyncService
         if (! $response->successful()) {
             if ($response->status() === 429) {
                 throw new RuntimeException(
-                    'The WordPress host is temporarily rate-limiting requests (HTTP 429). The bulk-sync fix is installed, so wait a few minutes for the block to clear and press Sync again.'
+                    'The WordPress host is temporarily rate-limiting requests (HTTP 429). Wait a few minutes for the block to clear and press Sync again.'
                 );
             }
 
@@ -398,6 +670,11 @@ class WordPressSyncService
     private function nameKey(string $firstName, string $lastName): string
     {
         return mb_strtolower(trim($firstName).'|'.trim($lastName));
+    }
+
+    private function personKey(string $name): string
+    {
+        return preg_replace('/[^a-z0-9]+/', '', mb_strtolower($name)) ?? '';
     }
 
     private function normaliseNoteType(mixed $type): string

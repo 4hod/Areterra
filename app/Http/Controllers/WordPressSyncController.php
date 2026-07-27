@@ -26,12 +26,12 @@ class WordPressSyncController extends Controller
             $result = $sync->syncMembers();
 
             return back()->with('success', sprintf(
-                'WordPress sync complete: %d members received, %d created, %d updated, %d notes added and %d notes updated.',
+                'WordPress sync complete: %d members received, %d created, %d updated, %d staff notes added, and %d end-of-day records added.',
                 $result['members_received'],
                 $result['members_created'],
                 $result['members_updated'],
                 $result['notes_created'],
-                $result['notes_updated'],
+                $result['sessions_created'],
             ));
         } catch (Throwable $e) {
             report($e);
