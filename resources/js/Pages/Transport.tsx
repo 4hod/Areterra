@@ -1,9 +1,9 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
+import TransportMap from '../components/TransportMap';
 import Modal from '../components/Modal';
-import { SharedProps } from '../types';
 import { confirmDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
 
@@ -19,6 +19,8 @@ interface Row {
     id: number;
     name: string;
     address: string | null;
+    lat: number | null;
+    lng: number | null;
     phone: string | null;
     balance: number;
     days_credit: number;
@@ -48,12 +50,11 @@ function FeeStatus({ row }: { row: Row }) {
 }
 
 export default function Transport({ date, isToday, rows, dailyRate, monthly }: Props) {
-    const { branding } = usePage<SharedProps>().props;
     const [paying, setPaying] = useState<Row | null>(null);
     const [amount, setAmount] = useState<number>(dailyRate);
     const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
     const [payNotes, setPayNotes] = useState('');
-    const [receipt, setReceipt] = useState<{ name: string; amount: number; balance: number } | null>(null);
+
 
     const morningQueue = rows.filter((r) => !r.morning_done);
     const morningDone = rows.filter((r) => r.morning_done);
@@ -74,13 +75,11 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
 
     function pay() {
         if (!paying) return;
-        const member = paying;
         router.post(
-            `/transport/${member.id}/pay`,
+            `/transport/${paying.id}/pay`,
             { amount, entry_date: payDate, notes: payNotes },
             {
                 onSuccess: () => {
-                    setReceipt({ name: member.name, amount, balance: member.balance + amount });
                     setPaying(null);
                     setPayNotes('');
                 },
@@ -127,6 +126,12 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                     </div>
                 ))}
             </div>
+
+            {rows.length > 0 && (
+                <Card title="🗺️ Today's stops" className="mb-4">
+                    <TransportMap stops={rows.map((r) => ({ id: r.id, name: r.name, address: r.address, lat: r.lat, lng: r.lng }))} />
+                </Card>
+            )}
 
             {rows.length === 0 && (
                 <Card>
@@ -353,7 +358,7 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                         </label>
                     </div>
                     <button onClick={pay} className="w-full rounded-lg bg-brand text-white font-bold py-3">
-                        Save & Receipt
+                        Save payment
                     </button>
 
                     {/* Payment & charge history */}
@@ -385,40 +390,6 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                         </details>
                     )}
                 </div>
-            </Modal>
-
-            {/* Receipt modal (print-friendly) */}
-            <Modal open={receipt !== null} title="Transport Receipt" onClose={() => setReceipt(null)}>
-                {receipt && (
-                    <div id="receipt" className="text-center space-y-2 print:block">
-                        {branding.logoUrl ? (
-                            <img src={branding.logoUrl} alt={branding.orgName} className="h-8 mx-auto object-contain" />
-                        ) : (
-                            <div className="text-2xl font-extrabold text-brand-dark">{branding.orgName}</div>
-                        )}
-                        <div className="text-xs text-slate-500">Transport Receipt · {new Date(date).toLocaleDateString('en-GB')}</div>
-                        <div className="text-lg font-bold">{receipt.name}</div>
-                        <div className="text-3xl font-extrabold text-brand">{gbp(receipt.amount)}</div>
-                        <div className="text-sm text-slate-500">
-                            Rate £{dailyRate.toFixed(2)}/day · {Math.floor(receipt.amount / dailyRate)} day(s) covered
-                        </div>
-                        <div className="text-sm">
-                            New balance:{' '}
-                            <b className={receipt.balance < 0 ? 'text-red-600' : 'text-emerald-700'}>
-                                {receipt.balance < 0 ? `−${gbp(receipt.balance)}` : gbp(receipt.balance)}
-                            </b>
-                        </div>
-                        <div className="text-[10px] text-slate-400 pt-2">
-                            Areterra · Registered charity No. 1196211 · 01562 307 306
-                        </div>
-                        <button
-                            onClick={() => window.print()}
-                            className="mt-2 rounded-full bg-brand text-white font-bold text-sm px-5 py-2.5 print:hidden"
-                        >
-                            🖨 Print receipt
-                        </button>
-                    </div>
-                )}
             </Modal>
         </AppShell>
     );

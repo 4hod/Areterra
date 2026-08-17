@@ -56,6 +56,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
         color: 'cat-ops',
         items: [
             { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
+            { href: '/weekly-planner', label: 'Weekly Planner', icon: '🗓️', isNew: true },
             { href: '/calendar', label: 'Calendar', icon: '🗓️', isNew: true },
             { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
             { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations', isNew: true },

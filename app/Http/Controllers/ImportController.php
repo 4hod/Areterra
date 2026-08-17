@@ -8,8 +8,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 // CSV import with preview-before-run (SPEC checklist: Import).
-// Members: first_name,last_name[,preferred_name,status,dob,phone,postcode]
-// Animals: name,species[,breed,sex,status]
+// Members: first_name,last_name[,preferred_name,status,dob,phone,email,postcode,address_line1,address_line2,town,support_needs,diagnoses,medication]
+// Animals: name,species[,breed,sex,status,joined_date,care_requirements,feeding_notes]
 class ImportController extends Controller
 {
     public function index()
@@ -55,8 +55,11 @@ class ImportController extends Controller
                 }
                 $member = Member::firstOrCreate(
                     ['first_name' => $row['first_name'], 'last_name' => $row['last_name']],
-                    collect($row)->only(['preferred_name', 'status', 'dob', 'phone', 'postcode'])
-                        ->filter()->all(),
+                    collect($row)->only([
+                        'preferred_name', 'status', 'dob', 'phone', 'email', 'postcode',
+                        'address_line1', 'address_line2', 'town',
+                        'support_needs', 'diagnoses', 'medication',
+                    ])->filter()->all(),
                 );
                 if ($member->wasRecentlyCreated) {
                     $member->settings()->create(['attendance_days' => [1, 2, 4, 5]]);
@@ -68,7 +71,8 @@ class ImportController extends Controller
                 }
                 $animal = Animal::firstOrCreate(
                     ['name' => $row['name'], 'species' => $row['species']],
-                    collect($row)->only(['breed', 'sex', 'status'])->filter()->all(),
+                    collect($row)->only(['breed', 'sex', 'status', 'joined_date', 'care_requirements', 'feeding_notes'])
+                        ->filter()->all(),
                 );
                 if ($animal->wasRecentlyCreated) {
                     $created++;

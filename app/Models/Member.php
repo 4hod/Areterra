@@ -23,6 +23,9 @@ class Member extends Model
             'diagnoses' => 'encrypted',
             'medication' => 'encrypted',
             'emergency_contacts' => 'encrypted:array',
+            'lat' => 'float',
+            'lng' => 'float',
+            'geocoded_at' => 'datetime',
         ];
     }
 

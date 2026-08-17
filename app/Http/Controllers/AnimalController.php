@@ -36,9 +36,13 @@ class AnimalController extends Controller
             'animal' => $animal->only([
                 'id', 'name', 'species', 'dob', 'microchip', 'sex', 'breed',
                 'photo_path', 'status', 'welfare_status',
+                'joined_date', 'care_requirements', 'feeding_notes',
             ]),
             'welfareChecks' => $animal->welfareChecks()->with('user:id,name')
-                ->orderByDesc('created_at')->limit(20)->get(),
+                ->orderByDesc('created_at')->limit(20)->get([
+                    'id', 'animal_id', 'user_id', 'status', 'notes', 'concern',
+                    'fed', 'treats_given', 'treats_notes', 'created_at',
+                ]),
             'monitoring' => $animal->dailyMonitoring()->orderByDesc('monitor_date')->limit(20)->get(),
             'vetRecords' => $animal->vetRecords()->orderByDesc('visit_date')->limit(20)->get(),
             'todayMonitoring' => $animal->dailyMonitoring()->whereDate('monitor_date', today())->first(),
@@ -70,6 +74,9 @@ class AnimalController extends Controller
             'sex' => ['nullable', 'in:male,female,unknown'],
             'breed' => ['nullable', 'string', 'max:100'],
             'status' => ['sometimes', 'in:active,inactive,deceased,rehomed'],
+            'joined_date' => ['nullable', 'date'],
+            'care_requirements' => ['nullable', 'string'],
+            'feeding_notes' => ['nullable', 'string'],
         ]);
     }
 }

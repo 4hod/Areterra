@@ -44,17 +44,24 @@ interface Props {
         breed: string | null;
         status: string;
         welfare_status: WelfareStatus;
+        joined_date: string | null;
+        care_requirements: string | null;
+        feeding_notes: string | null;
     };
     welfareChecks: {
         id: number;
         status: WelfareStatus;
         notes: string | null;
         concern: boolean;
+        fed: boolean;
+        treats_given: boolean;
+        treats_notes: string | null;
         created_at: string;
         user: { name: string };
     }[];
     monitoring: Monitoring[];
     todayMonitoring: Monitoring | null;
+    canEdit: boolean;
 }
 
 const emptyMonitoring = (): Monitoring => ({
@@ -71,7 +78,22 @@ const emptyMonitoring = (): Monitoring => ({
     concern: false,
 });
 
-export default function Show({ animal, welfareChecks, monitoring, todayMonitoring, vetRecords }: Props) {
+export default function Show({ animal, welfareChecks, monitoring, todayMonitoring, vetRecords, canEdit }: Props) {
+    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [details, setDetails] = useState({
+        dob: animal.dob ?? '',
+        microchip: animal.microchip ?? '',
+        sex: animal.sex ?? '',
+        breed: animal.breed ?? '',
+        joined_date: animal.joined_date ?? '',
+        care_requirements: animal.care_requirements ?? '',
+        feeding_notes: animal.feeding_notes ?? '',
+    });
+
+    function saveDetails() {
+        router.put(`/animals/${animal.id}`, details, { onSuccess: () => setDetailsOpen(false) });
+    }
+
     useEffect(() => {
         recordRecentlyViewed({ title: animal.name, url: `/animals/${animal.id}`, type: 'Animal' });
     }, [animal.id]);
@@ -110,10 +132,38 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         {animal.sex && ` · ${animal.sex}`}
                     </div>
                 </div>
-                <div className="ml-auto">
+                <div className="ml-auto flex items-center gap-2">
                     <StatusPill status={animal.welfare_status} label={`Welfare: ${animal.welfare_status}`} />
+                    {canEdit && (
+                        <button onClick={() => setDetailsOpen(true)} className="rounded-full bg-ink/[0.06] text-ink/70 text-xs font-bold px-3 py-2">
+                            ✏️ Edit details
+                        </button>
+                    )}
                 </div>
             </div>
+
+            {(animal.joined_date || animal.care_requirements || animal.feeding_notes) && (
+                <div className="grid md:grid-cols-3 gap-3 mb-4">
+                    {animal.joined_date && (
+                        <Card>
+                            <div className="text-xs font-bold uppercase tracking-wide text-ink/40">Joined Areterra</div>
+                            <div className="font-semibold text-brand-dark mt-1">
+                                {new Date(animal.joined_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                        </Card>
+                    )}
+                    {animal.care_requirements && (
+                        <Card title="🛁 Care Requirements">
+                            <p className="text-sm text-ink/70 whitespace-pre-wrap">{animal.care_requirements}</p>
+                        </Card>
+                    )}
+                    {animal.feeding_notes && (
+                        <Card title="🥣 Feeding">
+                            <p className="text-sm text-ink/70 whitespace-pre-wrap">{animal.feeding_notes}</p>
+                        </Card>
+                    )}
+                </div>
+            )}
 
             <div className="flex gap-2 mb-4">
                 <button onClick={() => setCheckOpen(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5">
@@ -147,6 +197,14 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                                     <StatusPill status={c.status} />
                                 </div>
                                 {c.notes && <div className="text-slate-500 mt-1">{c.notes}</div>}
+                                <div className="flex gap-2 mt-1 text-xs">
+                                    <span className={c.fed ? 'text-emerald-700' : 'text-red-600 font-bold'}>
+                                        {c.fed ? '🍽️ Fed' : '🚫 Not fed'}
+                                    </span>
+                                    {c.treats_given && (
+                                        <span className="text-amber-700">🍪 Treats{c.treats_notes && `: ${c.treats_notes}`}</span>
+                                    )}
+                                </div>
                             </li>
                         ))}
                     </ul>
@@ -333,6 +391,84 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                 <button onClick={saveMonitoring} className="mt-4 w-full rounded-lg bg-brand text-white font-bold py-3">
                     Save monitoring
                 </button>
+            </Modal>
+
+            <Modal open={detailsOpen} title={`Edit — ${animal.name}`} onClose={() => setDetailsOpen(false)}>
+                <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Date of birth
+                            <input
+                                type="date"
+                                value={details.dob}
+                                onChange={(e) => setDetails({ ...details, dob: e.target.value })}
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3"
+                            />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Joined Areterra
+                            <input
+                                type="date"
+                                value={details.joined_date}
+                                onChange={(e) => setDetails({ ...details, joined_date: e.target.value })}
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3"
+                            />
+                        </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Microchip
+                            <input
+                                value={details.microchip}
+                                onChange={(e) => setDetails({ ...details, microchip: e.target.value })}
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3"
+                            />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Sex
+                            <select
+                                value={details.sex}
+                                onChange={(e) => setDetails({ ...details, sex: e.target.value })}
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white"
+                            >
+                                <option value="">Unknown</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label className="block text-sm font-medium">
+                        Breed
+                        <input
+                            value={details.breed}
+                            onChange={(e) => setDetails({ ...details, breed: e.target.value })}
+                            className="mt-1 w-full rounded-lg border border-slate-300 px-3"
+                        />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        🛁 Care requirements
+                        <textarea
+                            value={details.care_requirements}
+                            onChange={(e) => setDetails({ ...details, care_requirements: e.target.value })}
+                            placeholder="e.g. Free range during day. Secure in coop at dusk. Check for mites weekly."
+                            className="mt-1 w-full rounded-lg border border-slate-300 p-3"
+                            rows={3}
+                        />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        🥣 Feeding
+                        <textarea
+                            value={details.feeding_notes}
+                            onChange={(e) => setDetails({ ...details, feeding_notes: e.target.value })}
+                            placeholder="e.g. Layers pellets, mixed corn and fresh water daily."
+                            className="mt-1 w-full rounded-lg border border-slate-300 p-3"
+                            rows={3}
+                        />
+                    </label>
+                    <button onClick={saveDetails} className="w-full rounded-lg bg-brand text-white font-bold py-3">
+                        Save details
+                    </button>
+                </div>
             </Modal>
         </AppShell>
     );

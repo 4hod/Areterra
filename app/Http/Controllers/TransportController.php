@@ -14,7 +14,7 @@ class TransportController extends Controller
     {
         $today = $request->date('date') ?? today();
 
-        $members = Member::active()
+        $members = Member::scheduledFor($today)
             ->whereHas('settings', fn ($q) => $q->where('transport_required', true))
             ->with('settings')
             ->orderBy('first_name')
@@ -26,12 +26,25 @@ class TransportController extends Controller
         $rows = $members->map(function (Member $m) use ($runs) {
             $address = collect([$m->address_line1, $m->address_line2, $m->town, $m->postcode])
                 ->filter()->implode(', ');
+
+            // Geocode once per address, ever — cached on the member record.
+            if ($address && ! $m->geocoded_at) {
+                $coords = \App\Support\Geocoder::resolve($address);
+                $m->update([
+                    'lat' => $coords['lat'] ?? null,
+                    'lng' => $coords['lng'] ?? null,
+                    'geocoded_at' => now(),
+                ]);
+            }
+
             $balance = TransportLedgerEntry::balanceFor($m->id);
 
             return [
                 'id' => $m->id,
                 'name' => $m->displayName(),
                 'address' => $address ?: null,
+                'lat' => $m->lat ? (float) $m->lat : null,
+                'lng' => $m->lng ? (float) $m->lng : null,
                 'phone' => $m->phone,
                 'balance' => $balance,
                 'days_credit' => (int) floor(max(0, $balance) / TransportLedgerEntry::DAILY_RATE),
@@ -70,6 +83,12 @@ class TransportController extends Controller
 
     public function complete(Request $request, Member $member)
     {
+        abort_unless(
+            Member::scheduledFor(today())->whereKey($member->id)->exists(),
+            422,
+            "{$member->displayName()} isn't scheduled for transport today.",
+        );
+
         $data = $request->validate([
             'phase' => ['required', 'in:morning,afternoon'],
         ]);
@@ -134,6 +153,12 @@ class TransportController extends Controller
 
     public function pay(Request $request, Member $member)
     {
+        abort_unless(
+            Member::scheduledFor(today())->whereKey($member->id)->exists(),
+            422,
+            "{$member->displayName()} isn't scheduled for transport today.",
+        );
+
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01', 'max:500'],
             'entry_date' => ['nullable', 'date'],
@@ -150,7 +175,7 @@ class TransportController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return back()->with('success', '£'.number_format($data['amount'], 2)." received from {$member->displayName()}.");
+        return back()->with('success', '£'.number_format($data['amount'], 2)." received from {$member->displayName()}. Please issue a receipt from the till.");
     }
 
     // Corrections only — payments recorded in error (SPEC checklist: delete payment).

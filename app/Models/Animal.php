@@ -18,6 +18,7 @@ class Animal extends Model
     {
         return [
             'dob' => 'date',
+            'joined_date' => 'date',
         ];
     }
 

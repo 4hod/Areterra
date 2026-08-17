@@ -14,6 +14,9 @@ class WelfareCheckController extends Controller
             'status' => ['required', 'in:green,amber,red'],
             'notes' => ['nullable', 'string'],
             'concern' => ['boolean'],
+            'fed' => ['boolean'],
+            'treats_given' => ['boolean'],
+            'treats_notes' => ['nullable', 'string'],
         ]);
 
         $this->record($animal, $data, $request->user()->id);
@@ -21,27 +24,36 @@ class WelfareCheckController extends Controller
         return back()->with('success', "Welfare check logged for {$animal->name}.");
     }
 
-    // Species group check: everyone healthy, except any animals explicitly flagged.
+    // Species group check: everyone healthy and fed by default, except
+    // whatever's explicitly noted per animal (concern, not fed, treats given).
     public function storeSpecies(Request $request)
     {
         $data = $request->validate([
             'species' => ['required', 'in:'.implode(',', Animal::SPECIES)],
-            'flagged' => ['nullable', 'array'],
-            'flagged.*.animal_id' => ['required', 'exists:animals,id'],
-            'flagged.*.status' => ['required', 'in:amber,red'],
-            'flagged.*.notes' => ['nullable', 'string'],
+            'checks' => ['nullable', 'array'],
+            'checks.*.animal_id' => ['required', 'exists:animals,id'],
+            'checks.*.status' => ['nullable', 'in:amber,red'],
+            'checks.*.notes' => ['nullable', 'string'],
+            'checks.*.fed' => ['boolean'],
+            'checks.*.treats_given' => ['boolean'],
+            'checks.*.treats_notes' => ['nullable', 'string'],
         ]);
 
-        $flagged = collect($data['flagged'] ?? [])->keyBy('animal_id');
+        $overrides = collect($data['checks'] ?? [])->keyBy('animal_id');
 
-        DB::transaction(function () use ($data, $flagged, $request) {
+        DB::transaction(function () use ($data, $overrides, $request) {
             Animal::active()->where('species', $data['species'])->get()
-                ->each(function (Animal $animal) use ($flagged, $request) {
-                    $flag = $flagged->get($animal->id);
+                ->each(function (Animal $animal) use ($overrides, $request) {
+                    $o = $overrides->get($animal->id);
+                    $hasConcern = $o && ! empty($o['status']);
+
                     $this->record($animal, [
-                        'status' => $flag['status'] ?? 'green',
-                        'notes' => $flag['notes'] ?? null,
-                        'concern' => $flag !== null,
+                        'status' => $hasConcern ? $o['status'] : 'green',
+                        'notes' => $o['notes'] ?? null,
+                        'concern' => $hasConcern,
+                        'fed' => $o['fed'] ?? true,
+                        'treats_given' => $o['treats_given'] ?? false,
+                        'treats_notes' => $o['treats_notes'] ?? null,
                     ], $request->user()->id);
                 });
         });
@@ -56,16 +68,27 @@ class WelfareCheckController extends Controller
             'status' => $data['status'],
             'notes' => $data['notes'] ?? null,
             'concern' => $data['concern'] ?? false,
+            'fed' => $data['fed'] ?? true,
+            'treats_given' => $data['treats_given'] ?? false,
+            'treats_notes' => $data['treats_notes'] ?? null,
         ]);
 
         $animal->update(['welfare_status' => $data['status']]);
 
+        $alerts = [];
         if ($data['concern'] ?? false) {
+            $alerts[] = "flagged {$data['status']}".(($data['notes'] ?? null) ? ": {$data['notes']}" : '');
+        }
+        if (! ($data['fed'] ?? true)) {
+            $alerts[] = 'not fed today';
+        }
+
+        if ($alerts) {
             \Illuminate\Support\Facades\Notification::send(
                 \App\Models\User::managers()->get(),
                 new \App\Notifications\ConcernRaised(
-                    "Welfare concern: {$animal->name}",
-                    trim("{$animal->species} {$animal->name} flagged {$data['status']}. ".($data['notes'] ?? '')),
+                    "Welfare: {$animal->name}",
+                    "{$animal->species} {$animal->name} — ".implode('; ', $alerts).'.',
                     "/animals/{$animal->id}",
                 ),
             );

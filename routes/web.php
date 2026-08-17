@@ -247,6 +247,9 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/activities', [App\Http\Controllers\ActivityController::class, 'store'])
         ->middleware('can:log_sessions')->name('activities.store');
 
+    Route::get('/weekly-planner', [App\Http\Controllers\WeeklyPlannerController::class, 'index'])->name('weekly-planner');
+    Route::get('/weekly-planner/print', [App\Http\Controllers\WeeklyPlannerController::class, 'print'])->name('weekly-planner.print');
+
     Route::get('/recognition', [App\Http\Controllers\RecognitionController::class, 'index'])->name('recognition');
     Route::post('/recognition', [App\Http\Controllers\RecognitionController::class, 'store'])->name('recognition.store');
     Route::post('/recognition/{recognition}/like', [App\Http\Controllers\RecognitionController::class, 'toggleLike'])->name('recognition.like');
