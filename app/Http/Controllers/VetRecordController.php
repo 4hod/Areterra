@@ -11,6 +11,7 @@ class VetRecordController extends Controller
     {
         $data = $request->validate([
             'visit_date' => ['required', 'date'],
+            'next_due_date' => ['nullable', 'date'],
             'reason' => ['nullable', 'string', 'max:200'],
             'treatment' => ['nullable', 'string'],
             'vet_name' => ['nullable', 'string', 'max:100'],

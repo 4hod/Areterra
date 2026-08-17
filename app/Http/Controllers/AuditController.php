@@ -37,6 +37,18 @@ class AuditController extends Controller
             $findings[] = $this->finding('warning', "{$animal->name} ({$animal->species}) has no vet record in the last 12 months", "/animals/{$animal->id}");
         }
 
+        // 2b. Vaccinations/treatments due or overdue.
+        foreach (\App\Models\VetRecord::with('animal')->whereNotNull('next_due_date')->get() as $record) {
+            if (! $record->animal || $record->animal->status !== 'active') {
+                continue;
+            }
+            if ($record->next_due_date->lt(today())) {
+                $findings[] = $this->finding('critical', "{$record->animal->name} — vet/vaccination was due ".$record->next_due_date->format('j M Y'), "/animals/{$record->animal->id}");
+            } elseif ($record->next_due_date->lte(today()->addDays(14))) {
+                $findings[] = $this->finding('warning', "{$record->animal->name} — vet/vaccination due ".$record->next_due_date->format('j M Y'), "/animals/{$record->animal->id}");
+            }
+        }
+
         // 3. Animals with welfare status amber/red.
         foreach (Animal::active()->whereIn('welfare_status', ['amber', 'red'])->get() as $animal) {
             $findings[] = $this->finding(
@@ -57,9 +69,20 @@ class AuditController extends Controller
         // 5. Staff with no supervision in 12 weeks.
         $supervisions = Supervision::orderByDesc('date')->get()->groupBy(fn ($s) => $s->subject_type.':'.$s->subject_id);
         $checkStaff = function (string $key, string $name) use ($supervisions, &$findings) {
-            $latest = $supervisions->get($key)?->first();
+            $history = $supervisions->get($key, collect());
+            $latest = $history->where('type', '!=', 'appraisal')->first();
             if ($latest === null || $latest->date->lt(now()->subWeeks(12))) {
                 $findings[] = $this->finding('warning', "{$name} has had no supervision in the last 12 weeks", '/supervisions');
+            }
+
+            // Appraisals are annual, not 12-weekly — checked separately, and
+            // prefer the explicit next_due_date over a flat interval when set.
+            $latestAppraisal = $history->where('type', 'appraisal')->first();
+            $dueDate = $latestAppraisal?->next_due_date ?? $latestAppraisal?->date?->addYear();
+            if ($latestAppraisal === null) {
+                $findings[] = $this->finding('info', "{$name} has never had an appraisal", '/supervisions');
+            } elseif ($dueDate && $dueDate->lt(today())) {
+                $findings[] = $this->finding('warning', "{$name}'s appraisal was due ".$dueDate->format('j M Y'), '/supervisions');
             }
         };
         User::all()->each(fn ($u) => $checkStaff(User::class.':'.$u->id, $u->name));
@@ -88,6 +111,31 @@ class AuditController extends Controller
         // 8. Overdue compliance items.
         foreach (\App\Models\ComplianceItem::whereNull('completed_at')->where('due_date', '<', today())->get() as $item) {
             $findings[] = $this->finding('critical', "Compliance item \"{$item->title}\" was due ".$item->due_date->format('j M Y'), '/compliance');
+        }
+
+        // 9. Consents needing annual re-confirmation.
+        foreach (\App\Models\MemberConsent::where('granted', true)->with('member')->get() as $consent) {
+            if ($consent->member && $consent->member->status === 'active' && $consent->isExpired()) {
+                $findings[] = $this->finding('warning', "{$consent->member->displayName()}'s {$consent->consent_type} consent needs re-confirming", "/members/{$consent->member_id}");
+            }
+        }
+
+        // 10. SAR requests approaching or past the statutory deadline.
+        foreach (\App\Models\SarRequest::whereNotIn('status', ['fulfilled', 'declined'])->get() as $sar) {
+            if ($sar->deadline_date->lt(today())) {
+                $findings[] = $this->finding('critical', "SAR from {$sar->requester_name} is past the statutory deadline (".$sar->deadline_date->format('j M Y').')', '/sar-requests');
+            } elseif ($sar->deadline_date->lte(today()->addDays(5))) {
+                $findings[] = $this->finding('warning', "SAR from {$sar->requester_name} is due ".$sar->deadline_date->format('j M Y'), '/sar-requests');
+            }
+        }
+
+        // 11. Insurance policies expiring or expired.
+        foreach (\App\Models\InsurancePolicy::whereNotNull('renewal_date')->get() as $policy) {
+            if ($policy->renewal_date->lt(today())) {
+                $findings[] = $this->finding('critical', "{$policy->policy_type} insurance expired ".$policy->renewal_date->format('j M Y'), '/insurance');
+            } elseif ($policy->renewal_date->lte(today()->addDays(30))) {
+                $findings[] = $this->finding('warning', "{$policy->policy_type} insurance renews ".$policy->renewal_date->format('j M Y'), '/insurance');
+            }
         }
 
         $order = ['critical' => 0, 'warning' => 1, 'info' => 2];

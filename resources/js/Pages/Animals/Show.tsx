@@ -7,6 +7,7 @@ import StatusPill from '../../components/StatusPill';
 import { WelfareStatus } from '../../types';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
 import ModuleHero from '../../components/ModuleHero';
+import Sparkline from '../../components/Sparkline';
 
 interface Monitoring {
     id?: number;
@@ -26,6 +27,7 @@ interface Monitoring {
 interface VetRecordRow {
     id: number;
     visit_date: string;
+    next_due_date: string | null;
     reason: string | null;
     treatment: string | null;
     vet_name: string | null;
@@ -104,7 +106,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     const [monitorOpen, setMonitorOpen] = useState(false);
     const [m, setM] = useState<Monitoring>(todayMonitoring ?? emptyMonitoring());
     const [vetOpen, setVetOpen] = useState(false);
-    const [vet, setVet] = useState({ visit_date: new Date().toISOString().slice(0, 10), reason: '', treatment: '', vet_name: '', notes: '' });
+    const [vet, setVet] = useState({ visit_date: new Date().toISOString().slice(0, 10), next_due_date: '', reason: '', treatment: '', vet_name: '', notes: '' });
 
     function saveCheck() {
         router.post(
@@ -212,6 +214,17 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
 
                 <Card title="Daily monitoring history">
                     {monitoring.length === 0 && <p className="text-sm text-slate-400">No monitoring recorded yet.</p>}
+                    {monitoring.filter((m) => m.weight_grams !== null).length >= 2 && (
+                        <div className="mb-3">
+                            <div className="text-xs font-bold uppercase tracking-wide text-ink/40 mb-1">Weight trend (g)</div>
+                            <Sparkline
+                                values={[...monitoring]
+                                    .filter((m) => m.weight_grams !== null)
+                                    .reverse()
+                                    .map((m) => m.weight_grams as number)}
+                            />
+                        </div>
+                    )}
                     <ul className="divide-y divide-slate-100 text-sm">
                         {monitoring.map((row) => (
                             <li key={row.id} className="py-2">
@@ -233,18 +246,30 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                 <Card title="Vet records" className="md:col-span-2">
                     {vetRecords.length === 0 && <p className="text-sm text-slate-400">No vet visits recorded.</p>}
                     <ul className="divide-y divide-slate-100 text-sm">
-                        {vetRecords.map((v) => (
-                            <li key={v.id} className="py-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold">
-                                        {new Date(v.visit_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                        {v.vet_name && <span className="text-slate-400"> · {v.vet_name}</span>}
-                                    </span>
-                                    <span className="text-slate-500">{v.reason}</span>
-                                </div>
-                                {v.treatment && <div className="text-slate-500 mt-1">{v.treatment}</div>}
-                            </li>
-                        ))}
+                        {vetRecords.map((v) => {
+                            const daysUntilDue = v.next_due_date
+                                ? Math.ceil((new Date(v.next_due_date).getTime() - Date.now()) / 86400000)
+                                : null;
+                            return (
+                                <li key={v.id} className="py-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold">
+                                            {new Date(v.visit_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            {v.vet_name && <span className="text-slate-400"> · {v.vet_name}</span>}
+                                        </span>
+                                        <span className="text-slate-500">{v.reason}</span>
+                                    </div>
+                                    {v.treatment && <div className="text-slate-500 mt-1">{v.treatment}</div>}
+                                    {v.next_due_date && daysUntilDue !== null && (
+                                        <div className={`text-xs font-bold mt-1 ${daysUntilDue < 0 ? 'text-status-red' : daysUntilDue <= 14 ? 'text-status-amber' : 'text-ink/40'}`}>
+                                            {daysUntilDue < 0
+                                                ? `⚠ Overdue since ${new Date(v.next_due_date).toLocaleDateString('en-GB')}`
+                                                : `Next due ${new Date(v.next_due_date).toLocaleDateString('en-GB')} (${daysUntilDue}d)`}
+                                        </div>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </Card>
             </div>
@@ -252,10 +277,16 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
             {/* Vet record modal */}
             <Modal open={vetOpen} title={`Vet visit — ${animal.name}`} onClose={() => setVetOpen(false)}>
                 <div className="space-y-3">
-                    <label className="block text-sm font-medium">
-                        Visit date
-                        <input type="date" value={vet.visit_date} onChange={(e) => setVet({ ...vet, visit_date: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
-                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Visit date
+                            <input type="date" value={vet.visit_date} onChange={(e) => setVet({ ...vet, visit_date: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Next due (optional)
+                            <input type="date" value={vet.next_due_date} onChange={(e) => setVet({ ...vet, next_due_date: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                         <label className="block text-sm font-medium">
                             Reason

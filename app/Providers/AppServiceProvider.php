@@ -41,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\MemberAlert::class, \App\Models\MemberConsent::class, \App\Models\Setting::class,
             \App\Models\ProductOrder::class, \App\Models\MaintenanceTask::class, \App\Models\Project::class,
             \App\Models\FundingOpportunity::class, \App\Models\Incident::class, \App\Models\FormDefinition::class,
+            \App\Models\SarRequest::class, \App\Models\InsurancePolicy::class,
         ];
         foreach ($audited as $model) {
             $model::observe(\App\Observers\AuditLogObserver::class);

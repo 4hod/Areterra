@@ -169,6 +169,8 @@ class MemberController extends Controller
                     'consent_type' => $c->consent_type,
                     'granted' => $c->granted,
                     'recorded_on' => $c->recorded_on->toDateString(),
+                    'expires_at' => $c->expiresAt()?->toDateString(),
+                    'is_expired' => $c->isExpired(),
                     'notes' => $c->notes,
                 ])
                 : [],

@@ -231,6 +231,14 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:log_sessions')->name('body-maps.store');
     Route::get('/members/{member}/sar', [App\Http\Controllers\SarController::class, 'show'])
         ->middleware('can:edit_members')->name('members.sar');
+    Route::get('/members/{member}/care-plan', [App\Http\Controllers\CarePlanController::class, 'show'])
+        ->middleware('can:view_member_details')->name('members.care-plan');
+
+    Route::middleware('can:edit_members')->group(function () {
+        Route::get('/sar-requests', [App\Http\Controllers\SarRequestController::class, 'index'])->name('sar-requests');
+        Route::post('/sar-requests', [App\Http\Controllers\SarRequestController::class, 'store'])->name('sar-requests.store');
+        Route::put('/sar-requests/{sarRequest}', [App\Http\Controllers\SarRequestController::class, 'update'])->name('sar-requests.update');
+    });
 
     Route::get('/vehicles', [App\Http\Controllers\VehicleController::class, 'index'])
         ->middleware('can:view_vehicles')->name('vehicles');
@@ -370,6 +378,11 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::post('/funding', [App\Http\Controllers\FundingController::class, 'store'])->name('funding.store');
         Route::put('/funding/{funding}', [App\Http\Controllers\FundingController::class, 'update'])->name('funding.update');
         Route::delete('/funding/{funding}', [App\Http\Controllers\FundingController::class, 'destroy'])->name('funding.destroy');
+
+        Route::get('/insurance', [App\Http\Controllers\InsurancePolicyController::class, 'index'])->name('insurance');
+        Route::post('/insurance', [App\Http\Controllers\InsurancePolicyController::class, 'store'])->name('insurance.store');
+        Route::put('/insurance/{policy}', [App\Http\Controllers\InsurancePolicyController::class, 'update'])->name('insurance.update');
+        Route::delete('/insurance/{policy}', [App\Http\Controllers\InsurancePolicyController::class, 'destroy'])->name('insurance.destroy');
     });
     Route::middleware('can:request_products')->group(function () {
         Route::get('/orders', [App\Http\Controllers\ProductOrderController::class, 'index'])->name('orders');

@@ -15,6 +15,7 @@ class VetRecord extends Model
     {
         return [
             'visit_date' => 'date',
+            'next_due_date' => 'date',
         ];
     }
 

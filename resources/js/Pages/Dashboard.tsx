@@ -7,6 +7,7 @@ import { ChecklistItem, SharedProps } from '../types';
 
 interface Props {
     orgIsEmpty: boolean;
+    birthdays: { id: number; name: string; date: string; is_today: boolean }[];
     stats: { membersInToday: number; membersScheduled: number; animalsNeedingChecks: number; attendanceTrend: number[] };
     welfareAlerts: { id: number; name: string; species: string; welfare_status: string }[];
     checklist: ChecklistItem[];
@@ -59,6 +60,7 @@ const avatarColours = ['dashboard-avatar-blue', 'dashboard-avatar-green', 'dashb
 
 export default function Dashboard({
     orgIsEmpty,
+    birthdays,
     stats,
     welfareAlerts,
     checklist,
@@ -259,6 +261,19 @@ export default function Dashboard({
                                 <Link href="/leave">Manage</Link>
                             </div>
                         </article>
+
+                        {birthdays.length > 0 && (
+                            <article className="dashboard-panel">
+                                <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">Coming up</p><h3>🎂 Birthdays</h3></div></div>
+                                <div className="dashboard-feed">
+                                    {birthdays.map((b) => (
+                                        <Link href={`/members/${b.id}`} key={b.id} className="dashboard-feed-item">
+                                            <strong>{b.is_today ? `🎉 ${b.name} — today!` : `${b.name} — ${b.date}`}</strong>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </article>
+                        )}
 
                         <article className="dashboard-panel">
                             <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">Latest updates</p><h3>Announcements</h3></div><Link href="/announcements">All →</Link></div>

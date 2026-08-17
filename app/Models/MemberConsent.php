@@ -25,4 +25,16 @@ class MemberConsent extends Model
     {
         return $this->belongsTo(Member::class);
     }
+
+    // Consent is treated as expiring a year after it was recorded — re-confirm
+    // annually rather than treating it as a one-time, forever tick.
+    public function expiresAt(): ?\Carbon\Carbon
+    {
+        return $this->recorded_on?->copy()->addYear();
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->granted && $this->expiresAt()?->lt(today());
+    }
 }

@@ -36,6 +36,22 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'orgIsEmpty' => Member::count() === 0 && Animal::count() === 0,
+            'birthdays' => Member::active()->whereNotNull('dob')->get()
+                ->filter(function ($m) {
+                    // Compare month+day only, across a 7-day window that can wrap year-end.
+                    $next = today()->setMonth($m->dob->month)->setDay($m->dob->day);
+                    if ($next->lt(today())) {
+                        $next = $next->addYear();
+                    }
+                    return $next->diffInDays(today()) <= 7;
+                })
+                ->map(fn ($m) => [
+                    'id' => $m->id,
+                    'name' => $m->displayName(),
+                    'date' => $m->dob->format('j M'),
+                    'is_today' => $m->dob->format('m-d') === today()->format('m-d'),
+                ])
+                ->values(),
             'stats' => [
                 'membersInToday' => Attendance::whereDate('date', $today)->where('checked_in', true)->count(),
                 'membersScheduled' => Member::scheduledFor($today)->count(),

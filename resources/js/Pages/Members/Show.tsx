@@ -26,7 +26,7 @@ interface ContactRow { id: number; name: string; role: string | null; organisati
 interface GoalRow { id: number; title: string; description: string | null; status: string; target_date: string | null; achieved_at: string | null }
 interface OutcomeRow { id: number; date: string; outcome: string; goal: string | null; user: string }
 interface AlertRow { id: number; type: string; text: string; severity: string }
-interface ConsentRow { consent_type: string; granted: boolean; recorded_on: string; notes: string | null }
+interface ConsentRow { consent_type: string; granted: boolean; recorded_on: string; expires_at: string | null; is_expired: boolean; notes: string | null }
 interface MemberNoteRow { id: number; note_type: string; note: string; author_name: string | null; noted_at: string | null; source: string }
 
 interface Props {
@@ -239,6 +239,9 @@ export default function Show(props: Props) {
                     </Link>
                     {canEdit && (
                         <>
+                            <a href={`/members/${member.id}/care-plan`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
+                                🗓️ Care Plan
+                            </a>
                             <a href={`/members/${member.id}/sar`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
                                 📄 SAR
                             </a>
@@ -591,7 +594,16 @@ export default function Show(props: Props) {
                                 <li key={type} className="py-3 flex items-center justify-between text-sm">
                                     <div>
                                         <div className="font-semibold">{label}</div>
-                                        {c && <div className="text-xs text-slate-400">Recorded {fmt(c.recorded_on)}{c.notes && ` — ${c.notes}`}</div>}
+                                        {c && (
+                                            <div className="text-xs text-slate-400">
+                                                Recorded {fmt(c.recorded_on)}{c.notes && ` — ${c.notes}`}
+                                                {c.granted && c.expires_at && (
+                                                    <span className={c.is_expired ? 'text-status-red font-bold' : ''}>
+                                                        {' '}· {c.is_expired ? `expired ${fmt(c.expires_at)} — please re-confirm` : `renews ${fmt(c.expires_at)}`}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex gap-1">
                                         {[true, false].map((granted) => (
