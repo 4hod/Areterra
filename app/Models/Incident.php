@@ -2,15 +2,29 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTasks;
+use App\Models\Concerns\HasDocuments;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Incident extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasTasks, HasDocuments;
 
     protected $guarded = [];
+
+    /** The member, animal or vehicle this incident is about. */
+    public function subject()
+    {
+        return $this->morphTo();
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class);
+    }
 
     public const SEVERITIES = ['minor', 'moderate', 'serious', 'critical'];
     public const STATUSES = ['open', 'under-review', 'closed'];

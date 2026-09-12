@@ -81,6 +81,11 @@ abstract class HubNotification extends Notification
         $firstName = explode(' ', $notifiable->name)[0];
         $body = "Hello {$firstName},\n\n{$this->body()}\n\nOpen Areterra Hub: ".url($this->url())."\n\n— Areterra Hub";
 
-        return new BrandedEmail($this->title(), $body);
+        // A Mailable carries no recipient of its own — unlike a MailMessage,
+        // Laravel will not address it for you. Without this the whole
+        // notification throws "An email must have a To header", which took
+        // down welfare concerns and product orders the moment a manager
+        // existed to notify.
+        return (new BrandedEmail($this->title(), $body))->to($notifiable->email);
     }
 }

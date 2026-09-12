@@ -10,6 +10,12 @@ class AuditLog extends Model
 
     protected $guarded = [];
 
+    /** The record this audit row is about. */
+    public function subject()
+    {
+        return $this->morphTo();
+    }
+
     protected function casts(): array
     {
         return [

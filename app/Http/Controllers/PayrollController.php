@@ -5,7 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\PayrollEntry;
 use App\Models\PayrollPeriod;
 use App\Models\StaffRosterMember;
+use App\Support\PayrollRates;
+use App\Workflows\Payroll\ApprovePayrollPeriod;
+use App\Workflows\Payroll\OpenPayrollPeriod;
+use App\Workflows\Payroll\PayrollPreview;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PayrollController extends Controller
@@ -66,25 +71,23 @@ class PayrollController extends Controller
             'authorised_by' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $period = PayrollPeriod::create($data);
+        // Validates, then creates period + entries in a single transaction.
+        // A missing rate no longer becomes a silent 0.00 — it comes back as a
+        // named warning. See OpenPayrollPeriod.
+        $workflow = new OpenPayrollPeriod($data);
+        $period = $workflow->run();
 
-        // Prefill a row for each active roster member at their current rate.
-        StaffRosterMember::where('active', true)->orderBy('name')->get()
-            ->each(fn (StaffRosterMember $s) => $period->entries()->create([
-                'payable_type' => StaffRosterMember::class,
-                'payable_id' => $s->id,
-                'staff_name' => $s->name,
-                'ni_number' => $s->safeNiNumber(),
-                'hourly_rate' => $s->currentRate() ?? 0,
-            ]));
-
-        return redirect()->route('payroll.show', $period)->with('success', 'Pay period created.');
+        return redirect()->route('payroll.show', $period)
+            ->with('success', 'Pay period created.')
+            ->with('problems', $workflow->warnings);
     }
 
     public function show(PayrollPeriod $period)
     {
         return Inertia::render('Payroll/Show', [
             'period' => $this->periodProps($period),
+            // Every figure, its working, and anything blocking approval.
+            'preview' => PayrollPreview::for($period)->toArray(),
         ]);
     }
 
@@ -130,30 +133,51 @@ class PayrollController extends Controller
             'deleted.*' => ['integer'],
         ]);
 
-        $period->entries()->whereIn('id', $data['deleted'] ?? [])->delete();
+        // One transaction: a failure part-way through the loop can no longer
+        // leave some lines saved, some deleted and the rest lost.
+        DB::transaction(function () use ($data, $period) {
+            $period->entries()->whereIn('id', $data['deleted'] ?? [])->delete();
 
-        foreach ($data['entries'] as $e) {
-            $values = [
-                'staff_name' => $e['staff_name'],
-                'ni_number' => $e['ni_number'] ?? null,
-                'hourly_rate' => $e['hourly_rate'] ?? 0,
-                'total_hours' => $e['total_hours'] ?? 0,
-                'holiday_pay' => $e['holiday_pay'] ?? 0,
-                'total_ssp' => $e['total_ssp'] ?? 0,
-                'mileage' => $e['mileage'] ?? 0,
-                'mileage_pay' => $e['mileage_pay'] ?? 0,
-            ];
-            // Totals are always recomputed server-side.
-            $values = [...$values, ...PayrollEntry::computeTotals($values)];
+            foreach ($data['entries'] as $e) {
+                $values = [
+                    'staff_name' => $e['staff_name'],
+                    'ni_number' => $e['ni_number'] ?? null,
+                    'hourly_rate' => $e['hourly_rate'] ?? 0,
+                    'total_hours' => $e['total_hours'] ?? 0,
+                    'holiday_pay' => $e['holiday_pay'] ?? 0,
+                    'total_ssp' => $e['total_ssp'] ?? 0,
+                    'mileage' => $e['mileage'] ?? 0,
+                    'mileage_pay' => $e['mileage_pay'] ?? 0,
+                ];
+                // Totals are always recomputed server-side.
+                $values = [...$values, ...PayrollEntry::computeTotals($values)];
 
-            if (! empty($e['id'])) {
-                $period->entries()->whereKey($e['id'])->update($values);
-            } else {
-                $period->entries()->create($values);
+                if (! empty($e['id'])) {
+                    $period->entries()->whereKey($e['id'])->update($values);
+                } else {
+                    $period->entries()->create($values);
+                }
             }
-        }
+        });
 
-        return back()->with('success', 'Payroll saved.');
+        return back()
+            ->with('success', 'Payroll saved.')
+            ->with('problems', PayrollPreview::for($period)->problems());
+    }
+
+    /**
+     * Draft -> Approved. Blocked, by name, if anything is wrong.
+     * WorkflowException renders the reasons rather than a 500.
+     */
+    public function approve(Request $request, PayrollPeriod $period)
+    {
+        $data = $request->validate([
+            'approved_by' => ['required', 'string', 'max:100'],
+        ]);
+
+        (new ApprovePayrollPeriod($period, $data['approved_by']))->run();
+
+        return back()->with('success', 'Pay run approved.');
     }
 
     public function destroyPeriod(PayrollPeriod $period)

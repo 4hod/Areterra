@@ -2,13 +2,24 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLedgerEntries;
+
+use App\Models\Concerns\HasStatus;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PayrollPeriod extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasStatus, HasLedgerEntries;
+
+    /** Point 16 — nothing jumps from data entry straight to "paid". */
+    public static array $statuses = [
+        'draft' => ['finalised'],
+        'finalised' => ['paid', 'draft'],
+        'paid' => [],
+    ];
 
     protected $guarded = [];
 

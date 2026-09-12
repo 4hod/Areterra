@@ -73,13 +73,24 @@ class FormController extends Controller
         return redirect('/forms')->with('success', 'Form created.');
     }
 
-    public function show(string $slug)
+    public function show(Request $request, string $slug)
     {
         $form = FormDefinition::where('slug', $slug)->with('fields')->firstOrFail();
 
         abort_unless($form->is_active || Gate::allows('build_forms'), 404);
 
+        // A report can be opened about a specific record:
+        //   /forms/welfare-concern?about=animal&id=4
+        $subject = $this->resolveSubject($request->query('about'), $request->query('id'));
+
         return Inertia::render('Forms/Show', [
+            'subject' => $subject ? [
+                'type' => $request->query('about'),
+                'id' => $subject->getKey(),
+                'name' => $subject->name
+                    ?? (method_exists($subject, 'displayName') ? $subject->displayName() : null)
+                    ?? $subject->title,
+            ] : null,
             'form' => [
                 'id' => $form->id,
                 'title' => $form->title,
@@ -104,12 +115,18 @@ class FormController extends Controller
         foreach ($form->fields as $field) {
             $rules["field_{$field->id}"] = [$field->is_required ? 'required' : 'nullable', 'string'];
         }
+        $rules['about'] = ['nullable', 'string'];
+        $rules['about_id'] = ['nullable', 'integer'];
         $data = $request->validate($rules);
+
+        $subject = $this->resolveSubject($data['about'] ?? null, $data['about_id'] ?? null);
 
         $submission = FormSubmission::create([
             'form_id' => $form->id,
             'submitted_by' => $request->user()->id,
             'submitted_at' => now(),
+            'subject_type' => $subject?->getMorphClass(),
+            'subject_id' => $subject?->getKey(),
         ]);
 
         foreach ($form->fields as $field) {
@@ -119,7 +136,36 @@ class FormController extends Controller
             ]);
         }
 
+        // Straight back to the record, where the report now appears.
+        if ($subject) {
+            $back = match ($data['about']) {
+                'member' => "/members/{$subject->getKey()}",
+                'animal' => "/animals/{$subject->getKey()}",
+                default => '/forms',
+            };
+
+            return redirect($back)->with('success', "{$form->title} saved to this record.");
+        }
+
         return redirect('/forms')->with('success', 'Submitted — thank you.');
+    }
+
+    /** Maps the ?about= shorthand to a real record. Anything unknown is ignored. */
+    private function resolveSubject(?string $about, $id)
+    {
+        if (! $about || ! $id) {
+            return null;
+        }
+
+        $model = match ($about) {
+            'member' => \App\Models\Member::class,
+            'animal' => \App\Models\Animal::class,
+            'vehicle' => \App\Models\Vehicle::class,
+            'grant' => \App\Models\Grant::class,
+            default => null,
+        };
+
+        return $model ? $model::find($id) : null;
     }
 
     public function submissions(string $slug)

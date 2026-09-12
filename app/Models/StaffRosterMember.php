@@ -14,6 +14,13 @@ class StaffRosterMember extends Model
 
     protected $guarded = [];
 
+    /** The same human's login account, when they have one. Payroll used to
+     *  match these by name, which meant one person could be paid twice. */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     protected function casts(): array
     {
         return [

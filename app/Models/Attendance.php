@@ -13,6 +13,28 @@ class Attendance extends Model
 
     protected $guarded = [];
 
+    public const STATUSES = ['expected', 'present', 'absent'];
+
+    public function scopeAbsent($query)
+    {
+        return $query->where('status', 'absent');
+    }
+
+    public function scopePresent($query)
+    {
+        return $query->where('status', 'present');
+    }
+
+    public function recorder()
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function activity()
+    {
+        return $this->belongsTo(Activity::class);
+    }
+
     protected function casts(): array
     {
         return [

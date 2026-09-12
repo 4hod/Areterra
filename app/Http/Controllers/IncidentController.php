@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\IncidentLogged;
+
 use App\Models\Incident;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -37,7 +39,7 @@ class IncidentController extends Controller
 
     public function store(Request $request)
     {
-        Incident::create([
+        $incident = Incident::create([
             ...$request->validate([
                 'title' => ['required', 'string', 'max:200'],
                 'occurred_at' => ['required', 'date'],
@@ -51,6 +53,8 @@ class IncidentController extends Controller
             ]),
             'reported_by' => $request->user()->id,
         ]);
+
+        IncidentLogged::dispatch($incident);
 
         return back()->with('success', 'Incident logged.');
     }

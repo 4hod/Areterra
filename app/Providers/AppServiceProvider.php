@@ -23,8 +23,16 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // CompleteTasksOnEvent is a subscriber (it handles several events with one
+        // method), so it needs registering — auto-discovery only finds listeners
+        // whose handle() type-hints a single concrete event.
+        \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\CompleteTasksOnEvent::class);
+        \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\SyncTransportChargeOnOutcome::class);
+
         // Audit trail on every major model (SPEC checklist: Audit Log).
         $audited = [
+            // Money changing without a trace is the thing to avoid.
+            \App\Models\TransportLedgerEntry::class, \App\Models\LedgerEntry::class,
             \App\Models\Member::class, \App\Models\MemberSetting::class, \App\Models\Animal::class,
             \App\Models\WelfareCheck::class, \App\Models\DailyMonitoring::class, \App\Models\VetRecord::class,
             \App\Models\Attendance::class, \App\Models\EndOfDayRecord::class, \App\Models\TransportRun::class,

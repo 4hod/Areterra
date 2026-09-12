@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AnimalHealthConcernRaised;
+
 use App\Models\Animal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,7 +65,7 @@ class WelfareCheckController extends Controller
 
     private function record(Animal $animal, array $data, int $userId): void
     {
-        $animal->welfareChecks()->create([
+        $check = $animal->welfareChecks()->create([
             'user_id' => $userId,
             'status' => $data['status'],
             'notes' => $data['notes'] ?? null,
@@ -74,6 +76,12 @@ class WelfareCheckController extends Controller
         ]);
 
         $animal->update(['welfare_status' => $data['status']]);
+
+        // Raises the vet follow-up task. Previously this event existed and had a
+        // listener, but nothing ever fired it.
+        if ($data['concern'] ?? false) {
+            AnimalHealthConcernRaised::dispatch($check);
+        }
 
         $alerts = [];
         if ($data['concern'] ?? false) {

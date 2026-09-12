@@ -35,6 +35,9 @@ class DashboardController extends Controller
         })->values();
 
         return Inertia::render('Dashboard', [
+            // Derived from the records themselves — nothing here is a stored
+            // reminder. Cached for an hour so it costs nothing on page load.
+            'needsAttention' => \App\Support\DueScanner::scanThrottled(14),
             'orgIsEmpty' => Member::count() === 0 && Animal::count() === 0,
             'birthdays' => Member::active()->whereNotNull('dob')->get()
                 ->filter(function ($m) {

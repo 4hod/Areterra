@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\InvoicePaid;
+
 use App\Models\Member;
 use App\Models\MemberInvoice;
 use Illuminate\Http\Request;
@@ -53,6 +55,8 @@ class InvoiceController extends Controller
     public function markPaid(MemberInvoice $invoice)
     {
         $invoice->update(['status' => 'paid', 'paid_date' => today()]);
+
+        InvoicePaid::dispatch($invoice->fresh());
 
         return back()->with('success', "{$invoice->qb_reference} marked paid.");
     }

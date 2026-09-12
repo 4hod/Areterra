@@ -24,6 +24,12 @@ class Document extends Model
         return $this->hasMany(DocumentRead::class);
     }
 
+    /** The record this document belongs to — animal, member, grant, session. */
+    public function attachable()
+    {
+        return $this->morphTo();
+    }
+
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');

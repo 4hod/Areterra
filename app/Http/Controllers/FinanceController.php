@@ -10,6 +10,7 @@ use App\Models\Member;
 use App\Models\MemberFinanceProfile;
 use App\Models\MemberInvoice;
 use App\Models\Setting;
+use App\Support\Period;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -209,16 +210,11 @@ class FinanceController extends Controller
         return $request->validate($rules);
     }
 
+    // Delegates to the central period engine so Finance, payroll, invoicing and
+    // forecasting can never drift apart. See App\Support\Period.
     private function toFourWeekly(float $amount, string $frequency): float
     {
-        return match ($frequency) {
-            'weekly' => $amount * 4,
-            'monthly' => $amount * 12 / 13,
-            'quarterly' => $amount * 4 / 13,
-            'annually' => $amount / 13,
-            'one_off' => $amount,
-            default => $amount,
-        };
+        return Period::toFourWeekly($amount, $frequency);
     }
 
     public function storeGrant(Request $request)
@@ -243,10 +239,38 @@ class FinanceController extends Controller
 
     public function storeExpenditure(Request $request, Grant $grant)
     {
-        $grant->expenditures()->create([
+        // Q15 — a closed grant can still be spent against, but only by a manager.
+        if (in_array($grant->status, ['closed', 'completed'], true)
+            && ! $request->user()->hasCapability('manage_finance')) {
+            throw new \App\Exceptions\WorkflowException(
+                ["{$grant->title} is closed. Recording further spend against it needs manager approval."],
+                'This grant is closed.',
+            );
+        }
+
+        $expenditure = $grant->expenditures()->create([
             ...$request->validate(['description' => ['required', 'string', 'max:255'], 'amount' => ['required', 'numeric', 'min:0.01'], 'spent_date' => ['required', 'date']]),
             'user_id' => $request->user()->id,
         ]);
-        return back()->with('success', 'Expenditure recorded.');
+
+        // Posts to the ledger against the grant, so restricted spend never
+        // inflates unrestricted reserves. See Listeners\PostGrantExpenseToLedger.
+        \App\Events\GrantExpenseRecorded::dispatch($expenditure->load('grant'));
+
+        // Q14 — overspend is allowed, but never silently.
+        $spent = (float) $grant->expenditures()->sum('amount');
+        $warning = $spent > (float) $grant->amount
+            ? sprintf(
+                '%s is now overspent by £%s (£%s of £%s).',
+                $grant->title,
+                number_format($spent - (float) $grant->amount, 2),
+                number_format($spent, 2),
+                number_format((float) $grant->amount, 2),
+            )
+            : null;
+
+        return back()
+            ->with('success', 'Expenditure recorded.')
+            ->with('problems', $warning ? [$warning] : []);
     }
 }

@@ -2,14 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLedgerEntries;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class GrantExpenditure extends Model
 {
-    use HasFactory;
+    use HasFactory, HasLedgerEntries;
 
     protected $guarded = [];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     protected function casts(): array
     {

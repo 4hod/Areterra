@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TransportOutcomeRecorded;
+use App\Events\TransportRunUndone;
 use App\Models\Member;
 use App\Models\TransportLedgerEntry;
 use App\Models\TransportRun;
 use Illuminate\Http\Request;
+use App\Support\TransportCharges;
 use Inertia\Inertia;
 
 class TransportController extends Controller
@@ -48,8 +51,16 @@ class TransportController extends Controller
                 'phone' => $m->phone,
                 'balance' => $balance,
                 'days_credit' => (int) floor(max(0, $balance) / TransportLedgerEntry::DAILY_RATE),
+                'legs_credit' => (int) floor(max(0, $balance) / TransportLedgerEntry::LEG_RATE),
+                'morning_outcome' => optional($runs->get($m->id.':morning'))->first()?->outcome,
+                'afternoon_outcome' => optional($runs->get($m->id.':afternoon'))->first()?->outcome,
                 'morning_done' => $runs->has($m->id.':morning'),
                 'afternoon_done' => $runs->has($m->id.':afternoon'),
+                'todays_charge' => \App\Support\TransportCharges::chargedOn($m->id, $today),
+                'legs_remaining' => \App\Support\TransportCredit::legsRemaining($m->id),
+                'credit_low' => \App\Support\TransportCredit::isLow($m->id),
+                'owes' => \App\Support\TransportCredit::owes($m->id),
+                'suggested_top_up' => \App\Support\TransportCredit::suggestedTopUp($m),
                 'ledger' => $m->transportLedger()->orderByDesc('entry_date')->orderByDesc('id')->limit(20)->get()
                     ->map(fn ($e) => [
                         'id' => $e->id,
@@ -74,6 +85,9 @@ class TransportController extends Controller
             'isToday' => $today->isToday(),
             'rows' => $rows,
             'dailyRate' => TransportLedgerEntry::DAILY_RATE,
+            'legRate' => TransportLedgerEntry::LEG_RATE,
+            'outcomes' => ['collected', 'not_collected', 'absent'],
+            'suggestedAmounts' => \App\Support\TransportCredit::SUGGESTED,
             'monthly' => [
                 'charged' => (float) $monthEntries->where('type', 'charge')->sum('amount'),
                 'collected' => (float) $monthEntries->where('type', 'payment')->sum('amount'),
@@ -81,7 +95,16 @@ class TransportController extends Controller
         ]);
     }
 
-    public function complete(Request $request, Member $member)
+    /**
+     * Records the outcome of one leg. Three states, deliberately distinct:
+     *
+     *   collected     — travelled. £2.50 for this leg.
+     *   not_collected — didn't take this leg but is still expected in
+     *                   (appointment, own lift, going home early). No charge
+     *                   for the leg, and the other leg is left alone.
+     *   absent        — not in at all today. Cancels both legs, no charge.
+     */
+    public function outcome(Request $request, Member $member)
     {
         abort_unless(
             Member::scheduledFor(today())->whereKey($member->id)->exists(),
@@ -91,41 +114,53 @@ class TransportController extends Controller
 
         $data = $request->validate([
             'phase' => ['required', 'in:morning,afternoon'],
+            'outcome' => ['required', 'in:collected,not_collected,absent'],
+            'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        TransportRun::firstOrCreate(
+        $run = TransportRun::updateOrCreate(
             ['run_date' => today(), 'member_id' => $member->id, 'phase' => $data['phase']],
-            ['completed_at' => now(), 'user_id' => $request->user()->id],
+            [
+                'outcome' => $data['outcome'],
+                'outcome_reason' => $data['reason'] ?? null,
+                'completed_at' => $data['outcome'] === 'collected' ? now() : null,
+                'user_id' => $request->user()->id,
+            ],
         );
 
-        // Charge auto-applies on morning collection, once per day (SPEC.md note 7).
-        // The pre-check below is just a fast path for the common case — the
-        // unique index on (member_id, charge_date) is what actually
-        // guarantees no double-charge, even under near-simultaneous requests.
-        if ($data['phase'] === 'morning') {
-            $alreadyCharged = TransportLedgerEntry::where('member_id', $member->id)
-                ->where('type', 'charge')
-                ->whereDate('entry_date', today())
-                ->exists();
+        // Recomputes the day's charge from the legs actually travelled, and
+        // updates the register if this was an absence.
+        TransportOutcomeRecorded::dispatch($run);
 
-            if (! $alreadyCharged) {
-                try {
-                    TransportLedgerEntry::create([
-                        'member_id' => $member->id,
-                        'type' => 'charge',
-                        'amount' => TransportLedgerEntry::DAILY_RATE,
-                        'entry_date' => today(),
-                        'charge_date' => today(),
-                        'notes' => 'Transport day charge',
-                        'user_id' => $request->user()->id,
-                    ]);
-                } catch (\Illuminate\Database\UniqueConstraintViolationException) {
-                    // Another request already charged this member today — fine, no-op.
-                }
-            }
-        }
+        $charge = TransportCharges::chargedOn($member->id, today());
 
-        return back()->with('success', "{$member->displayName()} marked as ".($data['phase'] === 'morning' ? 'collected' : 'dropped off').'.');
+        return back()->with('success', sprintf(
+            '%s — %s. Today\'s transport charge: £%s.',
+            $member->displayName(),
+            str_replace('_', ' ', $data['outcome']),
+            number_format($charge, 2),
+        ));
+    }
+
+    /** Kept for the existing "mark collected" button. */
+    public function complete(Request $request, Member $member)
+    {
+        $request->merge(['outcome' => 'collected']);
+
+        return $this->outcome($request, $member);
+    }
+
+    /** Running statement of prepayments and charges for one member. */
+    public function statement(Member $member)
+    {
+        return response()->json([
+            'member' => $member->displayName(),
+            'balance' => \App\Support\TransportCredit::balance($member->id),
+            'legs_remaining' => \App\Support\TransportCredit::legsRemaining($member->id),
+            'returns_remaining' => \App\Support\TransportCredit::returnsRemaining($member->id),
+            'suggested_top_up' => \App\Support\TransportCredit::suggestedTopUp($member),
+            'entries' => \App\Support\TransportCredit::statement($member->id),
+        ]);
     }
 
     public function undo(Request $request, Member $member)
@@ -134,10 +169,20 @@ class TransportController extends Controller
             'phase' => ['required', 'in:morning,afternoon'],
         ]);
 
-        TransportRun::whereDate('run_date', today())
+        $run = TransportRun::whereDate('run_date', today())
             ->where('member_id', $member->id)
             ->where('phase', $data['phase'])
-            ->delete();
+            ->first();
+
+        if ($run) {
+            // Delete first, then fire. The listener recomputes the day's charge
+            // from the remaining legs, so the undone leg must already be gone —
+            // otherwise it still counts and the charge never drops. The model
+            // instance keeps its attributes after delete(), so the listener
+            // still knows which member and date to recalculate.
+            $run->delete();
+            TransportRunUndone::dispatch($run);
+        }
 
         if ($data['phase'] === 'morning') {
             TransportLedgerEntry::where('member_id', $member->id)

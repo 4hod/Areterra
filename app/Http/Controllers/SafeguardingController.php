@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\SafeguardingConcernRaised;
+
 use App\Models\Member;
 use App\Models\SafeguardingConcern;
 use Illuminate\Http\Request;
@@ -34,7 +36,7 @@ class SafeguardingController extends Controller
 
     public function store(Request $request)
     {
-        SafeguardingConcern::create([
+        $concern = SafeguardingConcern::create([
             ...$request->validate([
                 'member_id' => ['nullable', 'exists:members,id'],
                 'date' => ['required', 'date'],
@@ -44,6 +46,8 @@ class SafeguardingController extends Controller
             'reported_by' => $request->user()->id,
             'source' => 'manual',
         ]);
+
+        SafeguardingConcernRaised::dispatch($concern);
 
         return back()->with('success', 'Safeguarding concern logged.');
     }

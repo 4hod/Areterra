@@ -11,6 +11,12 @@ class FormSubmission extends Model
 
     protected $guarded = [];
 
+    /** The member, animal or vehicle this report is about. */
+    public function subject()
+    {
+        return $this->morphTo();
+    }
+
     protected function casts(): array
     {
         return ['submitted_at' => 'datetime'];

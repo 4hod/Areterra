@@ -20,7 +20,17 @@ class ProductOrderController extends Controller
 
         $orders = ProductOrder::with(['requestedBy:id,name', 'approvedBy:id,name'])
             ->when(! $canManage, fn ($q) => $q->where('requested_by', $request->user()->id))
-            ->orderByRaw("field(status, 'pending', 'approved', 'ordered', 'delivered', 'rejected')")
+            ->orderByRaw(
+                // Portable equivalent of MySQL's field(). SQLite has no field()
+                // function, so the previous version 500'd the whole page there.
+                "case status
+                    when 'pending' then 1
+                    when 'approved' then 2
+                    when 'ordered' then 3
+                    when 'delivered' then 4
+                    when 'rejected' then 5
+                    else 6 end"
+            )
             ->orderByDesc('created_at')
             ->get()
             ->map(fn ($o) => [

@@ -45,6 +45,21 @@ class SearchController extends Controller
                 ->map(fn ($d) => ['title' => $d->title, 'url' => '/documents']);
         }
 
+        // Grants, invoices, tasks, incidents and compliance, added on top of the
+        // original four. GlobalSearch applies the same capability checks, so a
+        // volunteer still never sees finance or safeguarding hits.
+        foreach (\App\Support\GlobalSearch::for($q, $request->user()) as $group) {
+            if ($group['type'] === 'Members' || $group['type'] === 'Animals' || $group['type'] === 'Documents') {
+                continue; // already covered above, with better titles and links
+            }
+
+            $results[$group['type']] = collect($group['results'])
+                ->map(fn ($hit) => [
+                    'title' => $hit['meta'] ? "{$hit['title']} — {$hit['meta']}" : $hit['title'],
+                    'url' => $hit['url'] ?? '#',
+                ]);
+        }
+
         // Drop empty groups so the frontend doesn't render blank headings.
         $results = collect($results)->filter(fn ($group) => $group->isNotEmpty());
 

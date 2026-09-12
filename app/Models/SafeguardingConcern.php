@@ -12,6 +12,12 @@ class SafeguardingConcern extends Model
 
     protected $guarded = [];
 
+    /** The end-of-day record this concern was raised from, if any. */
+    public function endOfDayRecord()
+    {
+        return $this->belongsTo(EndOfDayRecord::class);
+    }
+
     protected function casts(): array
     {
         return [

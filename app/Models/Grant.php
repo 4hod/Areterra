@@ -2,13 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasFormSubmissions;
+
+use App\Models\Concerns\HasLedgerEntries;
+
+use App\Models\Concerns\HasTasks;
+use App\Models\Concerns\HasDocuments;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Grant extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasTasks, HasDocuments, HasLedgerEntries, HasFormSubmissions;
 
     protected $guarded = [];
 
