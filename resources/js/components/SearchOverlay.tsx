@@ -20,6 +20,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     const [q, setQ] = useState('');
     const [results, setResults] = useState<ResultGroup>({});
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [recent, setRecent] = useState<RecentItem[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,16 +37,41 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     useEffect(() => {
         if (q.trim().length < 2) {
             setResults({});
+            setError(null);
+            setLoading(false);
             return;
         }
+
+        const controller = new AbortController();
         setLoading(true);
+        setError(null);
         const t = setTimeout(() => {
-            fetch(`/search?q=${encodeURIComponent(q)}`, { headers: { Accept: 'application/json' } })
-                .then((r) => r.json())
+            fetch(`/search?q=${encodeURIComponent(q)}`, {
+                headers: { Accept: 'application/json' },
+                signal: controller.signal,
+            })
+                .then(async (response) => {
+                    const contentType = response.headers.get('content-type') ?? '';
+                    if (!response.ok || !contentType.includes('application/json')) {
+                        throw new Error(`Search returned ${response.status} ${contentType || 'without a content type'}`);
+                    }
+
+                    return response.json();
+                })
                 .then((data) => setResults(data.results ?? {}))
-                .finally(() => setLoading(false));
+                .catch((reason: unknown) => {
+                    if (reason instanceof DOMException && reason.name === 'AbortError') return;
+                    setResults({});
+                    setError('Search is temporarily unavailable. Please try again.');
+                })
+                .finally(() => {
+                    if (!controller.signal.aborted) setLoading(false);
+                });
         }, 250);
-        return () => clearTimeout(t);
+        return () => {
+            clearTimeout(t);
+            controller.abort();
+        };
     }, [q]);
 
     const groups = Object.entries(results);
@@ -89,6 +115,10 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
                     </div>
                 ) : loading ? (
                     <ResultSkeleton />
+                ) : error ? (
+                    <p className="p-5 text-sm font-medium text-red-700" role="alert">
+                        {error}
+                    </p>
                 ) : (
                     <div className="p-2">
                         {groups.length === 0 && (

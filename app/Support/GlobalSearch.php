@@ -68,9 +68,12 @@ final class GlobalSearch
                 'label' => 'Members',
                 'capability' => 'view_members',
                 'query' => fn (string $like) => Member::query()
-                    ->where('name', 'like', $like)
+                    ->where(fn ($query) => $query
+                        ->where('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like)
+                        ->orWhere('preferred_name', 'like', $like))
                     ->limit(self::PER_TYPE)->get()
-                    ->map(fn ($m) => self::hit($m->id, $m->name, null, 'members.show'))->all(),
+                    ->map(fn ($m) => self::hit($m->id, $m->displayName(), null, 'members.show'))->all(),
             ],
             [
                 'label' => 'Animals',

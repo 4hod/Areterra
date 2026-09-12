@@ -74,9 +74,21 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
 
             <Card>
                 <div className="flex items-center justify-between mb-3">
-                    <Link href={`/calendar?month=${prevMonth}`} className="rounded-full bg-slate-100 text-slate-600 text-sm font-bold px-3 py-1.5">‹</Link>
+                    <Link
+                        href={`/calendar?month=${prevMonth}`}
+                        aria-label={`Previous month, ${new Date(`${prevMonth}-01T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`}
+                        className="rounded-full bg-slate-100 text-slate-600 text-sm font-bold px-3 py-1.5"
+                    >
+                        <span aria-hidden>‹</span>
+                    </Link>
                     <div className="font-extrabold text-brand-dark">{monthLabel}</div>
-                    <Link href={`/calendar?month=${nextMonth}`} className="rounded-full bg-slate-100 text-slate-600 text-sm font-bold px-3 py-1.5">›</Link>
+                    <Link
+                        href={`/calendar?month=${nextMonth}`}
+                        aria-label={`Next month, ${new Date(`${nextMonth}-01T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`}
+                        className="rounded-full bg-slate-100 text-slate-600 text-sm font-bold px-3 py-1.5"
+                    >
+                        <span aria-hidden>›</span>
+                    </Link>
                 </div>
 
                 <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400 mb-1">
@@ -96,6 +108,8 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
                             <button
                                 key={dateStr}
                                 onClick={() => setSelectedDate(dateStr)}
+                                aria-label={`${new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${rows.length > 0 ? `, ${rows.length} event${rows.length === 1 ? '' : 's'}` : ', no events'}`}
+                                aria-pressed={selectedDate === dateStr}
                                 className={`aspect-square rounded-lg p-1 flex flex-col items-center justify-start text-xs border ${
                                     isToday ? 'border-brand bg-brand/5' : 'border-slate-100'
                                 } ${selectedDate === dateStr ? 'ring-2 ring-brand' : ''}`}

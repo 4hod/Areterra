@@ -33,7 +33,7 @@ export default function Refer() {
                             <div className="text-2xl font-extrabold">{branding.orgName}</div>
                         )}
                         <div className="text-white/60 text-sm">Animals. People. Purpose.</div>
-                        <h1 className="text-xl font-bold mt-4">Make a referral</h1>
+                        <p className="text-xl font-bold mt-4">Make a referral</p>
                         <p className="text-white/70 text-sm mt-1">
                             Refer an adult with learning disabilities to our day opportunity services.
                         </p>
@@ -83,6 +83,13 @@ export default function Refer() {
                             <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
                                 Send referral
                             </button>
+                            <p className="text-xs leading-relaxed text-slate-500 text-center">
+                                Before sending, please make sure the person knows you are sharing their details with Areterra.
+                                For questions about how information is handled, email{' '}
+                                <a className="font-semibold text-brand underline" href="mailto:team@areterra.co.uk?subject=Referral%20privacy%20question">
+                                    team@areterra.co.uk
+                                </a>.
+                            </p>
                             <p className="text-[11px] text-slate-400 text-center">
                                 Areterra · Registered charity No. 1196211 · 01562 307 306 · team@areterra.co.uk
                             </p>

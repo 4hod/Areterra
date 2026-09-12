@@ -1,10 +1,11 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { confirmDialog } from '../utils/dialogs';
 
 interface Entry {
     id: number;
@@ -59,7 +60,10 @@ export default function Funding({ entries, canManage }: { entries: Entry[]; canM
                                 </div>
                                 {f.notes && <p className="text-sm text-slate-500 mt-1">{f.notes}</p>}
                             </div>
-                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLE[f.status]}`}>{f.status}</span>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLE[f.status]}`}>{f.status}</span>
+                                {canManage && <button onClick={async () => (await confirmDialog(`Delete ${f.title}?`)) && router.delete(`/funding/${f.id}`)} className="text-xs font-bold text-red-600">Delete</button>}
+                            </div>
                         </div>
                     </Card>
                 ))}

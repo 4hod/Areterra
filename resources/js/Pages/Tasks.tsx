@@ -203,12 +203,19 @@ export default function Tasks({ tasks, show, mine, staff, counts }: Props) {
             </div>
 
             <Modal open={adding} title="Add a task" onClose={() => setAdding(false)}>
-                <div className="space-y-4">
+                <form
+                    className="space-y-4"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        add();
+                    }}
+                >
                     <label className="block text-sm font-medium">
                         What needs doing
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
+                            required
                             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         />
                     </label>
@@ -260,13 +267,13 @@ export default function Tasks({ tasks, show, mine, staff, counts }: Props) {
                         </select>
                     </label>
                     <button
-                        onClick={add}
+                        type="submit"
                         disabled={!title.trim()}
                         className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:bg-slate-300"
                     >
                         Add task
                     </button>
-                </div>
+                </form>
             </Modal>
         </AppShell>
     );

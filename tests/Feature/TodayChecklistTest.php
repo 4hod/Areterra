@@ -30,7 +30,7 @@ class TodayChecklistTest extends TestCase
 
         $done = $this->checklist();
 
-        $this->assertFalse($done['transport']);
+        $this->assertTrue($done['transport']);
         $this->assertFalse($done['register']);
         $this->assertFalse($done['moods']);
         $this->assertFalse($done['welfare']);
@@ -97,10 +97,21 @@ class TodayChecklistTest extends TestCase
         $this->assertTrue($this->checklist()['end_of_day']);
     }
 
-    public function test_transport_done_when_any_run_recorded(): void
+    public function test_transport_requires_both_journey_outcomes(): void
     {
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
+        $member->settings()->create([
+            'transport_required' => true,
+            'attendance_days' => [today()->isoWeekday()],
+        ]);
+
+        $this->assertFalse($this->checklist()['transport']);
+
         TransportRun::create(['run_date' => today(), 'member_id' => $member->id, 'phase' => 'morning']);
+
+        $this->assertFalse($this->checklist()['transport']);
+
+        TransportRun::create(['run_date' => today(), 'member_id' => $member->id, 'phase' => 'afternoon']);
 
         $this->assertTrue($this->checklist()['transport']);
     }

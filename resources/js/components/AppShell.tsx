@@ -99,7 +99,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
     },
 ];
 
-// Spec order: Today, Dashboard, Members, All Animals, Announcements, More.
+// Keep the established mobile navigation order.
 const MOBILE_NAV: NavItem[] = [
     { href: '/today', label: 'Today', icon: '✅' },
     { href: '/', label: 'Dashboard', icon: '🏠' },
@@ -333,7 +333,7 @@ export default function AppShell({ title, children }: { title: string; children:
                     >
                         ☰
                     </button>
-                    <h1 className="hub-topbar-title text-xl font-semibold text-brand-dark truncate">{title}</h1>
+                    <div className="hub-topbar-title text-xl font-semibold text-brand-dark truncate">{title}</div>
 
                     <div className="flex items-center gap-1 md:gap-2 ml-auto">
                         <button

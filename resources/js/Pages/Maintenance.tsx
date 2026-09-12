@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { confirmDialog } from '../utils/dialogs';
 
 interface Task {
     id: number;
@@ -62,9 +63,14 @@ export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]
                                 {t.description && <p className="text-sm text-slate-500 mt-1">{t.description}</p>}
                             </div>
                             {canManage && (
-                                <button onClick={() => router.post(`/maintenance/${t.id}/complete`)} className="shrink-0 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-2">
-                                    ✓ Complete
-                                </button>
+                                <div className="flex shrink-0 gap-2">
+                                    <button onClick={() => router.post(`/maintenance/${t.id}/complete`)} className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-2">
+                                        ✓ Complete
+                                    </button>
+                                    <button onClick={async () => (await confirmDialog(`Delete ${t.title}?`)) && router.delete(`/maintenance/${t.id}`)} className="rounded-full bg-red-50 text-red-700 text-xs font-bold px-3 py-2">
+                                        Delete
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </Card>
@@ -75,7 +81,12 @@ export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]
             {done.length > 0 && (
                 <Card title={`Completed (${done.length})`} className="mt-4 opacity-70">
                     <ul className="text-sm space-y-1">
-                        {done.map((t) => <li key={t.id} className="line-through text-slate-400">{t.title}</li>)}
+                        {done.map((t) => (
+                            <li key={t.id} className="flex items-center justify-between gap-2 text-slate-400">
+                                <span className="line-through">{t.title}</span>
+                                {canManage && <button onClick={async () => (await confirmDialog(`Delete ${t.title}?`)) && router.delete(`/maintenance/${t.id}`)} className="text-xs font-bold text-red-600">Delete</button>}
+                            </li>
+                        ))}
                     </ul>
                 </Card>
             )}

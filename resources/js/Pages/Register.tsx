@@ -1,9 +1,10 @@
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Modal from '../components/Modal';
 import MoodPicker from '../components/MoodPicker';
 import { MOOD_EMOJI, Mood } from '../types';
+import DailyFlowNav from '../components/DailyFlowNav';
 
 interface Row { id: number; name: string; scheduled: boolean; status: 'expected' | 'present' | 'absent'; absence_reason: string | null; checked_in: boolean; checked_in_at: string | null; arrival_mood: Mood | null; notes: string | null; }
 interface Cancellation { date: string; reason: string }
@@ -20,6 +21,12 @@ export default function Register({ date, rows, others, cancellation }: Props) {
     const percent = rows.length ? Math.round((present / rows.length) * 100) : 0;
 
     function openCheckIn(row: Row) { setEditing(row); setMood(row.arrival_mood); setNotes(row.notes ?? ''); }
+
+    useEffect(() => {
+        const memberId = Number(new URLSearchParams(window.location.search).get('member'));
+        const row = rows.find((candidate) => candidate.id === memberId);
+        if (row) openCheckIn(row);
+    }, []);
 
     function markAbsent(row: Row) {
         const reason = window.prompt(`Why is ${row.name} not in today? (leave blank if unknown)`);
@@ -47,6 +54,12 @@ export default function Register({ date, rows, others, cancellation }: Props) {
                     <div><span className="module-kicker-4a">Morning arrivals</span><h1>Morning Register</h1><p>{new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p></div>
                     <div className="register-hero-stats-4a"><article><strong>{present}</strong><span>Checked in</span></article><article><strong>{outstanding}</strong><span>Still expected</span></article><article><strong>{absent}</strong><span>Absent</span></article><article><strong>{percent}%</strong><span>Register complete</span></article></div>
                 </section>
+
+                <DailyFlowNav
+                    active="register"
+                    date={date}
+                    statuses={{ register: outstanding === 0 && rows.length > 0 ? 'done' : 'current' }}
+                />
 
                 {cancellation ? (
                     <section className="rounded-card bg-red-50 border border-red-200 text-red-800 px-4 py-3 mb-3">

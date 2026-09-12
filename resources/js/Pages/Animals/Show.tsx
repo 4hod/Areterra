@@ -332,13 +332,15 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                             </button>
                         ))}
                     </div>
-                    <textarea
-                        value={checkNotes}
-                        onChange={(e) => setCheckNotes(e.target.value)}
-                        placeholder="Notes"
-                        className="w-full rounded-lg border border-slate-300 p-3"
-                        rows={3}
-                    />
+                    <label className="block text-sm font-medium">
+                        Notes
+                        <textarea
+                            value={checkNotes}
+                            onChange={(e) => setCheckNotes(e.target.value)}
+                            className="mt-1 w-full rounded-lg border border-slate-300 p-3"
+                            rows={3}
+                        />
+                    </label>
                     <button onClick={saveCheck} className="w-full rounded-lg bg-brand text-white font-bold py-3">
                         Save check
                     </button>
@@ -403,13 +405,15 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         />
                     </label>
                 </div>
-                <textarea
-                    value={m.notes ?? ''}
-                    onChange={(e) => setM({ ...m, notes: e.target.value })}
-                    placeholder="Notes"
-                    className="mt-3 w-full rounded-lg border border-slate-300 p-3"
-                    rows={2}
-                />
+                <label className="mt-3 block text-sm font-medium">
+                    Notes
+                    <textarea
+                        value={m.notes ?? ''}
+                        onChange={(e) => setM({ ...m, notes: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-slate-300 p-3"
+                        rows={2}
+                    />
+                </label>
                 <label className="mt-3 flex items-center gap-2 text-sm font-medium text-red-700">
                     <input
                         type="checkbox"
