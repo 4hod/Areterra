@@ -292,6 +292,16 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_settings')->name('settings.update');
     Route::post('/settings/wordpress/test', [App\Http\Controllers\WordPressSyncController::class, 'test'])
         ->middleware('can:manage_settings')->name('settings.wordpress.test');
+
+    // Per-user permissions. Roles are presets; access is held per account.
+    Route::middleware('can:manage_settings')->group(function () {
+        Route::get('/settings/permissions', [App\Http\Controllers\PermissionsController::class, 'index'])
+            ->name('permissions');
+        Route::put('/settings/permissions/{user}', [App\Http\Controllers\PermissionsController::class, 'update'])
+            ->name('permissions.update');
+        Route::post('/settings/permissions/{user}/preset', [App\Http\Controllers\PermissionsController::class, 'applyPreset'])
+            ->name('permissions.preset');
+    });
     Route::post('/settings/wordpress/sync', [App\Http\Controllers\WordPressSyncController::class, 'sync'])
         ->middleware('can:manage_settings')->name('settings.wordpress.sync');
 

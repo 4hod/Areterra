@@ -93,6 +93,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
             { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
             { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
+            { href: '/settings/permissions', label: 'Permissions', icon: '🔑', cap: 'manage_settings' },
             { href: '/account', label: 'My Account', icon: '👤' },
         ],
     },

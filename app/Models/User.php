@@ -26,6 +26,23 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        // A new account starts with its role's preset ticked. From then on the
+        // account owns its permissions and the preset is just history.
+        static::created(function (User $user) {
+            if ($user->capabilityGrants()->exists()) {
+                return;
+            }
+
+            foreach (static::preset($user->role) as $capability) {
+                $user->capabilityGrants()->create(['capability' => $capability]);
+            }
+
+            $user->cachedCapabilities = null;
+        });
+    }
+
     public function isAdministrator(): bool
     {
         return $this->role === 'administrator';
@@ -33,16 +50,60 @@ class User extends Authenticatable
 
     public function hasCapability(string $capability): bool
     {
-        return in_array($capability, config('capabilities.roles')[$this->role] ?? [], true);
+        return in_array($capability, $this->capabilities(), true);
     }
 
+    /**
+     * Capabilities are stored per user, not derived from their role. The role
+     * is only the preset their account was set up from.
+     *
+     * Cached for the life of the request — the gate asks this a lot.
+     */
     public function capabilities(): array
     {
-        if ($this->isAdministrator()) {
-            return array_values(array_unique(array_merge(...array_values(config('capabilities.roles')))));
+        return $this->cachedCapabilities ??= $this->capabilityGrants()
+            ->pluck('capability')
+            ->all();
+    }
+
+    /** @var array<int, string>|null */
+    private ?array $cachedCapabilities = null;
+
+    public function capabilityGrants()
+    {
+        return $this->hasMany(UserCapability::class);
+    }
+
+    /**
+     * Replace this user's permissions with exactly the ones given. Anything not
+     * in the list is removed. Unknown capabilities are ignored rather than
+     * stored, so a stale form can't grant something that no longer exists.
+     *
+     * @param  array<int, string>  $capabilities
+     */
+    public function syncCapabilities(array $capabilities, ?User $grantedBy = null): void
+    {
+        $valid = array_values(array_intersect(config('capabilities.all'), $capabilities));
+
+        $this->capabilityGrants()->whereNotIn('capability', $valid)->delete();
+
+        $existing = $this->capabilityGrants()->pluck('capability')->all();
+
+        foreach (array_diff($valid, $existing) as $capability) {
+            $this->capabilityGrants()->create([
+                'capability' => $capability,
+                'granted_by' => $grantedBy?->id,
+            ]);
         }
 
-        return config('capabilities.roles')[$this->role] ?? [];
+        $this->cachedCapabilities = null;
+        $this->unsetRelation('capabilityGrants');
+    }
+
+    /** The capability list a preset would give, for pre-filling the form. */
+    public static function preset(string $role): array
+    {
+        return config("capabilities.roles.{$role}", []);
     }
 
     public function scopeManagers($query)

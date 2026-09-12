@@ -15,12 +15,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Gate::before(fn (User $user) => $user->isAdministrator() ? true : null);
-
-        foreach (config('capabilities.roles') as $capabilities) {
-            foreach ($capabilities as $capability) {
-                Gate::define($capability, fn (User $user) => $user->hasCapability($capability));
-            }
+        // No Gate::before shortcut for administrators. Permissions are held per
+        // user, so there is exactly one answer to "can this person do X" and
+        // route middleware, controllers and the UI all read the same one.
+        foreach (config('capabilities.all') as $capability) {
+            Gate::define($capability, fn (User $user) => $user->hasCapability($capability));
         }
 
         // CompleteTasksOnEvent is a subscriber (it handles several events with one

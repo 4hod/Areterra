@@ -26,7 +26,7 @@ class TransportController extends Controller
         $runs = TransportRun::whereDate('run_date', $today)->get()
             ->groupBy(fn ($r) => $r->member_id.':'.$r->phase);
 
-        $rows = $members->map(function (Member $m) use ($runs) {
+        $rows = $members->map(function (Member $m) use ($runs, $today) {
             $address = collect([$m->address_line1, $m->address_line2, $m->town, $m->postcode])
                 ->filter()->implode(', ');
 
