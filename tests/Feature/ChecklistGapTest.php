@@ -171,7 +171,9 @@ class ChecklistGapTest extends TestCase
     {
         $staff = $this->staff();
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
-        $member->settings()->create(['transport_required' => true]);
+        $member->// Scheduled for whatever day the suite happens to run on — hardcoding
+        // weekdays makes these tests fail every Saturday.
+        settings()->create(['transport_required' => true, 'attendance_days' => [today()->isoWeekday()]]);
 
         $this->actingAs($staff)->post("/transport/{$member->id}/pay", ['amount' => 10]);
         $payment = TransportLedgerEntry::where('type', 'payment')->first();

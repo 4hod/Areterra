@@ -31,7 +31,10 @@ class PayrollTest extends TestCase
     {
         $manager = User::factory()->create(['role' => 'manager']);
         $lucy = StaffRosterMember::create(['name' => 'Lucy Mills', 'active' => true]);
-        $lucy->rates()->create(['hourly_rate' => 12.71, 'effective_from' => today()->subMonth()]);
+        // Must pre-date the pay period. Rates are now resolved as at the period
+        // being run, not as at today — an August rate no longer leaks into a
+        // July pay run.
+        $lucy->rates()->create(['hourly_rate' => 12.71, 'effective_from' => '2026-01-01']);
         StaffRosterMember::create(['name' => 'Old Staff', 'active' => false]);
 
         $this->actingAs($manager)->post('/payroll/periods', [
@@ -42,9 +45,17 @@ class PayrollTest extends TestCase
         ])->assertRedirect();
 
         $period = PayrollPeriod::first();
-        $this->assertCount(1, $period->entries);
-        $this->assertSame('Lucy Mills', $period->entries->first()->staff_name);
-        $this->assertSame(12.71, (float) $period->entries->first()->hourly_rate);
+
+        // Account holders are prefilled as well as roster members. They were
+        // listed on the payroll index but never given entries, so anyone paid
+        // who also had a login silently dropped out of the run.
+        $lucy = $period->entries->firstWhere('staff_name', 'Lucy Mills');
+        $this->assertNotNull($lucy);
+        $this->assertSame(12.71, (float) $lucy->hourly_rate);
+        $this->assertTrue(
+            $period->entries->contains(fn ($e) => $e->payable_type === \App\Models\User::class),
+            'Users with accounts should also get a payroll line.',
+        );
     }
 
     public function test_totals_are_recomputed_server_side_on_save(): void

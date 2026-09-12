@@ -22,10 +22,12 @@ class TransportTest extends TestCase
         parent::setUp();
         $this->user = User::factory()->create(['role' => 'staff']);
         $this->member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
-        $this->member->settings()->create(['transport_required' => true]);
+        $this->member->// Scheduled for whatever day the suite happens to run on — hardcoding
+        // weekdays makes these tests fail every Saturday.
+        settings()->create(['transport_required' => true, 'attendance_days' => [today()->isoWeekday()]]);
     }
 
-    public function test_morning_collection_charges_five_pounds_once(): void
+    public function test_morning_collection_charges_one_leg_once(): void
     {
         $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'morning']);
         // Completing again (idempotent) must not double-charge.
@@ -33,14 +35,17 @@ class TransportTest extends TestCase
 
         $charges = TransportLedgerEntry::where('member_id', $this->member->id)->where('type', 'charge')->get();
         $this->assertCount(1, $charges);
-        $this->assertSame(-5.0, TransportLedgerEntry::balanceFor($this->member->id));
+        // Per leg now: £2.50 out, £2.50 back. A morning-only day is half a return.
+        $this->assertSame(-2.5, TransportLedgerEntry::balanceFor($this->member->id));
     }
 
-    public function test_afternoon_drop_off_does_not_charge(): void
+    public function test_afternoon_drop_off_charges_its_own_leg(): void
     {
         $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'afternoon']);
 
-        $this->assertSame(0.0, TransportLedgerEntry::balanceFor($this->member->id));
+        // Each leg stands on its own now — a drop-off home is £2.50 whether or
+        // not they were collected that morning.
+        $this->assertSame(-2.5, TransportLedgerEntry::balanceFor($this->member->id));
     }
 
     public function test_undo_morning_removes_run_and_charge(): void
@@ -58,8 +63,8 @@ class TransportTest extends TestCase
 
         $this->assertSame(10.0, TransportLedgerEntry::balanceFor($this->member->id));
 
-        // First transport day auto-deducts £5, leaving one day in credit.
+        // A collected morning leg costs £2.50, leaving £7.50.
         $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'morning']);
-        $this->assertSame(5.0, TransportLedgerEntry::balanceFor($this->member->id));
+        $this->assertSame(7.5, TransportLedgerEntry::balanceFor($this->member->id));
     }
 }

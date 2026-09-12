@@ -80,6 +80,10 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:log_sessions')->name('register.check-in');
     Route::put('/register/{member}', [RegisterController::class, 'update'])
         ->middleware('can:log_sessions')->name('register.update');
+    Route::post('/register/{member}/absent', [RegisterController::class, 'markAbsent'])
+        ->middleware('can:log_sessions')->name('register.absent');
+        Route::post('/register/cancel-day', [RegisterController::class, 'cancelDay'])
+            ->middleware('can:manage_operations')->name('register.cancel-day');
 
     Route::get('/end-of-day', [EndOfDayController::class, 'index'])
         ->middleware('can:log_sessions')->name('end-of-day');
@@ -94,8 +98,10 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::middleware('can:log_sessions')->group(function () {
         Route::get('/transport', [TransportController::class, 'index'])->name('transport');
         Route::post('/transport/{member}/complete', [TransportController::class, 'complete'])->name('transport.complete');
+        Route::post('/transport/{member}/outcome', [TransportController::class, 'outcome'])->name('transport.outcome');
         Route::post('/transport/{member}/undo', [TransportController::class, 'undo'])->name('transport.undo');
         Route::post('/transport/{member}/pay', [TransportController::class, 'pay'])->name('transport.pay');
+        Route::get('/transport/{member}/statement', [TransportController::class, 'statement'])->name('transport.statement');
     });
 
     Route::get('/leave', [LeaveController::class, 'index'])->name('leave');
@@ -135,6 +141,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::get('/payroll/periods/{period}/print', [PayrollController::class, 'print'])->name('payroll.print');
         Route::put('/payroll/periods/{period}', [PayrollController::class, 'updatePeriod'])->name('payroll.periods.update');
         Route::put('/payroll/periods/{period}/entries', [PayrollController::class, 'saveEntries'])->name('payroll.entries.save');
+        Route::post('/payroll/periods/{period}/approve', [PayrollController::class, 'approve'])->name('payroll.approve');
+
         Route::delete('/payroll/periods/{period}', [PayrollController::class, 'destroyPeriod'])->name('payroll.periods.destroy');
         Route::post('/payroll/roster', [PayrollController::class, 'storeRosterMember'])->name('payroll.roster.store');
         Route::put('/payroll/roster/{rosterMember}', [PayrollController::class, 'updateRosterMember'])->name('payroll.roster.update');
@@ -148,6 +156,14 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::get('/directory', [DirectoryController::class, 'index'])->name('directory');
     Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar');
     Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
+
+    // Tasks span every record type, so they live at the top level rather than
+    // inside any one module.
+    Route::get('/tasks', [App\Http\Controllers\TaskController::class, 'index'])->name('tasks');
+    Route::post('/tasks', [App\Http\Controllers\TaskController::class, 'store'])->name('tasks.store');
+    Route::post('/tasks/{task}/complete', [App\Http\Controllers\TaskController::class, 'complete'])->name('tasks.complete');
+    Route::post('/tasks/{task}/reopen', [App\Http\Controllers\TaskController::class, 'reopen'])->name('tasks.reopen');
+    Route::put('/tasks/{task}', [App\Http\Controllers\TaskController::class, 'update'])->name('tasks.update');
 
     Route::get('/policies', [PolicyController::class, 'index'])->name('policies.index');
     Route::get('/policies/{policy}', [PolicyController::class, 'show'])->name('policies.show');
@@ -208,8 +224,11 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::get('/invoices', [App\Http\Controllers\InvoiceController::class, 'index'])->name('invoices');
         Route::post('/invoices', [App\Http\Controllers\InvoiceController::class, 'store'])->name('invoices.store');
         Route::put('/invoices/{invoice}', [App\Http\Controllers\InvoiceController::class, 'update'])->name('invoices.update');
-        Route::post('/invoices/{invoice}/paid', [App\Http\Controllers\InvoiceController::class, 'markPaid'])->name('invoices.paid');
+        // Must come BEFORE /invoices/{invoice}/paid — otherwise "bulk" is
+        // matched as an invoice id, model binding fails, and the bulk action
+        // 404s. It was unreachable before this was reordered.
         Route::post('/invoices/bulk/paid', [App\Http\Controllers\InvoiceController::class, 'bulkMarkPaid'])->name('invoices.bulk-paid');
+        Route::post('/invoices/{invoice}/paid', [App\Http\Controllers\InvoiceController::class, 'markPaid'])->name('invoices.paid');
     });
 
     Route::middleware(['can:access_safeguarding', 'password.confirm'])->group(function () {
@@ -396,3 +415,4 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::put('/orders/{order}/delivered', [App\Http\Controllers\ProductOrderController::class, 'markDelivered'])->name('orders.delivered');
     });
 });
+

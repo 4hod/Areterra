@@ -15,6 +15,17 @@ interface LedgerEntry {
     notes: string | null;
 }
 
+type Outcome = 'collected' | 'not_collected' | 'absent';
+
+interface StatementRow {
+    id: number;
+    date: string;
+    type: string;
+    amount: number;
+    balance_after: number;
+    notes: string | null;
+}
+
 interface Row {
     id: number;
     name: string;
@@ -24,6 +35,14 @@ interface Row {
     phone: string | null;
     balance: number;
     days_credit: number;
+    legs_credit: number;
+    legs_remaining: number;
+    credit_low: boolean;
+    owes: boolean;
+    suggested_top_up: number;
+    todays_charge: number;
+    morning_outcome: Outcome | null;
+    afternoon_outcome: Outcome | null;
     morning_done: boolean;
     afternoon_done: boolean;
     ledger: LedgerEntry[];
@@ -34,39 +53,74 @@ interface Props {
     isToday: boolean;
     rows: Row[];
     dailyRate: number;
+    legRate: number;
+    outcomes: Outcome[];
+    suggestedAmounts: number[];
     monthly: { charged: number; collected: number };
 }
 
 const gbp = (n: number) => `£${Math.abs(n).toFixed(2)}`;
 
 function FeeStatus({ row }: { row: Row }) {
-    if (row.days_credit > 0) {
-        return <span className="text-emerald-700 text-xs font-bold">{row.days_credit} day{row.days_credit === 1 ? '' : 's'} in credit</span>;
-    }
-    if (row.balance < 0) {
+    if (row.owes) {
         return <span className="text-red-600 text-xs font-bold">Owes {gbp(row.balance)}</span>;
     }
-    return <span className="text-slate-400 text-xs font-semibold">Paid up</span>;
+    if (row.legs_remaining > 0) {
+        const tone = row.credit_low ? 'text-amber-600' : 'text-emerald-700';
+        return (
+            <span className={`${tone} text-xs font-bold`}>
+                {gbp(row.balance)} left · {row.legs_remaining} journey{row.legs_remaining === 1 ? '' : 's'}
+                {row.credit_low && ' — running low'}
+            </span>
+        );
+    }
+    return <span className="text-slate-400 text-xs font-semibold">No credit</span>;
 }
 
-export default function Transport({ date, isToday, rows, dailyRate, monthly }: Props) {
+const OUTCOME_LABEL: Record<Outcome, string> = {
+    collected: 'Collected',
+    not_collected: 'Not collected',
+    absent: 'Absent all day',
+};
+
+export default function Transport({ date, isToday, rows, dailyRate, legRate, suggestedAmounts, monthly }: Props) {
     const [paying, setPaying] = useState<Row | null>(null);
+    const [statement, setStatement] = useState<{ member: string; balance: number; returns_remaining: number; entries: StatementRow[] } | null>(null);
     const [amount, setAmount] = useState<number>(dailyRate);
     const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
     const [payNotes, setPayNotes] = useState('');
 
 
-    const morningQueue = rows.filter((r) => !r.morning_done);
-    const morningDone = rows.filter((r) => r.morning_done);
+    const morningQueue = rows.filter((r) => !r.morning_outcome);
+    const morningDone = rows.filter((r) => r.morning_outcome);
     const morningComplete = rows.length > 0 && morningQueue.length === 0;
-    const afternoonQueue = rows.filter((r) => !r.afternoon_done);
+    const afternoonQueue = rows.filter((r) => !r.afternoon_outcome && r.morning_outcome !== 'absent');
     const afternoonComplete = morningComplete && afternoonQueue.length === 0;
     const phase = afternoonComplete ? 3 : morningComplete ? 2 : 1;
 
     const next = phase === 1 ? morningQueue[0] : phase === 2 ? afternoonQueue[0] : null;
 
+    function openStatement(row: Row) {
+        fetch(`/transport/${row.id}/statement`, { headers: { Accept: 'application/json' } })
+            .then((r) => r.json())
+            .then(setStatement);
+    }
+
+    function record(row: Row, p: 'morning' | 'afternoon', outcome: Outcome, reason?: string) {
+        router.post(`/transport/${row.id}/outcome`, { phase: p, outcome, reason: reason ?? null });
+    }
+
     function complete(row: Row, p: 'morning' | 'afternoon') {
-        router.post(`/transport/${row.id}/complete`, { phase: p });
+        record(row, p, 'collected');
+    }
+
+    function askReason(row: Row, p: 'morning' | 'afternoon', outcome: Outcome) {
+        const prompt = outcome === 'absent'
+            ? `Why is ${row.name} absent today?`
+            : `Why wasn't ${row.name} collected? (they're still expected in)`;
+        const reason = window.prompt(prompt) ?? undefined;
+        if (reason === undefined) return;
+        record(row, p, outcome, reason);
     }
 
     function undo(row: Row, p: 'morning' | 'afternoon') {
@@ -156,18 +210,41 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                     <div className="mt-1">
                         <FeeStatus row={next} />
                     </div>
+                    <div className="mt-1 text-xs opacity-80">
+                        Today so far: {gbp(next.todays_charge)}
+                        {next.todays_charge === 0 && ' — nothing charged yet'}
+                        {' · '}{gbp(legRate)} a journey
+                    </div>
                     <div className="flex flex-wrap gap-2 mt-4">
                         <button
                             onClick={() => complete(next, phase === 2 ? 'afternoon' : 'morning')}
                             className="rounded-full bg-white text-brand-dark font-bold px-5 py-2.5"
                         >
-                            {phase === 2 ? 'Mark as Dropped Off ✓' : 'Mark as Collected ✓'}
+                            {phase === 2 ? 'Dropped off ✓' : 'Collected ✓'}
                         </button>
                         <button
-                            onClick={() => setPaying(next)}
+                            onClick={() => askReason(next, phase === 2 ? 'afternoon' : 'morning', 'not_collected')}
+                            className="rounded-full bg-white/20 font-semibold px-4 py-2.5"
+                        >
+                            Not collected
+                        </button>
+                        <button
+                            onClick={() => askReason(next, phase === 2 ? 'afternoon' : 'morning', 'absent')}
+                            className="rounded-full bg-white/20 font-semibold px-4 py-2.5"
+                        >
+                            Absent all day
+                        </button>
+                        <button
+                            onClick={() => { setPaying(next); setAmount(next.suggested_top_up || dailyRate); }}
                             className="rounded-full bg-accent text-brand-dark font-bold px-4 py-2.5"
                         >
                             💷 Take Payment
+                        </button>
+                        <button
+                            onClick={() => openStatement(next)}
+                            className="rounded-full bg-white/20 font-semibold px-4 py-2.5"
+                        >
+                            Statement
                         </button>
                         {next.address && (
                             <a
@@ -206,12 +283,26 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                                     {!r.address && <span className="ml-2 text-amber-600 text-xs font-bold">⚠ no address</span>}
                                     <div><FeeStatus row={r} /></div>
                                 </div>
-                                <button
-                                    onClick={() => complete(r, 'morning')}
-                                    className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
-                                >
-                                    Collected ✓
-                                </button>
+                                <div className="flex gap-1 shrink-0">
+                                    <button
+                                        onClick={() => complete(r, 'morning')}
+                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
+                                    >
+                                        Collected ✓
+                                    </button>
+                                    <button
+                                        onClick={() => askReason(r, 'morning', 'not_collected')}
+                                        className="rounded-full bg-slate-100 text-slate-600 font-semibold text-xs px-3 py-2"
+                                    >
+                                        Not collected
+                                    </button>
+                                    <button
+                                        onClick={() => askReason(r, 'morning', 'absent')}
+                                        className="rounded-full bg-slate-100 text-red-700 font-semibold text-xs px-3 py-2"
+                                    >
+                                        Absent
+                                    </button>
+                                </div>
                             </li>
                         ))}
                     </ul>
@@ -223,12 +314,20 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                         {afternoonQueue.slice(1).map((r) => (
                             <li key={r.id} className="py-2 flex items-center justify-between text-sm">
                                 <span className="font-semibold">{r.name}</span>
-                                <button
-                                    onClick={() => complete(r, 'afternoon')}
-                                    className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
-                                >
-                                    Dropped ✓
-                                </button>
+                                <div className="flex gap-1 shrink-0">
+                                    <button
+                                        onClick={() => complete(r, 'afternoon')}
+                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
+                                    >
+                                        Dropped ✓
+                                    </button>
+                                    <button
+                                        onClick={() => askReason(r, 'afternoon', 'not_collected')}
+                                        className="rounded-full bg-slate-100 text-slate-600 font-semibold text-xs px-3 py-2"
+                                    >
+                                        Not collected
+                                    </button>
+                                </div>
                             </li>
                         ))}
                     </ul>
@@ -247,14 +346,16 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                                 <div className="flex items-center justify-between text-sm">
                                     <div>
                                         <span className="font-semibold">{r.name}</span>
-                                        <span className="ml-2 text-emerald-700 text-xs font-bold">
-                                            ✓ collected{r.afternoon_done ? ' · dropped off' : ''}
+                                        <span className={`ml-2 text-xs font-bold ${r.morning_outcome === 'collected' ? 'text-emerald-700' : r.morning_outcome === 'absent' ? 'text-red-600' : 'text-slate-500'}`}>
+                                            {r.morning_outcome ? OUTCOME_LABEL[r.morning_outcome] : ''}
+                                            {r.afternoon_outcome && ` · ${OUTCOME_LABEL[r.afternoon_outcome].toLowerCase()} home`}
+                                            {' · '}{gbp(r.todays_charge)}
                                         </span>
                                         <div><FeeStatus row={r} /></div>
                                     </div>
                                     <div className="flex gap-1">
                                         <button
-                                            onClick={() => setPaying(r)}
+                                            onClick={() => { setPaying(r); setAmount(r.suggested_top_up || dailyRate); }}
                                             className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs px-3 py-2"
                                         >
                                             💷 Payment
@@ -296,7 +397,7 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                         {rows.map((r) => (
                             <button
                                 key={r.id}
-                                onClick={() => setPaying(r)}
+                                onClick={() => { setPaying(r); setAmount(r.suggested_top_up || dailyRate); }}
                                 className="rounded-full border border-slate-200 text-xs font-semibold px-3 py-1.5 hover:bg-slate-50"
                             >
                                 {r.name.split(' ')[0]} · <FeeStatus row={r} />
@@ -317,11 +418,14 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                                 <b className={paying.balance < 0 ? 'text-red-600' : 'text-emerald-700'}>
                                     {paying.balance < 0 ? `−${gbp(paying.balance)}` : gbp(paying.balance)}
                                 </b>
+                                {paying.suggested_top_up > 0 && (
+                                    <> · covers a fortnight with {gbp(paying.suggested_top_up)}</>
+                                )}
                             </>
                         )}
                     </p>
                     <div className="flex gap-2">
-                        {[5, 10, 15, 20].map((v) => (
+                        {suggestedAmounts.map((v) => (
                             <button
                                 key={v}
                                 onClick={() => setAmount(v)}
@@ -344,7 +448,8 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                             className="mt-1 w-full rounded-lg border border-slate-300 px-3"
                         />
                         <span className="text-xs font-bold text-brand">
-                            = {Math.floor(amount / dailyRate)} day{Math.floor(amount / dailyRate) === 1 ? '' : 's'}
+                            = {Math.floor(amount / legRate)} journey{Math.floor(amount / legRate) === 1 ? '' : 's'}
+                            {' · '}{Math.floor(amount / dailyRate)} full day{Math.floor(amount / dailyRate) === 1 ? '' : 's'}
                         </span>
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -390,6 +495,45 @@ export default function Transport({ date, isToday, rows, dailyRate, monthly }: P
                         </details>
                     )}
                 </div>
+            </Modal>
+            <Modal open={statement !== null} title={statement ? `${statement.member} — transport account` : ''} onClose={() => setStatement(null)}>
+                {statement && (
+                    <div className="space-y-3">
+                        <div className="rounded-card bg-slate-50 px-4 py-3">
+                            <div className="text-2xl font-extrabold text-brand-dark">
+                                {statement.balance < 0 ? `−${gbp(statement.balance)}` : gbp(statement.balance)}
+                            </div>
+                            <div className="text-sm text-slate-600">
+                                {statement.balance < 0
+                                    ? 'owed'
+                                    : `in credit · ${statement.returns_remaining} full day${statement.returns_remaining === 1 ? '' : 's'} covered`}
+                            </div>
+                        </div>
+
+                        {statement.entries.length === 0 && (
+                            <p className="text-sm text-slate-500">No payments or charges recorded yet.</p>
+                        )}
+
+                        <ul className="divide-y divide-slate-100">
+                            {statement.entries.map((row) => (
+                                <li key={row.id} className="py-2 flex items-baseline justify-between gap-3 text-sm">
+                                    <div className="min-w-0">
+                                        <div className="text-slate-700">{row.notes ?? (row.amount > 0 ? 'Payment' : 'Transport')}</div>
+                                        <div className="text-xs text-slate-400">
+                                            {new Date(row.date).toLocaleDateString('en-GB')}
+                                        </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className={row.amount > 0 ? 'font-bold text-emerald-700' : 'font-semibold text-slate-700'}>
+                                            {row.amount > 0 ? '+' : '−'}{gbp(row.amount)}
+                                        </div>
+                                        <div className="text-xs text-slate-400">{gbp(row.balance_after)} left</div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </Modal>
         </AppShell>
     );

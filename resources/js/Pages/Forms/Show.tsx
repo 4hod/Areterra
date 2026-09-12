@@ -20,9 +20,21 @@ interface FormDef {
     fields: Field[];
 }
 
-export default function Show({ form }: { form: FormDef }) {
+interface Subject {
+    type: string;
+    id: number;
+    name: string;
+}
+
+export default function Show({ form, subject }: { form: FormDef; subject: Subject | null }) {
     const initial: Record<string, string> = {};
     form.fields.forEach((f) => { initial[`field_${f.id}`] = f.type === 'checkbox' ? '' : ''; });
+
+    // Carried through so the report lands on the record it's about.
+    if (subject) {
+        initial.about = subject.type;
+        initial.about_id = String(subject.id);
+    }
 
     const { data, setData, post, processing, errors, reset } = useForm(initial);
 
@@ -34,9 +46,20 @@ export default function Show({ form }: { form: FormDef }) {
     return (
         <AppShell title={form.title}>
             <Head title={form.title} />
-            <ModuleHero eyebrow="Complete a record" title="Form" description="Capture accurate information in a calm, focused workspace." icon="✍️" tone="purple" />
+            <ModuleHero
+                eyebrow={subject ? `About ${subject.name}` : 'Complete a record'}
+                title={form.title}
+                description="Capture accurate information in a calm, focused workspace."
+                icon="✍️"
+                tone="purple"
+            />
 
             <Card>
+                {subject && (
+                    <div className="rounded-card bg-brand/5 border border-brand/20 px-4 py-3 mb-4 text-sm">
+                        This will be saved to <b>{subject.name}</b>’s record.
+                    </div>
+                )}
                 {form.description && <p className="text-sm text-slate-500 mb-4">{form.description}</p>}
                 <form onSubmit={submit} className="space-y-4">
                     {form.fields.map((f) => {

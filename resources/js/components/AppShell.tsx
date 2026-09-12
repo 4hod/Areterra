@@ -24,6 +24,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/register', label: 'Register', icon: '📋', cap: 'log_sessions' },
             { href: '/end-of-day', label: 'End of Day', icon: '🌙', cap: 'log_sessions' },
             { href: '/transport', label: 'Transport', icon: '🚐', cap: 'log_sessions' },
+            { href: '/tasks', label: 'Tasks', icon: '☑️', isNew: true },
         ],
     },
     {

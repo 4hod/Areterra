@@ -48,7 +48,23 @@ const NUMERIC: [keyof Entry, string, number][] = [
     ['mileage_pay', 'Mileage Pay (£)', 0.01],
 ];
 
-export default function Show({ period }: { period: Period }) {
+export interface PreviewLine {
+    id: number;
+    staff_name: string;
+    linked: boolean;
+    working: string;
+    total: number;
+    problems: string[];
+}
+
+export interface Preview {
+    lines: PreviewLine[];
+    totals: Record<string, number>;
+    problems: string[];
+    can_approve: boolean;
+}
+
+export default function Show({ period, preview }: { period: Period; preview: Preview }) {
     const [entries, setEntries] = useState<Entry[]>(period.entries);
     const [deleted, setDeleted] = useState<number[]>([]);
     const locked = period.status !== 'draft';
@@ -89,6 +105,12 @@ export default function Show({ period }: { period: Period }) {
         router.put(`/payroll/periods/${period.id}`, { status });
     }
 
+    function approve() {
+        const by = window.prompt('Who is approving this pay run?');
+        if (!by) return;
+        router.post(`/payroll/periods/${period.id}/approve`, { approved_by: by });
+    }
+
     return (
         <AppShell title={period.label}>
             <Head title={`Payroll — ${period.label}`} />
@@ -109,8 +131,13 @@ export default function Show({ period }: { period: Period }) {
                         🖨 Print PDF
                     </Link>
                     {period.status === 'draft' && (
-                        <button onClick={() => setStatus('finalised')} className="rounded-full bg-status-amber text-white font-semibold text-xs px-4 py-2">
-                            Finalise
+                        <button
+                            onClick={approve}
+                            disabled={!preview.can_approve}
+                            title={preview.can_approve ? undefined : 'Resolve the problems below first'}
+                            className={`rounded-full font-semibold text-xs px-4 py-2 text-white ${preview.can_approve ? 'bg-status-amber' : 'bg-slate-300 cursor-not-allowed'}`}
+                        >
+                            Approve pay run
                         </button>
                     )}
                     {period.status === 'finalised' && (
@@ -131,6 +158,55 @@ export default function Show({ period }: { period: Period }) {
                     </button>
                 </span>
             </div>
+
+            {preview.problems.length > 0 && (
+                <Card className="mb-4 border-l-4 border-l-red-500">
+                    <div className="font-bold text-red-700 mb-2">
+                        {preview.problems.length} thing{preview.problems.length === 1 ? '' : 's'} to sort before this can be approved
+                    </div>
+                    <ul className="space-y-1 text-sm text-slate-700">
+                        {preview.problems.map((problem) => (
+                            <li key={problem} className="flex gap-2">
+                                <span className="text-red-500">•</span>
+                                <span>{problem}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
+            )}
+
+            {preview.problems.length === 0 && period.status === 'draft' && (
+                <Card className="mb-4 border-l-4 border-l-status-green">
+                    <div className="font-bold text-emerald-700">Everything checks out — ready to approve</div>
+                    <p className="text-sm text-slate-600 mt-0.5">
+                        {preview.totals.staff_count} staff · {preview.totals.total_hours} hours · £{Number(preview.totals.total).toFixed(2)} total
+                    </p>
+                </Card>
+            )}
+
+            <details className="mb-4">
+                <summary className="text-sm font-semibold text-brand cursor-pointer">
+                    Show how every figure was worked out
+                </summary>
+                <div className="mt-2 space-y-2">
+                    {preview.lines.map((line) => (
+                        <Card key={line.id}>
+                            <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                <span className="font-semibold">{line.staff_name}</span>
+                                <span className="font-bold">£{Number(line.total).toFixed(2)}</span>
+                            </div>
+                            <p className="text-xs text-slate-600 mt-1">{line.working}</p>
+                            {line.problems.length > 0 && (
+                                <ul className="mt-2 space-y-0.5">
+                                    {line.problems.map((problem) => (
+                                        <li key={problem} className="text-xs font-semibold text-red-600">{problem}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </Card>
+                    ))}
+                </div>
+            </details>
 
             {/* Live total banner — dark blue with yellow total, matching the paper sheet */}
             <div className="rounded-card bg-brand-dark p-4 mb-4 flex items-center justify-between">

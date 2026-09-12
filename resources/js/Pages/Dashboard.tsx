@@ -5,7 +5,15 @@ import EmptyState from '../components/EmptyState';
 import StatusPill from '../components/StatusPill';
 import { ChecklistItem, SharedProps } from '../types';
 
+interface Notice {
+    kind: string;
+    message: string;
+    due_on: string | null;
+    overdue: boolean;
+}
+
 interface Props {
+    needsAttention: Notice[];
     orgIsEmpty: boolean;
     birthdays: { id: number; name: string; date: string; is_today: boolean }[];
     stats: { membersInToday: number; membersScheduled: number; animalsNeedingChecks: number; attendanceTrend: number[] };
@@ -59,6 +67,7 @@ const quickActions = [
 const avatarColours = ['dashboard-avatar-blue', 'dashboard-avatar-green', 'dashboard-avatar-purple', 'dashboard-avatar-orange'];
 
 export default function Dashboard({
+    needsAttention,
     orgIsEmpty,
     birthdays,
     stats,
@@ -114,6 +123,36 @@ export default function Dashboard({
 
             <div className="dashboard-page">
                 {banner && <div className="dashboard-banner">📣 {banner}</div>}
+
+                {needsAttention.length > 0 && (
+                    <section className="rounded-card bg-white border border-slate-200 p-4 mb-4">
+                        <div className="flex items-baseline justify-between mb-2">
+                            <b className="text-brand-dark">Needs attention</b>
+                            <span className="text-xs text-slate-400">
+                                {needsAttention.filter((n) => n.overdue).length} overdue
+                            </span>
+                        </div>
+                        <ul className="divide-y divide-slate-100">
+                            {needsAttention.slice(0, 8).map((notice) => (
+                                <li key={`${notice.kind}-${notice.message}`} className="py-2 flex items-baseline justify-between gap-3 text-sm">
+                                    <span className={notice.overdue ? 'text-red-700 font-semibold' : 'text-slate-700'}>
+                                        {notice.message}
+                                    </span>
+                                    {notice.due_on && (
+                                        <span className="text-xs text-slate-400 shrink-0">
+                                            {new Date(notice.due_on).toLocaleDateString('en-GB')}
+                                        </span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                        {needsAttention.length > 8 && (
+                            <p className="text-xs text-slate-400 mt-2">
+                                and {needsAttention.length - 8} more
+                            </p>
+                        )}
+                    </section>
+                )}
 
                 <section className="dashboard-hero">
                     <div className="dashboard-hero-copy">
