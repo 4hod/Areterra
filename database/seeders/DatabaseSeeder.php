@@ -13,23 +13,25 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Dev credentials only — set real passwords before any production deploy.
-        User::firstOrCreate(['email' => 'ekilburn@areterra.co.uk'], [
-            'name' => 'E Kilburn',
-            'password' => 'password',
-            'role' => 'administrator',
-        ]);
+        $users = [
+            ['email' => 'ekilburn@areterra.co.uk', 'name' => 'E Kilburn', 'role' => 'administrator'],
+            ['email' => 'lucy@areterra.co.uk', 'name' => 'Lucy Mills', 'role' => 'staff'],
+            ['email' => 'vanessa@areterra.co.uk', 'name' => 'Vanessa Goodall', 'role' => 'staff'],
+        ];
 
-        User::firstOrCreate(['email' => 'lucy@areterra.co.uk'], [
-            'name' => 'Lucy Mills',
-            'password' => 'password',
-            'role' => 'staff',
-        ]);
+        foreach ($users as $attributes) {
+            $user = User::firstOrCreate(
+                ['email' => $attributes['email']],
+                [...$attributes, 'password' => 'password'],
+            );
 
-        User::firstOrCreate(['email' => 'vanessa@areterra.co.uk'], [
-            'name' => 'Vanessa Goodall',
-            'password' => 'password',
-            'role' => 'staff',
-        ]);
+            // Model events are deliberately disabled while seeding, so new
+            // users do not receive the grants normally applied in User::booted().
+            // Repair only empty grant sets to preserve any customised access.
+            if ($user->capabilityGrants()->doesntExist()) {
+                $user->syncCapabilities(User::preset($user->role));
+            }
+        }
 
         foreach ([['Lucy Mills', 12.71], ['Vanessa Goodall', 13.36]] as [$name, $rate]) {
             $member = \App\Models\StaffRosterMember::firstOrCreate(['name' => $name], ['active' => true]);
