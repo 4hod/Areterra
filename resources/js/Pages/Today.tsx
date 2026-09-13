@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import { ChecklistItem } from '../types';
 
-const LINKS: Record<string, string> = { transport: '/register', register: '/register', moods: '/register', welfare: '/animals', end_of_day: '/end-of-day' };
+const LINKS: Record<string, string> = { transport: '/transport', register: '/register', moods: '/register', welfare: '/monitoring', end_of_day: '/end-of-day' };
 const ICONS: Record<string, string> = { transport: '🚌', register: '✓', moods: '🙂', welfare: '🐾', end_of_day: '🌙' };
 
 export default function Today({ checklist, date }: { checklist: ChecklistItem[]; date: string }) {
@@ -28,7 +28,7 @@ export default function Today({ checklist, date }: { checklist: ChecklistItem[];
 
                 <section className="today-focus-4a">
                     <div><span>Next priority</span><h2>{nextItem ? nextItem.label : 'Everything is complete'}</h2><p>{nextItem ? nextItem.detail : 'The daily workflow is fully completed.'}</p></div>
-                    {nextItem && <Link href={LINKS[nextItem.key]} className="module-primary-btn-4a">Open task →</Link>}
+                    {nextItem && <Link href={`${LINKS[nextItem.key]}?date=${date}`} className="module-primary-btn-4a">Open task →</Link>}
                 </section>
 
                 <section className="today-flow-4a">
@@ -37,7 +37,7 @@ export default function Today({ checklist, date }: { checklist: ChecklistItem[];
                             <div className="today-step-line-4a"><span>{item.done ? '✓' : index + 1}</span></div>
                             <div className="today-step-icon-4a">{ICONS[item.key] ?? '•'}</div>
                             <div className="today-step-copy-4a"><span>{item.done ? 'Completed' : 'Action required'}</span><h3>{item.label}</h3><p>{item.detail}</p></div>
-                            {!item.done ? <Link href={LINKS[item.key]} className="today-step-action-4a">Continue</Link> : <div className="today-step-complete-4a">Done</div>}
+                            {!item.done ? <Link href={`${LINKS[item.key]}?date=${date}`} className="today-step-action-4a">Continue</Link> : <Link href={`${LINKS[item.key]}?date=${date}`} className="today-step-complete-4a">Review</Link>}
                         </article>
                     ))}
                 </section>

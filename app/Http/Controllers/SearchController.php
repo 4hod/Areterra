@@ -48,6 +48,14 @@ class SearchController extends Controller
         // Grants, invoices, tasks, incidents and compliance, added on top of the
         // original four. GlobalSearch applies the same capability checks, so a
         // volunteer still never sees finance or safeguarding hits.
+        $groupUrls = [
+            'Grants' => '/finance',
+            'Invoices' => '/invoices',
+            'Tasks' => '/tasks',
+            'Incidents' => '/incidents',
+            'Compliance' => '/compliance',
+        ];
+
         foreach (\App\Support\GlobalSearch::for($q, $request->user()) as $group) {
             if ($group['type'] === 'Members' || $group['type'] === 'Animals' || $group['type'] === 'Documents') {
                 continue; // already covered above, with better titles and links
@@ -56,7 +64,7 @@ class SearchController extends Controller
             $results[$group['type']] = collect($group['results'])
                 ->map(fn ($hit) => [
                     'title' => $hit['meta'] ? "{$hit['title']} — {$hit['meta']}" : $hit['title'],
-                    'url' => $hit['url'] ?? '#',
+                    'url' => $hit['url'] ?? $groupUrls[$group['type']] ?? '/',
                 ]);
         }
 

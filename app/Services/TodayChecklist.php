@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Animal;
 use App\Models\Attendance;
+use App\Models\DayCancellation;
 use App\Models\EndOfDayRecord;
+use App\Models\Member;
 use App\Models\TransportRun;
 use Carbon\CarbonInterface;
 
@@ -13,7 +15,18 @@ class TodayChecklist
 {
     public function build(CarbonInterface $date): array
     {
-        $attendees = Attendance::whereDate('date', $date)->where('checked_in', true)->get();
+        $scheduled = Member::scheduledFor($date)->with('settings')->get();
+        // Include ad-hoc attendees as well as scheduled members. The register is
+        // complete only when every visible person has a final present/absent
+        // decision, rather than as soon as the first person is checked in.
+        $attendance = Attendance::whereDate('date', $date)->get()->keyBy('member_id');
+        $attendees = $attendance->where('checked_in', true);
+        $dayCancelled = DayCancellation::isCancelled($date);
+        $registerComplete = $dayCancelled || (
+            $attendance->isNotEmpty()
+            && $attendance->every(fn ($entry) => $entry->checked_in || $entry->status === 'absent')
+            && $scheduled->every(fn ($member) => $attendance->has($member->id))
+        );
 
         $activeAnimals = Animal::active()->count();
         $checkedAnimals = Animal::active()
@@ -24,18 +37,34 @@ class TodayChecklist
             ->whereIn('member_id', $attendees->pluck('member_id'))
             ->count();
 
+        $transportMembers = $scheduled->filter(fn ($member) => (bool) $member->settings?->transport_required);
+        $transportRuns = TransportRun::whereDate('run_date', $date)
+            ->whereIn('member_id', $transportMembers->pluck('id'))
+            ->get()
+            ->groupBy('member_id');
+        $transportComplete = $dayCancelled || $transportMembers->isEmpty() || $transportMembers->every(function ($member) use ($transportRuns) {
+            $runs = $transportRuns->get($member->id, collect());
+            $morning = $runs->firstWhere('phase', 'morning');
+
+            return $morning && ($morning->outcome === 'absent' || $runs->contains('phase', 'afternoon'));
+        });
+
         return [
             [
                 'key' => 'transport',
                 'label' => 'Transport Register',
-                'done' => TransportRun::whereDate('run_date', $date)->exists(),
-                'detail' => 'At least one transport run recorded today',
+                'done' => $transportComplete,
+                'detail' => $transportMembers->isEmpty()
+                    ? 'No transport runs scheduled today'
+                    : $transportRuns->flatten(1)->count().' journey outcomes recorded',
             ],
             [
                 'key' => 'register',
                 'label' => 'Morning Register',
-                'done' => $attendees->isNotEmpty(),
-                'detail' => $attendees->count().' checked in',
+                'done' => $registerComplete,
+                'detail' => $dayCancelled
+                    ? 'The whole day is cancelled'
+                    : $attendance->count().' of '.$scheduled->count().' attendance decisions recorded',
             ],
             [
                 'key' => 'moods',

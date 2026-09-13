@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import DailyFlowNav from '../components/DailyFlowNav';
 
 interface MonitoringData {
     id?: number;
@@ -62,6 +63,12 @@ export default function Monitoring({ date, bySpecies, done, total }: Props) {
         <AppShell title="Daily Monitoring">
             <Head title="Daily Monitoring" />
             <ModuleHero eyebrow="Daily assurance" title="Daily monitoring" description="Capture wellbeing, care and environmental checks before small issues grow." icon="📊" tone="teal" />
+
+            <DailyFlowNav
+                active="monitoring"
+                date={date}
+                statuses={{ monitoring: done === total && total > 0 ? 'done' : 'current' }}
+            />
 
             <div className="flex items-center gap-3 mb-3">
                 <input

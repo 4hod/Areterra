@@ -425,4 +425,3 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::put('/orders/{order}/delivered', [App\Http\Controllers\ProductOrderController::class, 'markDelivered'])->name('orders.delivered');
     });
 });
-

@@ -106,7 +106,7 @@ export default function Dashboard({
                 <section className="dashboard-empty-state">
                     <div className="dashboard-empty-illustration">🦜🐰🐹</div>
                     <p className="dashboard-kicker">Your new workspace</p>
-                    <h2>Welcome to Areterra Hub, {firstName}.</h2>
+                    <h1>Welcome to Areterra Hub, {firstName}.</h1>
                     <p>Add your first members and animals to bring attendance, welfare, records and daily operations to life.</p>
                     <div className="dashboard-empty-actions">
                         <Link href="/members">+ Add a member</Link>
@@ -157,7 +157,7 @@ export default function Dashboard({
                 <section className="dashboard-hero">
                     <div className="dashboard-hero-copy">
                         <p className="dashboard-kicker">Live service overview</p>
-                        <h2>{greeting()}, {firstName}.</h2>
+                        <h1>{greeting()}, {firstName}.</h1>
                         <p className="dashboard-hero-summary">
                             {stats.membersInToday} members are in today, {completed} of {checklist.length} daily actions are complete,
                             and {welfareAlerts.length === 0 ? 'there are no current welfare alerts.' : `${welfareAlerts.length} welfare alert${welfareAlerts.length === 1 ? '' : 's'} need attention.`}

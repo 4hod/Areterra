@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
@@ -116,9 +116,14 @@ export default function Builder() {
                     </button>
                 </Card>
 
-                <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
-                    Create form
-                </button>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <Link href="/forms" className="rounded-lg bg-slate-100 px-5 py-3 text-center font-bold text-slate-600">
+                        Cancel
+                    </Link>
+                    <button type="submit" disabled={processing} className="rounded-lg bg-brand px-5 py-3 font-bold text-white disabled:opacity-60 sm:min-w-48">
+                        Create form
+                    </button>
+                </div>
             </form>
         </AppShell>
     );

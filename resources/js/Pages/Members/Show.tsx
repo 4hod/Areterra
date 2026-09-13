@@ -269,6 +269,19 @@ export default function Show(props: Props) {
                 </div>
             )}
 
+            <section className="mb-3 rounded-card border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="mr-2 min-w-[150px]">
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-brand">Today’s support</div>
+                        <div className="text-xs font-semibold text-brand-dark">Continue with {member.name}</div>
+                    </div>
+                    <Link href={`/register?member=${member.id}`} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-brand/10 hover:text-brand-dark">📋 Register</Link>
+                    {member.settings.transport_required && <Link href={`/transport?member=${member.id}`} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-brand/10 hover:text-brand-dark">🚐 Transport</Link>}
+                    <Link href={`/end-of-day?member=${member.id}`} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-brand/10 hover:text-brand-dark">🌙 End-of-day note</Link>
+                    <button onClick={() => setTab('Sessions')} className="ml-auto rounded-full bg-brand px-3 py-2 text-xs font-bold text-white">View joined history →</button>
+                </div>
+            </section>
+
             {/* Tabs */}
             <TabBar tabs={TABS} active={tab} onChange={setTab} />
 
@@ -817,7 +830,7 @@ export default function Show(props: Props) {
                     <div>
                         <div className="text-sm font-medium mb-1">Attendance days</div>
                         <div className="flex gap-1.5">
-                            {[1, 2, 3, 4, 5].map((d) => (
+                            {[1, 2, 3, 4, 5, 6, 7].map((d) => (
                                 <button
                                     key={d}
                                     type="button"

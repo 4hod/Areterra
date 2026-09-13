@@ -4,12 +4,24 @@ namespace Tests\Feature;
 
 use App\Models\Animal;
 use App\Models\User;
+use App\Models\WelfareCheck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AnimalWelfareTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_feeding_flags_are_exposed_as_booleans(): void
+    {
+        $check = new WelfareCheck([
+            'fed' => 0,
+            'treats_given' => 1,
+        ]);
+
+        $this->assertFalse($check->fed);
+        $this->assertTrue($check->treats_given);
+    }
 
     public function test_monitoring_upserts_on_animal_and_date(): void
     {

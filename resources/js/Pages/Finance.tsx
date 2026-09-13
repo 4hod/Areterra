@@ -40,7 +40,7 @@ export default function Finance(props:Props){
  function saveCost(e:FormEvent){e.preventDefault();costForm.post('/finance/fixed-costs',{onSuccess:()=>{setCostModal(false);costForm.reset();}})}
  return <AppShell title="Finance"><Head title="Finance"/>
   <div className="finance-page">
-   <div className="finance-heading"><div><h2>Finance</h2><p>4-week income, costs and surplus</p></div><button className="link-btn" onClick={()=>changeTab('rates')}>⚙ Rates & Settings</button></div>
+   <div className="finance-heading"><div><h1>Finance</h1><p>4-week income, costs and surplus</p></div><button className="link-btn" onClick={()=>changeTab('rates')}>⚙ Rates & Settings</button></div>
    <div className="finance-tabs">{tabs.map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>changeTab(id)}>{label}</button>)}</div>
 
    {tab==='overview'&&<>
