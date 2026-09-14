@@ -12,11 +12,11 @@ const STEPS: { key: DailyStep; href: string; label: string; icon: string }[] = [
 
 export default function DailyFlowNav({
     active,
-    date,
+    date = new Date().toISOString().slice(0, 10),
     statuses = {},
 }: {
-    active: DailyStep;
-    date: string;
+    active?: DailyStep;
+    date?: string;
     statuses?: Partial<Record<DailyStep, StepState>>;
 }) {
     return (

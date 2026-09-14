@@ -132,6 +132,14 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::get('/more', fn () => Inertia::render('More'))->name('more');
 
+    // Workspace landing pages join related modules without changing their
+    // underlying routes or data models.
+    foreach (['people', 'animal-care', 'operations', 'team', 'business', 'governance'] as $workspace) {
+        Route::get("/{$workspace}", fn () => Inertia::render('Workspace', ['workspace' => $workspace]))
+            ->name("workspace.{$workspace}");
+    }
+    Route::get('/search-hub', fn () => Inertia::render('SearchHub'))->name('search-hub');
+
     // ── Phase 3 ──────────────────────────────────────────────────────────
 
     Route::middleware('can:manage_payroll')->group(function () {

@@ -6,12 +6,13 @@ import DialogHost from './DialogHost';
 import AccountMenu from './AccountMenu';
 import NotificationBell from './NotificationBell';
 
-interface NavItem {
+export interface NavItem {
     href: string;
     label: string;
     icon: string;
     cap?: string;
     isNew?: boolean;
+    matches?: string[];
 }
 
 export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem[] }[] = [
@@ -21,80 +22,28 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
         items: [
             { href: '/', label: 'Dashboard', icon: '🏠' },
             { href: '/today', label: 'Today', icon: '✅' },
-            { href: '/register', label: 'Register', icon: '📋', cap: 'log_sessions' },
-            { href: '/end-of-day', label: 'End of Day', icon: '🌙', cap: 'log_sessions' },
-            { href: '/transport', label: 'Transport', icon: '🚐', cap: 'log_sessions' },
-            { href: '/tasks', label: 'Tasks', icon: '☑️', isNew: true },
         ],
     },
     {
-        title: 'People & animals',
+        title: 'Workspaces',
         color: 'cat-people',
         items: [
-            { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
-            { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
-            { href: '/monitoring', label: 'Daily Monitoring', icon: '📊', cap: 'log_welfare' },
-            { href: '/reviews', label: 'Member Reviews', icon: '🔄', cap: 'view_members' },
-            { href: '/sar-requests', label: 'SAR Requests', icon: '🔐', cap: 'edit_members', isNew: true },
-            { href: '/email', label: 'Email Composer', icon: '✉️', cap: 'view_member_details' },
+            { href: '/people', label: 'People', icon: '👥', matches: ['/members', '/monitoring', '/reviews', '/referrals', '/email', '/sar-requests'] },
+            { href: '/animal-care', label: 'Animal Care', icon: '🐾', matches: ['/animals'] },
+            { href: '/operations', label: 'Operations', icon: '🧭', matches: ['/register', '/transport', '/end-of-day', '/activities', '/weekly-planner', '/calendar', '/vehicles', '/maintenance', '/projects', '/insurance'] },
+            { href: '/team', label: 'Team', icon: '🤝', matches: ['/directory', '/announcements', '/recognition', '/leave', '/timeclock', '/supervisions', '/payroll', '/orders'] },
+            { href: '/business', label: 'Business', icon: '💼', matches: ['/finance', '/funding', '/invoices', '/reports'] },
+            { href: '/governance', label: 'Governance', icon: '⚖️', matches: ['/policies', '/documents', '/risk-assessments', '/compliance', '/incidents', '/safeguarding', '/forms', '/audit', '/settings', '/import'] },
         ],
     },
     {
-        title: 'Staff',
-        color: 'cat-staff',
-        items: [
-            { href: '/announcements', label: 'Announcements', icon: '📢' },
-            { href: '/recognition', label: 'Recognition', icon: '🌟' },
-            { href: '/leave', label: 'Leave', icon: '🌴', cap: 'request_leave' },
-            { href: '/timeclock', label: 'Time Clock', icon: '⏱️', cap: 'own_timeclock' },
-            { href: '/directory', label: 'Directory', icon: '📖' },
-            { href: '/orders', label: 'Orders', icon: '📦', cap: 'request_products', isNew: true },
-            { href: '/supervisions', label: 'Supervisions', icon: '🗣️', cap: 'manage_supervisions' },
-            { href: '/payroll', label: 'Payroll', icon: '💷', cap: 'manage_payroll' },
-        ],
-    },
-    {
-        title: 'Operations',
-        color: 'cat-ops',
-        items: [
-            { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
-            { href: '/weekly-planner', label: 'Weekly Planner', icon: '🗓️', isNew: true },
-            { href: '/calendar', label: 'Calendar', icon: '🗓️', isNew: true },
-            { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
-            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations', isNew: true },
-            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations', isNew: true },
-            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations', isNew: true },
-            { href: '/insurance', label: 'Insurance', icon: '🛡️', cap: 'manage_operations', isNew: true },
-            { href: '/referrals', label: 'Referrals', icon: '📨', cap: 'create_members' },
-            { href: '/finance', label: 'Finance & Grants', icon: '💰', cap: 'manage_finance' },
-            { href: '/invoices', label: 'Invoices', icon: '🧾', cap: 'manage_finance' },
-        ],
-    },
-    {
-        title: 'Governance & safety',
-        color: 'cat-governance',
-        items: [
-            { href: '/policies', label: 'Policies', icon: '📜' },
-            { href: '/documents', label: 'Documents', icon: '📁' },
-            { href: '/risk-assessments', label: 'Risk Assessments', icon: '⚖️' },
-            { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
-            { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents', isNew: true },
-            { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
-        ],
-    },
-    {
-        title: 'Reporting & admin',
+        title: 'Utilities',
         color: 'cat-admin',
         items: [
-            { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
-            { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
-            { href: '/audit-log', label: 'Audit Log', icon: '🧾', cap: 'view_audit_log' },
-            { href: '/forms', label: 'Forms', icon: '📝', isNew: true },
+            { href: '/search-hub', label: 'Search', icon: '🔍' },
+            { href: '/tasks', label: 'Tasks', icon: '☑️' },
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
-            { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
-            { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
-            { href: '/settings/permissions', label: 'Permissions', icon: '🔑', cap: 'manage_settings' },
-            { href: '/account', label: 'My Account', icon: '👤' },
+            { href: '/account', label: 'My account', icon: '👤' },
         ],
     },
 ];
@@ -102,15 +51,18 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
 // Keep the established mobile navigation order.
 const MOBILE_NAV: NavItem[] = [
     { href: '/today', label: 'Today', icon: '✅' },
-    { href: '/', label: 'Dashboard', icon: '🏠' },
-    { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
-    { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
-    { href: '/announcements', label: 'News', icon: '📢' },
+    { href: '/people', label: 'People', icon: '👥', matches: ['/members', '/monitoring', '/reviews', '/referrals'] },
+    { href: '/animal-care', label: 'Animals', icon: '🐾', matches: ['/animals'] },
+    { href: '/operations', label: 'Operations', icon: '🧭', matches: ['/register', '/transport', '/end-of-day', '/activities', '/weekly-planner', '/calendar', '/vehicles', '/maintenance', '/projects'] },
     { href: '/more', label: 'More', icon: '⋯' },
 ];
 
 function isActive(href: string, url: string) {
     return href === '/' ? url === '/' : url.startsWith(href);
+}
+
+function itemIsActive(item: NavItem, url: string) {
+    return isActive(item.href, url) || item.matches?.some((href) => isActive(href, url)) === true;
 }
 
 export function allowed(item: NavItem, caps: string[]) {
@@ -133,10 +85,11 @@ export default function AppShell({ title, children }: { title: string; children:
         } catch {
             stored = {};
         }
+        if (stored.Workspaces === undefined) stored.Workspaces = true;
         // Always auto-open whichever section contains the current page, regardless
         // of stored state, so navigating somewhere never hides where you just went.
         for (const section of NAV_SECTIONS) {
-            if (section.title && section.items.some((item) => isActive(item.href, url))) {
+            if (section.title && section.items.some((item) => itemIsActive(item, url))) {
                 stored[section.title] = true;
             }
         }
@@ -251,7 +204,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                             key={item.href}
                                             href={item.href}
                                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
-                                                isActive(item.href, url)
+                                                itemIsActive(item, url)
                                                     ? 'bg-brand text-white shadow-sm'
                                                     : 'text-white/70 hover:bg-white/5 hover:text-white'
                                             }`}
@@ -290,7 +243,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                                 key={item.href}
                                                 href={item.href}
                                                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
-                                                    isActive(item.href, url)
+                                                    itemIsActive(item, url)
                                                         ? 'bg-brand text-white shadow-sm'
                                                         : 'text-white/70 hover:bg-white/5 hover:text-white'
                                                 }`}
@@ -380,7 +333,7 @@ export default function AppShell({ title, children }: { title: string; children:
                         key={item.href}
                         href={item.href}
                         className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium min-h-11 ${
-                            isActive(item.href, url) ? 'text-brand' : 'text-slate-500'
+                            itemIsActive(item, url) ? 'text-brand' : 'text-slate-500'
                         }`}
                     >
                         <span className="text-xl" aria-hidden>
@@ -416,7 +369,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                                 href={item.href}
                                                 onClick={() => setDrawer(false)}
                                                 className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
-                                                    isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
+                                                    itemIsActive(item, url) ? 'bg-brand text-white' : 'text-white/75'
                                                 }`}
                                             >
                                                 <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
@@ -446,7 +399,7 @@ export default function AppShell({ title, children }: { title: string; children:
                                                     href={item.href}
                                                     onClick={() => setDrawer(false)}
                                                     className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
-                                                        isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
+                                                        itemIsActive(item, url) ? 'bg-brand text-white' : 'text-white/75'
                                                     }`}
                                                 >
                                                     <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
