@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Animal;
 use App\Models\Member;
+use App\Services\LegacyJotformArchiveImporter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use RuntimeException;
 
 // CSV import with preview-before-run (SPEC checklist: Import).
 // Members: first_name,last_name[,preferred_name,status,dob,phone,email,postcode,address_line1,address_line2,town,support_needs,diagnoses,medication]
@@ -15,6 +17,24 @@ class ImportController extends Controller
     public function index()
     {
         return Inertia::render('Import');
+    }
+
+    public function archive(Request $request, LegacyJotformArchiveImporter $importer)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'max:10240'],
+        ]);
+
+        try {
+            $report = $importer->import($request->file('file'), $request->user());
+        } catch (RuntimeException $exception) {
+            return back()->with('error', 'Archive import stopped without changing any data: '.$exception->getMessage());
+        }
+
+        return back()->with([
+            'success' => "Archive import complete. {$report['source_rows']} source rows were accounted for.",
+            'archive_import_report' => $report,
+        ]);
     }
 
     public function preview(Request $request)

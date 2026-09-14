@@ -377,6 +377,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     // CSV import
     Route::middleware('can:manage_settings')->group(function () {
         Route::get('/import', [App\Http\Controllers\ImportController::class, 'index'])->name('import');
+        Route::post('/import/archive', [App\Http\Controllers\ImportController::class, 'archive'])->name('import.archive');
         Route::post('/import/preview', [App\Http\Controllers\ImportController::class, 'preview'])->name('import.preview');
         Route::post('/import/commit', [App\Http\Controllers\ImportController::class, 'commit'])->name('import.commit');
     });
