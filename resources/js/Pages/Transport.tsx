@@ -6,6 +6,7 @@ import TransportMap from '../components/TransportMap';
 import Modal from '../components/Modal';
 import { confirmDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
+import DailyFlowNav from '../components/DailyFlowNav';
 
 interface LedgerEntry {
     id: number;
@@ -146,6 +147,12 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
             <Head title="Transport" />
             <ModuleHero eyebrow="Daily journeys" title="Transport" description="Coordinate collections, drop-offs and transport payments in one live workspace." icon="🚐" tone="purple" />
 
+            <DailyFlowNav
+                active="transport"
+                date={date}
+                statuses={{ transport: afternoonComplete ? 'done' : 'current' }}
+            />
+
             {/* Date picker */}
             <div className="flex items-center gap-2 mb-3">
                 <input
@@ -154,7 +161,7 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                     onChange={(e) => router.get('/transport', { date: e.target.value })}
                     className="rounded-lg border border-slate-300 px-3 bg-white text-sm"
                 />
-                {!isToday && <span className="text-xs font-bold text-amber-600">Viewing a different day</span>}
+                {!isToday && <span className="text-xs font-bold text-amber-600">Viewing a different day — read only</span>}
             </div>
 
             {/* Morning summary banner during afternoon phase */}
@@ -218,25 +225,29 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                     <div className="flex flex-wrap gap-2 mt-4">
                         <button
                             onClick={() => complete(next, phase === 2 ? 'afternoon' : 'morning')}
-                            className="rounded-full bg-white text-brand-dark font-bold px-5 py-2.5"
+                            disabled={!isToday}
+                            className="rounded-full bg-white text-brand-dark font-bold px-5 py-2.5 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {phase === 2 ? 'Dropped off ✓' : 'Collected ✓'}
                         </button>
                         <button
                             onClick={() => askReason(next, phase === 2 ? 'afternoon' : 'morning', 'not_collected')}
-                            className="rounded-full bg-white/20 font-semibold px-4 py-2.5"
+                            disabled={!isToday}
+                            className="rounded-full bg-white/20 font-semibold px-4 py-2.5 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Not collected
                         </button>
                         <button
                             onClick={() => askReason(next, phase === 2 ? 'afternoon' : 'morning', 'absent')}
-                            className="rounded-full bg-white/20 font-semibold px-4 py-2.5"
+                            disabled={!isToday}
+                            className="rounded-full bg-white/20 font-semibold px-4 py-2.5 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             Absent all day
                         </button>
                         <button
                             onClick={() => { setPaying(next); setAmount(next.suggested_top_up || dailyRate); }}
-                            className="rounded-full bg-accent text-brand-dark font-bold px-4 py-2.5"
+                            disabled={!isToday}
+                            className="rounded-full bg-accent text-brand-dark font-bold px-4 py-2.5 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             💷 Take Payment
                         </button>
@@ -286,19 +297,22 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                                 <div className="flex gap-1 shrink-0">
                                     <button
                                         onClick={() => complete(r, 'morning')}
-                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
+                                        disabled={!isToday}
+                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         Collected ✓
                                     </button>
                                     <button
                                         onClick={() => askReason(r, 'morning', 'not_collected')}
-                                        className="rounded-full bg-slate-100 text-slate-600 font-semibold text-xs px-3 py-2"
+                                        disabled={!isToday}
+                                        className="rounded-full bg-slate-100 text-slate-600 font-semibold text-xs px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         Not collected
                                     </button>
                                     <button
                                         onClick={() => askReason(r, 'morning', 'absent')}
-                                        className="rounded-full bg-slate-100 text-red-700 font-semibold text-xs px-3 py-2"
+                                        disabled={!isToday}
+                                        className="rounded-full bg-slate-100 text-red-700 font-semibold text-xs px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         Absent
                                     </button>
@@ -317,13 +331,15 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                                 <div className="flex gap-1 shrink-0">
                                     <button
                                         onClick={() => complete(r, 'afternoon')}
-                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
+                                        disabled={!isToday}
+                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         Dropped ✓
                                     </button>
                                     <button
                                         onClick={() => askReason(r, 'afternoon', 'not_collected')}
-                                        className="rounded-full bg-slate-100 text-slate-600 font-semibold text-xs px-3 py-2"
+                                        disabled={!isToday}
+                                        className="rounded-full bg-slate-100 text-slate-600 font-semibold text-xs px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         Not collected
                                     </button>
@@ -356,13 +372,15 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                                     <div className="flex gap-1">
                                         <button
                                             onClick={() => { setPaying(r); setAmount(r.suggested_top_up || dailyRate); }}
-                                            className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs px-3 py-2"
+                                            disabled={!isToday}
+                                            className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             💷 Payment
                                         </button>
                                         <button
                                             onClick={() => undo(r, r.afternoon_done ? 'afternoon' : 'morning')}
-                                            className="rounded-full bg-slate-100 text-slate-500 font-semibold text-xs px-3 py-2"
+                                            disabled={!isToday}
+                                            className="rounded-full bg-slate-100 text-slate-500 font-semibold text-xs px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             Undo
                                         </button>
@@ -398,7 +416,8 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                             <button
                                 key={r.id}
                                 onClick={() => { setPaying(r); setAmount(r.suggested_top_up || dailyRate); }}
-                                className="rounded-full border border-slate-200 text-xs font-semibold px-3 py-1.5 hover:bg-slate-50"
+                                disabled={!isToday}
+                                className="rounded-full border border-slate-200 text-xs font-semibold px-3 py-1.5 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {r.name.split(' ')[0]} · <FeeStatus row={r} />
                             </button>

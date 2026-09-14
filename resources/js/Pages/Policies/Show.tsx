@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import { SharedProps } from '../../types';
-import ModuleHero from '../../components/ModuleHero';
+import RecordHeader from '../../components/RecordHeader';
 
 interface Props {
     policy: {
@@ -53,7 +53,30 @@ export default function Show({ policy, canManage }: Props) {
                     .print-header { display: flex !important }
                 }`}</style>
             </Head>
-            <ModuleHero eyebrow="Policy detail" title="Policy" description="Read the current version, key details and acknowledgement status." icon="📖" tone="amber" />
+            <div className="no-print">
+                <RecordHeader
+                    eyebrow="Policy record"
+                    title={policy.title}
+                    description={`Version ${policy.version}${policy.review_date ? ` · Review due ${new Date(policy.review_date).toLocaleDateString('en-GB')}` : ''}`}
+                    backHref="/policies"
+                    backLabel="Policies"
+                    leading={<div className="h-14 w-14 rounded-2xl bg-amber-50 text-2xl grid place-items-center">📖</div>}
+                    status={<span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-700">{policy.status}</span>}
+                    actions={(
+                        <>
+                            {canManage && !editing && <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2.5">✏️ Edit</button>}
+                            {canManage && !editing && <button onClick={() => router.post(`/policies/${policy.id}/approve`)} className="rounded-full bg-status-green text-white font-semibold text-xs px-4 py-2.5">✓ Approve</button>}
+                            <button onClick={() => window.print()} className="rounded-full bg-brand-dark text-white font-semibold text-xs px-4 py-2.5">🖨 Print PDF</button>
+                        </>
+                    )}
+                    related={[
+                        { href: '/governance', label: 'Governance', icon: '⚖️' },
+                        { href: '/documents', label: 'Documents', icon: '📁' },
+                        { href: '/risk-assessments', label: 'Risks', icon: '⚠️' },
+                        { href: '/compliance', label: 'Compliance', icon: '📋' },
+                    ]}
+                />
+            </div>
 
             {/* Print-only branded header */}
             <div className="print-header hidden justify-between items-start mb-6">
@@ -66,31 +89,6 @@ export default function Show({ policy, canManage }: Props) {
                     <div>Version {policy.version}</div>
                     <div>{new Date(policy.updated_at).toLocaleDateString('en-GB')}</div>
                 </div>
-            </div>
-
-            <div className="no-print flex flex-wrap items-center gap-2 mb-4 text-sm">
-                <span className="text-slate-500">
-                    v{policy.version} · {policy.status}
-                    {policy.review_date && ` · review due ${new Date(policy.review_date).toLocaleDateString('en-GB')}`}
-                </span>
-                <span className="ml-auto flex gap-2">
-                    <button onClick={() => window.print()} className="rounded-full bg-brand-dark text-white font-semibold text-xs px-4 py-2">
-                        🖨 Print PDF
-                    </button>
-                    {canManage && !editing && (
-                        <>
-                            <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2">
-                                ✏️ Edit
-                            </button>
-                            <button
-                                onClick={() => router.post(`/policies/${policy.id}/approve`)}
-                                className="rounded-full bg-status-green text-white font-semibold text-xs px-4 py-2"
-                            >
-                                ✓ Approve
-                            </button>
-                        </>
-                    )}
-                </span>
             </div>
 
             {editing && (

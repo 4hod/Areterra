@@ -1,10 +1,11 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { confirmDialog } from '../utils/dialogs';
 
 interface Policy {
     id: number;
@@ -67,11 +68,14 @@ export default function Insurance({ policies, canManage }: { policies: Policy[];
                                     </div>
                                     {p.notes && <p className="text-sm text-slate-500 mt-1">{p.notes}</p>}
                                 </div>
-                                {days !== null && (
-                                    <span className={`shrink-0 text-xs font-bold px-2.5 py-0.5 rounded-full ${overdue ? 'bg-red-100 text-red-700' : dueSoon ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}`}>
-                                        {overdue ? `Expired ${Math.abs(days)}d ago` : `${days}d left`}
-                                    </span>
-                                )}
+                                <div className="flex shrink-0 items-center gap-2">
+                                    {days !== null && (
+                                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${overdue ? 'bg-red-100 text-red-700' : dueSoon ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}`}>
+                                            {overdue ? `Expired ${Math.abs(days)}d ago` : `${days}d left`}
+                                        </span>
+                                    )}
+                                    {canManage && <button onClick={async () => (await confirmDialog(`Delete ${p.policy_type}?`)) && router.delete(`/insurance/${p.id}`)} className="text-xs font-bold text-red-600">Delete</button>}
+                                </div>
                             </div>
                         </Card>
                     );

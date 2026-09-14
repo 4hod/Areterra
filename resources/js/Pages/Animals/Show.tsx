@@ -4,9 +4,9 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
+import RecordHeader from '../../components/RecordHeader';
 import { WelfareStatus } from '../../types';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
-import ModuleHero from '../../components/ModuleHero';
 import Sparkline from '../../components/Sparkline';
 
 interface Monitoring {
@@ -123,26 +123,28 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     return (
         <AppShell title={animal.name}>
             <Head title={animal.name} />
-            <ModuleHero eyebrow="Animal profile" title="Animal record" description="Care notes, routines, health information and history in one place." icon="🐾" tone="green" />
-
-            <div className="flex items-center gap-4 mb-4">
-                <div>
-                    <div className="text-xl font-extrabold text-brand-dark">{animal.name}</div>
-                    <div className="text-slate-500 text-sm">
-                        {animal.species}
-                        {animal.breed && ` · ${animal.breed}`}
-                        {animal.sex && ` · ${animal.sex}`}
-                    </div>
-                </div>
-                <div className="ml-auto flex items-center gap-2">
-                    <StatusPill status={animal.welfare_status} label={`Welfare: ${animal.welfare_status}`} />
-                    {canEdit && (
-                        <button onClick={() => setDetailsOpen(true)} className="rounded-full bg-ink/[0.06] text-ink/70 text-xs font-bold px-3 py-2">
-                            ✏️ Edit details
-                        </button>
-                    )}
-                </div>
-            </div>
+            <RecordHeader
+                eyebrow="Animal record"
+                title={animal.name}
+                description={`${animal.species}${animal.breed ? ` · ${animal.breed}` : ''}${animal.sex ? ` · ${animal.sex}` : ''}`}
+                backHref="/animals"
+                backLabel="Animal Care"
+                leading={<div className="h-14 w-14 rounded-2xl bg-emerald-50 text-2xl grid place-items-center">🐾</div>}
+                status={<StatusPill status={animal.welfare_status} label={`Welfare: ${animal.welfare_status}`} />}
+                actions={(
+                    <>
+                        <button onClick={() => setCheckOpen(true)} className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2.5">✓ Welfare check</button>
+                        <button onClick={() => { setM(todayMonitoring ?? emptyMonitoring()); setMonitorOpen(true); }} className="rounded-full bg-brand-dark text-white font-semibold text-xs px-4 py-2.5">📊 Monitoring</button>
+                        <button onClick={() => setVetOpen(true)} className="rounded-full bg-slate-700 text-white font-semibold text-xs px-4 py-2.5">🩺 Vet visit</button>
+                        {canEdit && <button onClick={() => setDetailsOpen(true)} className="rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-4 py-2.5">✏️ Edit</button>}
+                    </>
+                )}
+                related={[
+                    { href: '/animal-care', label: 'Animal Care', icon: '🐾' },
+                    { href: '/animals', label: 'All animals', icon: '🦜' },
+                    { href: '/tasks', label: 'Tasks', icon: '☑️' },
+                ]}
+            />
 
             {(animal.joined_date || animal.care_requirements || animal.feeding_notes) && (
                 <div className="grid md:grid-cols-3 gap-3 mb-4">
@@ -166,24 +168,6 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                     )}
                 </div>
             )}
-
-            <div className="flex gap-2 mb-4">
-                <button onClick={() => setCheckOpen(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5">
-                    ✓ Welfare check
-                </button>
-                <button
-                    onClick={() => {
-                        setM(todayMonitoring ?? emptyMonitoring());
-                        setMonitorOpen(true);
-                    }}
-                    className="rounded-full bg-brand-dark text-white font-semibold text-sm px-4 py-2.5"
-                >
-                    📊 Daily monitoring
-                </button>
-                <button onClick={() => setVetOpen(true)} className="rounded-full bg-slate-700 text-white font-semibold text-sm px-4 py-2.5">
-                    🩺 Vet visit
-                </button>
-            </div>
 
             <div className="grid md:grid-cols-2 gap-3">
                 <Card title="Recent welfare checks">
@@ -332,13 +316,15 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                             </button>
                         ))}
                     </div>
-                    <textarea
-                        value={checkNotes}
-                        onChange={(e) => setCheckNotes(e.target.value)}
-                        placeholder="Notes"
-                        className="w-full rounded-lg border border-slate-300 p-3"
-                        rows={3}
-                    />
+                    <label className="block text-sm font-medium">
+                        Notes
+                        <textarea
+                            value={checkNotes}
+                            onChange={(e) => setCheckNotes(e.target.value)}
+                            className="mt-1 w-full rounded-lg border border-slate-300 p-3"
+                            rows={3}
+                        />
+                    </label>
                     <button onClick={saveCheck} className="w-full rounded-lg bg-brand text-white font-bold py-3">
                         Save check
                     </button>
@@ -403,13 +389,15 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         />
                     </label>
                 </div>
-                <textarea
-                    value={m.notes ?? ''}
-                    onChange={(e) => setM({ ...m, notes: e.target.value })}
-                    placeholder="Notes"
-                    className="mt-3 w-full rounded-lg border border-slate-300 p-3"
-                    rows={2}
-                />
+                <label className="mt-3 block text-sm font-medium">
+                    Notes
+                    <textarea
+                        value={m.notes ?? ''}
+                        onChange={(e) => setM({ ...m, notes: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-slate-300 p-3"
+                        rows={2}
+                    />
+                </label>
                 <label className="mt-3 flex items-center gap-2 text-sm font-medium text-red-700">
                     <input
                         type="checkbox"

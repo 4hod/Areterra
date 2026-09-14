@@ -3,6 +3,7 @@ import { FormEvent } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import ModuleHero from '../components/ModuleHero';
+import { confirmDialog } from '../utils/dialogs';
 
 interface Template {
     id: number;
@@ -48,6 +49,25 @@ export default function EmailComposer({ members, member, contacts, templates }: 
         <AppShell title="Email Composer">
             <Head title="Email Composer" />
             <ModuleHero eyebrow="Member communications" title="Email composer" description="Create clear, consistent updates using live member information." icon="✉️" tone="blue" />
+
+            {templates.length > 0 && (
+                <Card title="Saved templates" className="mb-4">
+                    <ul className="divide-y divide-slate-100">
+                        {templates.map((template) => (
+                            <li key={template.id} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                                <span className="text-sm font-semibold text-brand-dark">{template.name}</span>
+                                <button
+                                    type="button"
+                                    onClick={async () => (await confirmDialog(`Delete template ${template.name}?`)) && router.delete(`/email/templates/${template.id}`)}
+                                    className="text-xs font-bold text-red-600"
+                                >
+                                    Delete
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
+            )}
 
             <form onSubmit={submit} className="space-y-4">
                 <Card title="Who's it about?">

@@ -9,7 +9,7 @@ import TabBar from '../../components/TabBar';
 import { MOOD_EMOJI, Mood } from '../../types';
 import { confirmDialog, promptDialog } from '../../utils/dialogs';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
-import ModuleHero from '../../components/ModuleHero';
+import RecordHeader from '../../components/RecordHeader';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
 const CONSENT_LABELS: Record<string, string> = {
@@ -188,70 +188,44 @@ export default function Show(props: Props) {
     return (
         <AppShell title={member.name}>
             <Head title={member.name} />
-            <ModuleHero eyebrow="Member profile" title="Member record" description="Everything the team needs to understand and support this person well." icon="💚" tone="teal" />
-
-            <Link href="/members" className="inline-block text-sm font-semibold text-brand mb-2">
-                ← Back
-            </Link>
-
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-2">
-                <div className="relative">
-                    {member.photo_path ? (
-                        <img src={member.photo_path} alt={member.name} className="h-16 w-16 rounded-full object-cover" />
-                    ) : (
-                        <div className="h-16 w-16 rounded-full bg-brand/10 text-brand font-extrabold text-2xl flex items-center justify-center">
-                            {member.name.charAt(0)}
-                        </div>
-                    )}
-                    {canEdit && (
-                        <>
-                            <button
-                                onClick={() => photoInput.current?.click()}
-                                aria-label="Change photo"
-                                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-brand text-white text-xs flex items-center justify-center ring-2 ring-white"
-                            >
-                                📷
-                            </button>
-                            <input
-                                ref={photoInput}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
-                            />
-                        </>
-                    )}
-                </div>
-                <div>
-                    <div className="text-xl font-extrabold text-brand-dark">
-                        {member.name}
-                        {isBirthday(member.dob) && <span className="ml-2" title="Birthday today!">🎂</span>}
+            <RecordHeader
+                eyebrow="Member record"
+                title={<>{member.name}{isBirthday(member.dob) && <span className="ml-2" title="Birthday today!">🎂</span>}</>}
+                description={member.settings.key_worker ? `Key worker: ${member.settings.key_worker}` : 'Support, attendance, communication and outcomes in one record.'}
+                backHref="/members"
+                backLabel="People"
+                leading={(
+                    <div className="relative">
+                        {member.photo_path ? (
+                            <img src={member.photo_path} alt={member.name} className="h-16 w-16 rounded-full object-cover" />
+                        ) : (
+                            <div className="h-16 w-16 rounded-full bg-brand/10 text-brand font-extrabold text-2xl flex items-center justify-center">{member.name.charAt(0)}</div>
+                        )}
+                        {canEdit && (
+                            <>
+                                <button onClick={() => photoInput.current?.click()} aria-label="Change photo" className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-brand text-white text-xs flex items-center justify-center ring-2 ring-white">📷</button>
+                                <input ref={photoInput} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])} />
+                            </>
+                        )}
                     </div>
-                    <StatusPill status={member.status} />
-                </div>
-                <div className="ml-auto flex gap-1.5">
-                    <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                        🖨 Print
-                    </button>
-                    <Link href={`/members/${member.id}/history`} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                        📜 Full History
-                    </Link>
-                    {canEdit && (
-                        <>
-                            <a href={`/members/${member.id}/care-plan`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                                🗓️ Care Plan
-                            </a>
-                            <a href={`/members/${member.id}/sar`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                                📄 SAR
-                            </a>
-                            <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2">
-                                ✏️ Edit Profile
-                            </button>
-                        </>
-                    )}
-                </div>
-            </div>
+                )}
+                status={<StatusPill status={member.status} />}
+                actions={(
+                    <>
+                        {canEdit && <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2.5">✏️ Edit profile</button>}
+                        <Link href={`/members/${member.id}/history`} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2.5">📜 History</Link>
+                        {canEdit && <a href={`/members/${member.id}/care-plan`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2.5">🗓️ Care plan</a>}
+                        {canEdit && <a href={`/members/${member.id}/sar`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2.5">📄 SAR</a>}
+                        <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2.5">🖨 Print</button>
+                    </>
+                )}
+                related={[
+                    { href: `/register?member=${member.id}`, label: 'Register', icon: '📋' },
+                    { href: `/transport?member=${member.id}`, label: 'Transport', icon: '🚐' },
+                    { href: `/monitoring?member=${member.id}`, label: 'Monitoring', icon: '📊' },
+                    { href: `/end-of-day?member=${member.id}`, label: 'End of day', icon: '🌙' },
+                ]}
+            />
 
             {/* Alerts banner */}
             {alerts.length > 0 && (
@@ -268,6 +242,19 @@ export default function Show(props: Props) {
                     ))}
                 </div>
             )}
+
+            <section className="mb-3 rounded-card border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="mr-2 min-w-[150px]">
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-brand">Today’s support</div>
+                        <div className="text-xs font-semibold text-brand-dark">Continue with {member.name}</div>
+                    </div>
+                    <Link href={`/register?member=${member.id}`} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-brand/10 hover:text-brand-dark">📋 Register</Link>
+                    {member.settings.transport_required && <Link href={`/transport?member=${member.id}`} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-brand/10 hover:text-brand-dark">🚐 Transport</Link>}
+                    <Link href={`/end-of-day?member=${member.id}`} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-brand/10 hover:text-brand-dark">🌙 End-of-day note</Link>
+                    <button onClick={() => setTab('Sessions')} className="ml-auto rounded-full bg-brand px-3 py-2 text-xs font-bold text-white">View joined history →</button>
+                </div>
+            </section>
 
             {/* Tabs */}
             <TabBar tabs={TABS} active={tab} onChange={setTab} />
@@ -817,7 +804,7 @@ export default function Show(props: Props) {
                     <div>
                         <div className="text-sm font-medium mb-1">Attendance days</div>
                         <div className="flex gap-1.5">
-                            {[1, 2, 3, 4, 5].map((d) => (
+                            {[1, 2, 3, 4, 5, 6, 7].map((d) => (
                                 <button
                                     key={d}
                                     type="button"

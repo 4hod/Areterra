@@ -15,6 +15,8 @@ class WelfareCheck extends Model
     {
         return [
             'concern' => 'boolean',
+            'fed' => 'boolean',
+            'treats_given' => 'boolean',
         ];
     }
 

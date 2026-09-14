@@ -7,7 +7,6 @@ import ModuleHero from '../components/ModuleHero';
 export default function More() {
     const { auth } = usePage<SharedProps>().props;
     const caps = auth.user?.capabilities ?? [];
-
     return (
         <AppShell title="More">
             <Head title="More" />
@@ -25,9 +24,7 @@ export default function More() {
                                         href={item.href}
                                         className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-3 font-semibold text-sm text-brand-dark hover:bg-slate-50"
                                     >
-                                        <span className="text-xl" aria-hidden>
-                                            {item.icon}
-                                        </span>
+                                        <span className="text-xl" aria-hidden>{item.icon}</span>
                                         {item.label}
                                     </Link>
                                 ))}

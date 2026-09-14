@@ -1,10 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import MoodPicker from '../components/MoodPicker';
 import { MOOD_EMOJI, Mood } from '../types';
+import DailyFlowNav from '../components/DailyFlowNav';
 
 type Intake = 'good' | 'some' | 'poor' | 'refused';
 
@@ -95,6 +96,12 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
         });
     }
 
+    useEffect(() => {
+        const memberId = Number(new URLSearchParams(window.location.search).get('member'));
+        const row = rows.find((candidate) => candidate.id === memberId);
+        if (row) open(row);
+    }, []);
+
     function save() {
         if (!editing) return;
         router.post(
@@ -120,6 +127,12 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                         <div><i style={{ width: `${rows.length ? Math.round((doneCount / rows.length) * 100) : 0}%` }} /></div>
                     </div>
                 </section>
+
+                <DailyFlowNav
+                    active="end-of-day"
+                    date={date}
+                    statuses={{ 'end-of-day': doneCount === rows.length && rows.length > 0 ? 'done' : 'current' }}
+                />
 
                 {rows.length === 0 && (
                     <div className="module-empty-4a">
