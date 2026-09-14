@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Animal;
+use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,6 +99,7 @@ class StaffModulesTest extends TestCase
     public function test_an_end_of_day_record_is_saved_against_the_member(): void
     {
         $amy = $this->member();
+        Attendance::create(['member_id' => $amy->id, 'date' => today(), 'checked_in' => true, 'arrival_mood' => 'happy']);
 
         $this->actingAs($this->staff)->post("/end-of-day/{$amy->id}", [
             'end_mood' => 'happy',

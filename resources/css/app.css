@@ -230,3 +230,14 @@ body{background:radial-gradient(circle at 83% -20%,rgba(0,157,230,.08),transpare
     .module-hero p { font-size:.8rem; }
     .module-hero__actions { width:100%; }
 }
+
+/* Today is a gated sequence: future jobs stay visibly unavailable. */
+.today-step-4a.is-locked { background:#f7f9fa; box-shadow:none; opacity:.7; }
+.today-step-4a.is-locked .today-step-icon-4a { filter:grayscale(1); }
+.today-step-locked-4a { color:#82909a; font-size:16px; }
+.today-always-available-4a { display:grid; grid-template-columns:50px 1fr auto; gap:14px; align-items:center; padding:17px 20px; border:1px solid #cae9dc; border-radius:20px; background:#f2fbf7; box-shadow:var(--hub-shadow); }
+.today-always-available-4a.is-done { background:linear-gradient(145deg,#fff,#f5fbf8); }
+@media (max-width:760px) {
+    .today-always-available-4a { grid-template-columns:40px 1fr auto; }
+    .today-always-available-4a .today-step-icon-4a { width:40px; height:40px; }
+}

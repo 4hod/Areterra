@@ -47,6 +47,40 @@ class StaffGovernanceSweepTest extends SweepTestCase
         $this->assertEquals(45, DB::table('timeclock_entries')->find($e->id)->break_minutes);
     }
 
+    public function test_additional_hours_and_contracts(): void
+    {
+        $this->assertWriteOk($this->post('/timeclock/additional', [
+            'work_date' => today()->toDateString(),
+            'hours' => 2.5,
+            'notes' => 'Covered an evening event.',
+        ]), 'timeclock.additional');
+
+        $this->assertDatabaseHas('additional_hours_entries', [
+            'user_id' => $this->admin->id,
+            'minutes' => 150,
+        ]);
+
+        $this->assertWriteOk($this->put("/timeclock/contracts/{$this->admin->id}", [
+            'contracted_hours' => 37.5,
+        ]), 'timeclock.contracts.update');
+        $this->assertEquals(37.5, $this->admin->fresh()->contracted_hours);
+    }
+
+    public function test_directory_contacts_can_be_added_and_removed(): void
+    {
+        $this->assertWriteOk($this->post('/directory/contacts', [
+            'name' => 'Severn Edge Vets',
+            'category' => 'Vet',
+            'phone' => '01234 567890',
+            'email' => 'care@example.test',
+        ]), 'directory.contacts.store');
+
+        $contact = DB::table('directory_contacts')->first();
+        $this->assertNotNull($contact);
+        $this->assertWriteOk($this->delete("/directory/contacts/{$contact->id}"), 'directory.contacts.destroy');
+        $this->assertDatabaseMissing('directory_contacts', ['id' => $contact->id]);
+    }
+
     public function test_supervisions_recorded_against_a_subject(): void
     {
         $this->get('/supervisions')->assertOk();

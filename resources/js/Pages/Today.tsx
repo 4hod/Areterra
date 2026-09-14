@@ -3,13 +3,17 @@ import { Head, Link } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import { ChecklistItem } from '../types';
 
-const LINKS: Record<string, string> = { transport: '/register', register: '/register', moods: '/register', welfare: '/animals', end_of_day: '/end-of-day' };
-const ICONS: Record<string, string> = { transport: '🚌', register: '✓', moods: '🙂', welfare: '🐾', end_of_day: '🌙' };
+const LINKS: Record<string, string> = { transport: '/transport', register: '/register', moods: '/register', welfare: '/animals', end_of_day: '/end-of-day' };
+const ICONS: Record<string, string> = { transport: '🚌', register: '✓', moods: '🙂', welfare: '🌿', end_of_day: '🌙' };
 
 export default function Today({ checklist, date }: { checklist: ChecklistItem[]; date: string }) {
     const done = checklist.filter((item) => item.done).length;
     const percent = checklist.length ? Math.round((done / checklist.length) * 100) : 100;
-    const nextItem = checklist.find((item) => !item.done);
+    const welfareItem = checklist.find((item) => item.key === 'welfare');
+    const orderedItems = checklist.filter((item) => item.key !== 'welfare');
+    const nextItem = welfareItem && !welfareItem.done
+        ? welfareItem
+        : orderedItems.find((item) => !item.done);
 
     return (
         <AppShell title="Today">
@@ -31,13 +35,21 @@ export default function Today({ checklist, date }: { checklist: ChecklistItem[];
                     {nextItem && <Link href={LINKS[nextItem.key]} className="module-primary-btn-4a">Open task →</Link>}
                 </section>
 
+                {welfareItem && (
+                    <section className={`today-always-available-4a ${welfareItem.done ? 'is-done' : ''}`}>
+                        <div className="today-step-icon-4a">{ICONS.welfare}</div>
+                        <div className="today-step-copy-4a"><span>Always available</span><h3>{welfareItem.label}</h3><p>{welfareItem.detail}</p></div>
+                        <Link href={LINKS.welfare} className="today-step-action-4a">{welfareItem.done ? 'Review' : 'Open'}</Link>
+                    </section>
+                )}
+
                 <section className="today-flow-4a">
-                    {checklist.map((item, index) => (
-                        <article key={item.key} className={`today-step-4a ${item.done ? 'is-done' : ''}`}>
+                    {orderedItems.map((item, index) => (
+                        <article key={item.key} className={`today-step-4a ${item.done ? 'is-done' : ''} ${!item.available ? 'is-locked' : ''}`}>
                             <div className="today-step-line-4a"><span>{item.done ? '✓' : index + 1}</span></div>
                             <div className="today-step-icon-4a">{ICONS[item.key] ?? '•'}</div>
-                            <div className="today-step-copy-4a"><span>{item.done ? 'Completed' : 'Action required'}</span><h3>{item.label}</h3><p>{item.detail}</p></div>
-                            {!item.done ? <Link href={LINKS[item.key]} className="today-step-action-4a">Continue</Link> : <div className="today-step-complete-4a">Done</div>}
+                            <div className="today-step-copy-4a"><span>{item.done ? 'Completed' : item.available ? 'Action required' : 'Locked'}</span><h3>{item.label}</h3><p>{!item.available ? 'Complete the previous job first' : item.detail}</p></div>
+                            {!item.done && item.available ? <Link href={LINKS[item.key]} className="today-step-action-4a">Continue</Link> : item.done && item.key === 'welfare' ? <Link href={LINKS[item.key]} className="today-step-action-4a">Review</Link> : item.done ? <div className="today-step-complete-4a">Done</div> : <div className="today-step-locked-4a" aria-label="Locked">🔒</div>}
                         </article>
                     ))}
                 </section>

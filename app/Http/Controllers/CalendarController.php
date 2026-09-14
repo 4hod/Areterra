@@ -25,6 +25,8 @@ class CalendarController extends Controller
                 'type' => 'activity',
                 'title' => $a->title,
                 'id' => $a->id,
+                'start_time' => $a->start_time ? substr($a->start_time, 0, 5) : null,
+                'description' => $a->description,
             ]);
 
         $canManageLeave = Gate::allows('approve_leave');

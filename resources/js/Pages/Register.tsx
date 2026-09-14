@@ -80,7 +80,7 @@ export default function Register({ date, rows, others, cancellation }: Props) {
                     ))}
                 </section>
 
-                {others.length > 0 && <section className="register-others-4a"><button onClick={() => setShowOthers(!showOthers)}><span>Members not scheduled today</span><b>{others.length}</b><i>{showOthers ? 'Hide' : 'Show'} list</i></button>{showOthers && <div>{others.map((member) => <article key={member.id}><span>{member.name}</span><button onClick={() => openCheckIn({ id: member.id, name: member.name, scheduled: false, checked_in: false, checked_in_at: null, arrival_mood: null, notes: null })}>Ad-hoc check in</button></article>)}</div>}</section>}
+                {others.length > 0 && <section className="register-others-4a"><button onClick={() => setShowOthers(!showOthers)}><span>Members not scheduled today</span><b>{others.length}</b><i>{showOthers ? 'Hide' : 'Show'} list</i></button>{showOthers && <div>{others.map((member) => <article key={member.id}><span>{member.name}</span><button onClick={() => openCheckIn({ id: member.id, name: member.name, scheduled: false, status: 'expected', absence_reason: null, checked_in: false, checked_in_at: null, arrival_mood: null, notes: null })}>Ad-hoc check in</button></article>)}</div>}</section>}
             </div>
 
             <Modal open={editing !== null} title={editing?.name ?? ''} onClose={() => setEditing(null)}>

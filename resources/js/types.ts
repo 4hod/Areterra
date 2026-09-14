@@ -30,4 +30,5 @@ export interface ChecklistItem {
     label: string;
     done: boolean;
     detail: string;
+    available: boolean;
 }

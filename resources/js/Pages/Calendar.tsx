@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -11,6 +11,8 @@ interface CalEvent {
     title: string;
     id: number;
     status?: string;
+    start_time?: string | null;
+    description?: string | null;
 }
 
 interface PendingLeave {
@@ -37,6 +39,13 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export default function Calendar({ month, prevMonth, nextMonth, events, canManageLeave, pendingLeave }: Props) {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [reviewing, setReviewing] = useState(false);
+    const [adding, setAdding] = useState(false);
+    const { data, setData, post, processing, reset } = useForm({
+        title: '',
+        activity_date: new Date().toISOString().slice(0, 10),
+        start_time: '',
+        description: '',
+    });
 
     const byDate = events.reduce<Record<string, CalEvent[]>>((acc, e) => {
         (acc[e.date] ??= []).push(e);
@@ -61,10 +70,25 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
         router.put(`/leave/${id}/review`, { status }, { preserveScroll: true });
     }
 
+    function openAdd(date?: string) {
+        if (date) setData('activity_date', date);
+        setAdding(true);
+    }
+
+    function submitActivity(e: FormEvent) {
+        e.preventDefault();
+        post('/activities', { onSuccess: () => { setAdding(false); reset(); } });
+    }
+
     return (
         <AppShell title="Calendar">
             <Head title="Calendar" />
-            <ModuleHero eyebrow="Plan ahead" title="Calendar" description="Bring events, appointments, activities and deadlines into one clear view." icon="🗓️" tone="purple" />
+            <ModuleHero eyebrow="Plan and deliver" title="Calendar & activities" description="Plan the weekly programme, add activities and see leave in one calendar." icon="🗓️" tone="purple" />
+
+            <div className="flex gap-2 mb-4 flex-wrap">
+                <button onClick={() => openAdd(selectedDate ?? undefined)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">+ Add activity</button>
+                <a href={`/weekly-planner/print?week=${selectedDate ?? todayStr}`} target="_blank" rel="noreferrer" className="rounded-full bg-slate-100 text-brand-dark font-semibold text-sm px-5 py-2.5">🖨 Print week</a>
+            </div>
 
             {canManageLeave && pendingLeave.length > 0 && (
                 <button onClick={() => setReviewing(true)} className="rounded-full bg-amber-100 text-amber-800 font-semibold text-sm px-5 py-2.5 mb-4">
@@ -123,8 +147,9 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
                         {selectedEvents.map((e, i) => (
                             <li key={i} className="text-sm flex items-center gap-2">
                                 <span>{e.type === 'activity' ? '📅' : '🏖️'}</span>
-                                <span className="text-brand-dark font-medium">{e.title}</span>
+                                <span className="text-brand-dark font-medium">{e.start_time && `${e.start_time} · `}{e.title}</span>
                                 {e.status && <span className="text-xs text-slate-400">({e.status})</span>}
+                                {e.description && <span className="text-xs text-slate-500">{e.description}</span>}
                             </li>
                         ))}
                     </ul>
@@ -148,6 +173,18 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
                     ))}
                     {pendingLeave.length === 0 && <p className="text-sm text-slate-400">Nothing pending.</p>}
                 </div>
+            </Modal>
+
+            <Modal open={adding} title="Add activity" onClose={() => setAdding(false)}>
+                <form onSubmit={submitActivity} className="space-y-3">
+                    <label className="block text-sm font-medium">Activity<input value={data.title} onChange={(e) => setData('title', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required /></label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">Date<input type="date" value={data.activity_date} onChange={(e) => setData('activity_date', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required /></label>
+                        <label className="block text-sm font-medium">Start time<input type="time" value={data.start_time} onChange={(e) => setData('start_time', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" /></label>
+                    </div>
+                    <label className="block text-sm font-medium">Notes<textarea value={data.description} onChange={(e) => setData('description', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={3} /></label>
+                    <button disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">Add to calendar</button>
+                </form>
             </Modal>
         </AppShell>
     );

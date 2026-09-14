@@ -194,8 +194,8 @@ class CoreRecordsSweepTest extends SweepTestCase
         ]);
         $this->assertWriteOk($r, 'activities.store');
         $this->assertNotNull(DB::table('activities')->where('title', 'Animal handling session')->first(), 'activity not created');
-        $this->get('/activities')->assertOk();
-        $this->get('/weekly-planner')->assertOk();
+        $this->get('/activities')->assertRedirect('/calendar');
+        $this->get('/weekly-planner')->assertRedirect('/calendar');
         $this->get('/weekly-planner/print')->assertOk();
     }
 

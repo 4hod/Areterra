@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'daily.step' => \App\Http\Middleware\EnforceDailyWorkflowOrder::class,
+        ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);

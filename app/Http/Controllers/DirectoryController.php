@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DirectoryContact;
 use App\Models\StaffRosterMember;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class DirectoryController extends Controller
@@ -35,6 +38,29 @@ class DirectoryController extends Controller
 
         return Inertia::render('Directory', [
             'staff' => $users->concat($roster)->sortBy('name')->values(),
+            'contacts' => DirectoryContact::orderBy('category')->orderBy('name')->get(),
+            'canManage' => Gate::allows('manage_directory'),
         ]);
+    }
+
+    public function store(Request $request)
+    {
+        DirectoryContact::create($request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'category' => ['required', 'string', 'max:60'],
+            'organisation' => ['nullable', 'string', 'max:120'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]));
+
+        return back()->with('success', 'Contact added.');
+    }
+
+    public function destroy(DirectoryContact $contact)
+    {
+        $contact->delete();
+
+        return back()->with('success', 'Contact removed.');
     }
 }

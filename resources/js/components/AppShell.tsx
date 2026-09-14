@@ -11,7 +11,6 @@ interface NavItem {
     label: string;
     icon: string;
     cap?: string;
-    isNew?: boolean;
 }
 
 export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem[] }[] = [
@@ -21,10 +20,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
         items: [
             { href: '/', label: 'Dashboard', icon: '🏠' },
             { href: '/today', label: 'Today', icon: '✅' },
-            { href: '/register', label: 'Register', icon: '📋', cap: 'log_sessions' },
-            { href: '/end-of-day', label: 'End of Day', icon: '🌙', cap: 'log_sessions' },
-            { href: '/transport', label: 'Transport', icon: '🚐', cap: 'log_sessions' },
-            { href: '/tasks', label: 'Tasks', icon: '☑️', isNew: true },
+            { href: '/tasks', label: 'Tasks', icon: '☑️' },
         ],
     },
     {
@@ -35,8 +31,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
             { href: '/monitoring', label: 'Daily Monitoring', icon: '📊', cap: 'log_welfare' },
             { href: '/reviews', label: 'Member Reviews', icon: '🔄', cap: 'view_members' },
-            { href: '/sar-requests', label: 'SAR Requests', icon: '🔐', cap: 'edit_members', isNew: true },
-            { href: '/email', label: 'Email Composer', icon: '✉️', cap: 'view_member_details' },
+            { href: '/sar-requests', label: 'SAR Requests', icon: '🔐', cap: 'edit_members' },
         ],
     },
     {
@@ -44,27 +39,23 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
         color: 'cat-staff',
         items: [
             { href: '/announcements', label: 'Announcements', icon: '📢' },
-            { href: '/recognition', label: 'Recognition', icon: '🌟' },
             { href: '/leave', label: 'Leave', icon: '🌴', cap: 'request_leave' },
             { href: '/timeclock', label: 'Time Clock', icon: '⏱️', cap: 'own_timeclock' },
             { href: '/directory', label: 'Directory', icon: '📖' },
-            { href: '/orders', label: 'Orders', icon: '📦', cap: 'request_products', isNew: true },
+            { href: '/orders', label: 'Orders', icon: '📦', cap: 'request_products' },
             { href: '/supervisions', label: 'Supervisions', icon: '🗣️', cap: 'manage_supervisions' },
-            { href: '/payroll', label: 'Payroll', icon: '💷', cap: 'manage_payroll' },
         ],
     },
     {
         title: 'Operations',
         color: 'cat-ops',
         items: [
-            { href: '/activities', label: 'Activities', icon: '📅', cap: 'log_sessions' },
-            { href: '/weekly-planner', label: 'Weekly Planner', icon: '🗓️', isNew: true },
-            { href: '/calendar', label: 'Calendar', icon: '🗓️', isNew: true },
+            { href: '/calendar', label: 'Calendar & Activities', icon: '🗓️' },
             { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
-            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations', isNew: true },
-            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations', isNew: true },
-            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations', isNew: true },
-            { href: '/insurance', label: 'Insurance', icon: '🛡️', cap: 'manage_operations', isNew: true },
+            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations' },
+            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations' },
+            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations' },
+            { href: '/insurance', label: 'Insurance', icon: '🛡️', cap: 'manage_operations' },
             { href: '/referrals', label: 'Referrals', icon: '📨', cap: 'create_members' },
             { href: '/finance', label: 'Finance & Grants', icon: '💰', cap: 'manage_finance' },
             { href: '/invoices', label: 'Invoices', icon: '🧾', cap: 'manage_finance' },
@@ -78,7 +69,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/documents', label: 'Documents', icon: '📁' },
             { href: '/risk-assessments', label: 'Risk Assessments', icon: '⚖️' },
             { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
-            { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents', isNew: true },
+            { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents' },
             { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
         ],
     },
@@ -89,7 +80,7 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
             { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
             { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
             { href: '/audit-log', label: 'Audit Log', icon: '🧾', cap: 'view_audit_log' },
-            { href: '/forms', label: 'Forms', icon: '📝', isNew: true },
+            { href: '/forms', label: 'Forms', icon: '📝' },
             { href: '/notifications', label: 'Notifications', icon: '🔔' },
             { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
             { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
@@ -99,13 +90,13 @@ export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem
     },
 ];
 
-// Spec order: Today, Dashboard, Members, All Animals, Announcements, More.
+// Keep the three primary workspaces immediately available on mobile.
 const MOBILE_NAV: NavItem[] = [
-    { href: '/today', label: 'Today', icon: '✅' },
     { href: '/', label: 'Dashboard', icon: '🏠' },
+    { href: '/today', label: 'Today', icon: '✅' },
+    { href: '/tasks', label: 'Tasks', icon: '☑️' },
     { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
     { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
-    { href: '/announcements', label: 'News', icon: '📢' },
     { href: '/more', label: 'More', icon: '⋯' },
 ];
 
@@ -258,11 +249,6 @@ export default function AppShell({ title, children }: { title: string; children:
                                         >
                                             <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
                                             <span className="flex-1">{item.label}</span>
-                                            {item.isNew && (
-                                                <span className="rounded bg-accent text-brand-dark text-[9px] font-extrabold px-1.5 py-0.5 tracking-wide">
-                                                    NEW
-                                                </span>
-                                            )}
                                         </Link>
                                     ))}
                                 </div>
@@ -297,11 +283,6 @@ export default function AppShell({ title, children }: { title: string; children:
                                             >
                                                 <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
                                                 <span className="flex-1">{item.label}</span>
-                                                {item.isNew && (
-                                                    <span className="rounded bg-accent text-brand-dark text-[9px] font-extrabold px-1.5 py-0.5 tracking-wide">
-                                                        NEW
-                                                    </span>
-                                                )}
                                             </Link>
                                         ))}
                                     </div>

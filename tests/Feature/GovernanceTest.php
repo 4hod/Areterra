@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Animal;
 use App\Models\Announcement;
+use App\Models\Attendance;
 use App\Models\Member;
 use App\Models\User;
 use App\Notifications\AnnouncementPosted;
@@ -54,6 +55,7 @@ class GovernanceTest extends TestCase
         $staff = User::factory()->create(['role' => 'staff']);
         $manager = User::factory()->create(['role' => 'manager']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
+        Attendance::create(['member_id' => $member->id, 'date' => today(), 'checked_in' => true, 'arrival_mood' => 'happy']);
 
         $payload = [
             'end_mood' => 'sad',

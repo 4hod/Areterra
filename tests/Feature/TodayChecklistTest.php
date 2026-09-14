@@ -24,13 +24,13 @@ class TodayChecklistTest extends TestCase
             ->all();
     }
 
-    public function test_everything_incomplete_on_an_empty_day(): void
+    public function test_empty_transport_is_skipped_but_daily_records_remain_open(): void
     {
         Animal::create(['name' => 'Demon', 'species' => 'Macaw']);
 
         $done = $this->checklist();
 
-        $this->assertFalse($done['transport']);
+        $this->assertTrue($done['transport']);
         $this->assertFalse($done['register']);
         $this->assertFalse($done['moods']);
         $this->assertFalse($done['welfare']);
@@ -63,19 +63,23 @@ class TodayChecklistTest extends TestCase
         $this->assertTrue($this->checklist()['moods']);
     }
 
-    public function test_welfare_requires_every_active_animal_checked_today(): void
+    public function test_welfare_requires_every_active_animal_checked_and_fed_today(): void
     {
         $user = User::factory()->create();
         $demon = Animal::create(['name' => 'Demon', 'species' => 'Macaw']);
         $angel = Animal::create(['name' => 'Angel', 'species' => 'Macaw']);
         Animal::create(['name' => 'Retired', 'species' => 'Rabbit', 'status' => 'inactive']);
 
-        $demon->welfareChecks()->create(['user_id' => $user->id, 'status' => 'green']);
+        $demonCheck = $demon->welfareChecks()->create(['user_id' => $user->id, 'status' => 'green', 'fed' => false]);
 
         $this->assertFalse($this->checklist()['welfare']);
 
-        // Inactive animals don't count — checking the remaining active one completes it.
-        $angel->welfareChecks()->create(['user_id' => $user->id, 'status' => 'green']);
+        // Checking the other animal is not enough while Demon is still unfed.
+        $angel->welfareChecks()->create(['user_id' => $user->id, 'status' => 'green', 'fed' => true]);
+
+        $this->assertFalse($this->checklist()['welfare']);
+
+        $demonCheck->update(['fed' => true]);
 
         $this->assertTrue($this->checklist()['welfare']);
     }
@@ -100,8 +104,41 @@ class TodayChecklistTest extends TestCase
     public function test_transport_done_when_any_run_recorded(): void
     {
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
+        $member->settings()->create([
+            'attendance_days' => [today()->isoWeekday()],
+            'transport_required' => true,
+        ]);
+
+        $this->assertFalse($this->checklist()['transport']);
+
         TransportRun::create(['run_date' => today(), 'member_id' => $member->id, 'phase' => 'morning']);
 
         $this->assertTrue($this->checklist()['transport']);
+    }
+
+    public function test_welfare_is_parallel_while_the_other_steps_are_sequential(): void
+    {
+        $user = User::factory()->create();
+        $animal = Animal::create(['name' => 'Demon', 'species' => 'Macaw']);
+        $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
+        $member->settings()->create([
+            'attendance_days' => [today()->isoWeekday()],
+            'transport_required' => true,
+        ]);
+
+        $items = collect(app(TodayChecklist::class)->build(today()))->keyBy('key');
+
+        $this->assertTrue($items['welfare']['available']);
+        $this->assertTrue($items['transport']['available']);
+        $this->assertFalse($items['register']['available']);
+        $this->assertFalse($items['end_of_day']['available']);
+
+        $animal->welfareChecks()->create(['user_id' => $user->id, 'status' => 'green', 'fed' => true]);
+
+        TransportRun::create(['run_date' => today(), 'member_id' => $member->id, 'phase' => 'morning']);
+
+        $items = collect(app(TodayChecklist::class)->build(today()))->keyBy('key');
+        $this->assertTrue($items['register']['available']);
+        $this->assertFalse($items['moods']['available']);
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ComplianceItem;
+use App\Models\Attendance;
 use App\Models\Grant;
 use App\Models\Member;
 use App\Models\MemberInvoice;
@@ -22,6 +23,7 @@ class Phase4Test extends TestCase
         Notification::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
+        Attendance::create(['member_id' => $member->id, 'date' => today(), 'checked_in' => true, 'arrival_mood' => 'happy']);
 
         $this->actingAs($staff)->post("/end-of-day/{$member->id}", [
             'end_mood' => 'sad',

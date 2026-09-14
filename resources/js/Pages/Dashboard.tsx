@@ -21,7 +21,6 @@ interface Props {
     checklist: ChecklistItem[];
     banner: string | null;
     staffAvatars: string[];
-    myShift: { clock_in: string } | null;
     leaveBalance: { entitlement: number; taken: number; remaining: number };
     announcements: { id: number; title: string; author: string; created_at: string; read: boolean }[];
     notifications: { id: string; title: string; body: string; url: string; read: boolean; created_at: string }[];
@@ -75,7 +74,6 @@ export default function Dashboard({
     checklist,
     banner,
     staffAvatars,
-    myShift,
     leaveBalance,
     announcements,
     notifications,
@@ -291,8 +289,8 @@ export default function Dashboard({
                             <div className="dashboard-panel-heading"><div><p className="dashboard-kicker">My workspace</p><h3>Shift and leave</h3></div></div>
                             <div className="dashboard-personal-row">
                                 <div className="dashboard-personal-icon">⏱️</div>
-                                <div><strong>{myShift ? `Clocked in at ${myShift.clock_in}` : 'Not clocked in'}</strong><span>Time clock status</span></div>
-                                {myShift ? <Link href="/timeclock">Open</Link> : <button onClick={() => router.post('/timeclock/in')}>Clock in</button>}
+                                <div><strong>Contracted hours automatic</strong><span>Log additional hours only</span></div>
+                                <Link href="/timeclock">Open</Link>
                             </div>
                             <div className="dashboard-personal-row">
                                 <div className="dashboard-personal-icon">🌴</div>

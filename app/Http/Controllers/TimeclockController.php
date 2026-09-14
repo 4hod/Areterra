@@ -13,6 +13,10 @@ class TimeclockController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $from = $request->date('from') ?? now()->startOfWeek();
+        $to = $request->date('to') ?? today();
+        $contractedHours = $user->contracted_hours
+            ?? $user->rates()->orderByDesc('effective_from')->value('contracted_hours');
 
         $entryRow = fn (TimeclockEntry $e) => [
             'id' => $e->id,
@@ -25,14 +29,34 @@ class TimeclockController extends Controller
         ];
 
         return Inertia::render('Timeclock', [
+            'contractedHours' => $contractedHours === null ? null : (float) $contractedHours,
+            'additionalEntries' => $user->additionalHoursEntries()->orderByDesc('work_date')->limit(20)->get()->map(fn ($e) => [
+                'id' => $e->id,
+                'user' => $user->name,
+                'work_date' => $e->work_date->toDateString(),
+                'minutes' => $e->minutes,
+                'notes' => $e->notes,
+            ]),
+            'staffContracts' => Gate::allows('edit_timeclock')
+                ? User::orderBy('name')->get(['id', 'name', 'contracted_hours'])->map(fn ($staff) => [
+                    'id' => $staff->id,
+                    'name' => $staff->name,
+                    'contracted_hours' => $staff->contracted_hours
+                        ?? $staff->rates()->orderByDesc('effective_from')->value('contracted_hours'),
+                ])
+                : [],
+            'allAdditionalEntries' => Gate::allows('view_all_timeclock')
+                ? \App\Models\AdditionalHoursEntry::with('user:id,name')->whereBetween('work_date', [$from, $to])->orderByDesc('work_date')->get()->map(fn ($e) => [
+                    'id' => $e->id, 'user' => $e->user->name, 'work_date' => $e->work_date->toDateString(), 'minutes' => $e->minutes, 'notes' => $e->notes,
+                ]) : [],
             'openEntry' => ($open = $user->timeclockEntries()->whereNull('clock_out')->latest('clock_in')->first())
                 ? $entryRow($open->setRelation('user', $user))
                 : null,
             'myEntries' => $user->timeclockEntries()->with('user:id,name')
                 ->orderByDesc('clock_in')->limit(15)->get()->map($entryRow),
             'isManager' => Gate::allows('view_all_timeclock'),
-            'from' => ($from = $request->date('from') ?? now()->startOfWeek())->toDateString(),
-            'to' => ($to = $request->date('to') ?? today())->toDateString(),
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
             'weekEntries' => Gate::allows('view_all_timeclock')
                 ? TimeclockEntry::with('user:id,name')
                     ->whereBetween('clock_in', [$from, $to->copy()->endOfDay()])
@@ -41,6 +65,32 @@ class TimeclockController extends Controller
                     ->map($entryRow)
                 : [],
         ]);
+    }
+
+    public function storeAdditional(Request $request)
+    {
+        $data = $request->validate([
+            'work_date' => ['required', 'date', 'before_or_equal:today'],
+            'hours' => ['required', 'numeric', 'min:0.25', 'max:24'],
+            'notes' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $request->user()->additionalHoursEntries()->create([
+            'work_date' => $data['work_date'],
+            'minutes' => (int) round($data['hours'] * 60),
+            'notes' => $data['notes'],
+        ]);
+
+        return back()->with('success', 'Additional hours logged.');
+    }
+
+    public function updateContract(Request $request, User $user)
+    {
+        Gate::authorize('edit_timeclock');
+        $data = $request->validate(['contracted_hours' => ['nullable', 'numeric', 'min:0', 'max:168']]);
+        $user->update($data);
+
+        return back()->with('success', 'Contracted hours updated.');
     }
 
     public function clockIn(Request $request)

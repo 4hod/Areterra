@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-#[Fillable(['name', 'email', 'password', 'role', 'job_title', 'phone', 'bio', 'photo_path'])]
+#[Fillable(['name', 'email', 'password', 'role', 'job_title', 'phone', 'bio', 'photo_path', 'contracted_hours'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -23,6 +23,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'contracted_hours' => 'decimal:2',
         ];
     }
 
@@ -129,6 +130,11 @@ class User extends Authenticatable
     public function timeclockEntries()
     {
         return $this->hasMany(TimeclockEntry::class);
+    }
+
+    public function additionalHoursEntries()
+    {
+        return $this->hasMany(AdditionalHoursEntry::class);
     }
 
     public function supervisions()

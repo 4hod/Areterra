@@ -75,20 +75,20 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:log_welfare')->name('monitoring.store');
 
     Route::get('/register', [RegisterController::class, 'index'])
-        ->middleware('can:log_sessions')->name('register');
+        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register');
     Route::post('/register/{member}/check-in', [RegisterController::class, 'checkIn'])
-        ->middleware('can:log_sessions')->name('register.check-in');
+        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register.check-in');
     Route::put('/register/{member}', [RegisterController::class, 'update'])
-        ->middleware('can:log_sessions')->name('register.update');
+        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register.update');
     Route::post('/register/{member}/absent', [RegisterController::class, 'markAbsent'])
-        ->middleware('can:log_sessions')->name('register.absent');
-        Route::post('/register/cancel-day', [RegisterController::class, 'cancelDay'])
-            ->middleware('can:manage_operations')->name('register.cancel-day');
+        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register.absent');
+    Route::post('/register/cancel-day', [RegisterController::class, 'cancelDay'])
+        ->middleware('can:manage_operations')->name('register.cancel-day');
 
     Route::get('/end-of-day', [EndOfDayController::class, 'index'])
-        ->middleware('can:log_sessions')->name('end-of-day');
+        ->middleware(['can:log_sessions', 'daily.step:end_of_day'])->name('end-of-day');
     Route::post('/end-of-day/{member}', [EndOfDayController::class, 'store'])
-        ->middleware('can:log_sessions')->name('end-of-day.store');
+        ->middleware(['can:log_sessions', 'daily.step:end_of_day'])->name('end-of-day.store');
 
     Route::post('/animals/{animal}/vet-records', [VetRecordController::class, 'store'])
         ->middleware('can:log_welfare')->name('vet-records.store');
@@ -114,6 +114,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::get('/timeclock', [TimeclockController::class, 'index'])->name('timeclock');
         Route::post('/timeclock/in', [TimeclockController::class, 'clockIn'])->name('timeclock.in');
         Route::post('/timeclock/out', [TimeclockController::class, 'clockOut'])->name('timeclock.out');
+        Route::post('/timeclock/additional', [TimeclockController::class, 'storeAdditional'])->name('timeclock.additional');
+        Route::put('/timeclock/contracts/{user}', [TimeclockController::class, 'updateContract'])->name('timeclock.contracts.update');
         Route::put('/timeclock/{entry}', [TimeclockController::class, 'update'])->name('timeclock.update');
     });
 
@@ -154,6 +156,10 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_supervisions')->name('supervisions.store');
 
     Route::get('/directory', [DirectoryController::class, 'index'])->name('directory');
+    Route::post('/directory/contacts', [DirectoryController::class, 'store'])
+        ->middleware('can:manage_directory')->name('directory.contacts.store');
+    Route::delete('/directory/contacts/{contact}', [DirectoryController::class, 'destroy'])
+        ->middleware('can:manage_directory')->name('directory.contacts.destroy');
     Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar');
     Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
 
@@ -270,11 +276,11 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/defects/{defect}/resolve', [App\Http\Controllers\VehicleController::class, 'resolveDefect'])
         ->middleware('can:manage_vehicles')->name('defects.resolve');
 
-    Route::get('/activities', [App\Http\Controllers\ActivityController::class, 'index'])->name('activities');
+    Route::redirect('/activities', '/calendar')->name('activities');
     Route::post('/activities', [App\Http\Controllers\ActivityController::class, 'store'])
         ->middleware('can:log_sessions')->name('activities.store');
 
-    Route::get('/weekly-planner', [App\Http\Controllers\WeeklyPlannerController::class, 'index'])->name('weekly-planner');
+    Route::redirect('/weekly-planner', '/calendar')->name('weekly-planner');
     Route::get('/weekly-planner/print', [App\Http\Controllers\WeeklyPlannerController::class, 'print'])->name('weekly-planner.print');
 
     Route::get('/recognition', [App\Http\Controllers\RecognitionController::class, 'index'])->name('recognition');
@@ -425,4 +431,3 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         Route::put('/orders/{order}/delivered', [App\Http\Controllers\ProductOrderController::class, 'markDelivered'])->name('orders.delivered');
     });
 });
-

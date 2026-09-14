@@ -25,8 +25,6 @@ class DashboardController extends Controller
             ->whereHas('welfareChecks', fn ($q) => $q->whereDate('created_at', $today))
             ->count();
 
-        $openShift = $user->timeclockEntries()->whereNull('clock_out')->latest('clock_in')->first();
-
         // 7-day attendance trend for the dashboard sparkline.
         $attendanceTrend = collect(range(6, 0))->map(function ($daysAgo) {
             $date = today()->subDays($daysAgo);
@@ -67,7 +65,6 @@ class DashboardController extends Controller
             'checklist' => $checklist->build($today),
             'banner' => Setting::get('banner_text'),
             'staffAvatars' => User::orderBy('name')->limit(12)->pluck('name'),
-            'myShift' => $openShift ? ['clock_in' => $openShift->clock_in->format('H:i')] : null,
             'leaveBalance' => LeaveBalance::remainingFor($user),
             'announcements' => Announcement::with('author:id,name')->latest()->limit(3)->get()
                 ->map(fn ($a) => [
