@@ -31,11 +31,7 @@ export default function Import() {
     const [kind, setKind] = useState('members');
     const [file, setFile] = useState<File | null>(null);
     const [archive, setArchive] = useState<File | null>(null);
-
-    function uploadArchive() {
-        if (!archive) return;
-        router.post('/import/archive', { file: archive }, { forceFormData: true });
-    }
+    const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
     function upload() {
         if (!file) return;
@@ -53,15 +49,16 @@ export default function Import() {
             <ModuleHero eyebrow="Data tools" title="Import" description="Bring existing information into the Hub safely and clearly." icon="⬆️" tone="slate" />
 
             <Card title="Legacy records archive" className="mb-4">
-                <div className="flex flex-wrap items-end gap-3">
+                <form action="/import/archive" method="post" encType="multipart/form-data" className="flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="_token" value={csrfToken} />
                     <label className="block text-sm font-medium flex-1 min-w-48">
                         ZIP containing Jotform Excel exports
-                        <input type="file" accept=".zip,application/zip" onChange={(e) => setArchive(e.target.files?.[0] ?? null)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 block" />
+                        <input type="file" name="file" accept=".zip,application/zip" onChange={(e) => setArchive(e.target.files?.[0] ?? null)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 block" />
                     </label>
-                    <button onClick={uploadArchive} disabled={!archive} className="rounded-full bg-brand text-white font-bold text-sm px-5 py-3 disabled:opacity-60">
+                    <button type="submit" disabled={!archive} className="rounded-full bg-brand text-white font-bold text-sm px-5 py-3 disabled:opacity-60">
                         Import archive
                     </button>
-                </div>
+                </form>
                 <p className="text-xs text-slate-500 mt-2">
                     Imports attendance, morning transport and end-of-shift history. Existing member/date records are matched, every source row is retained encrypted, and the whole import rolls back if a workbook or code is unrecognised.
                 </p>
