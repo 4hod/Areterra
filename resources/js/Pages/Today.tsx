@@ -3,8 +3,8 @@ import { Head, Link } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import { ChecklistItem } from '../types';
 
-const LINKS: Record<string, string> = { transport: '/transport', register: '/register', moods: '/register', welfare: '/animals', end_of_day: '/end-of-day' };
-const ICONS: Record<string, string> = { transport: '🚌', register: '✓', moods: '🙂', welfare: '🌿', end_of_day: '🌙' };
+const LINKS: Record<string, string> = { transport: '/transport', register: '/register', moods: '/register', welfare: '/animals', end_of_day: '/end-of-day', return_transport: '/transport' };
+const ICONS: Record<string, string> = { transport: '🚌', register: '✓', moods: '🙂', welfare: '🌿', end_of_day: '🌙', return_transport: '🏠' };
 
 export default function Today({ checklist, date }: { checklist: ChecklistItem[]; date: string }) {
     const done = checklist.filter((item) => item.done).length;

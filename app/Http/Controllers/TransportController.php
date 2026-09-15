@@ -7,12 +7,15 @@ use App\Events\TransportRunUndone;
 use App\Models\Member;
 use App\Models\TransportLedgerEntry;
 use App\Models\TransportRun;
+use App\Services\TodayChecklist;
 use Illuminate\Http\Request;
 use App\Support\TransportCharges;
 use Inertia\Inertia;
 
 class TransportController extends Controller
 {
+    public function __construct(private readonly TodayChecklist $todayChecklist) {}
+
     public function index(\Illuminate\Http\Request $request)
     {
         $today = $request->date('date') ?? today();
@@ -83,6 +86,7 @@ class TransportController extends Controller
         return Inertia::render('Transport', [
             'date' => $today->toDateString(),
             'isToday' => $today->isToday(),
+            'afternoonAvailable' => ! $today->isToday() || $this->todayChecklist->canAccess('return_transport', $today),
             'rows' => $rows,
             'dailyRate' => TransportLedgerEntry::DAILY_RATE,
             'legRate' => TransportLedgerEntry::LEG_RATE,
@@ -117,6 +121,13 @@ class TransportController extends Controller
             'outcome' => ['required', 'in:collected,not_collected,absent'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
+
+        if ($data['phase'] === 'afternoon' && ! $this->todayChecklist->canAccess('return_transport', today())) {
+            return redirect()->route('today')->with(
+                'error',
+                'Please complete the earlier Today jobs before starting return transport.',
+            );
+        }
 
         $run = TransportRun::updateOrCreate(
             ['run_date' => today(), 'member_id' => $member->id, 'phase' => $data['phase']],

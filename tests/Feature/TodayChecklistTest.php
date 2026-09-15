@@ -114,6 +114,38 @@ class TodayChecklistTest extends TestCase
         TransportRun::create(['run_date' => today(), 'member_id' => $member->id, 'phase' => 'morning']);
 
         $this->assertTrue($this->checklist()['transport']);
+        $this->assertFalse($this->checklist()['return_transport']);
+
+        TransportRun::create(['run_date' => today(), 'member_id' => $member->id, 'phase' => 'afternoon']);
+
+        $this->assertTrue($this->checklist()['return_transport']);
+    }
+
+    public function test_return_transport_is_the_final_ordered_step(): void
+    {
+        $user = User::factory()->create();
+        $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
+        $member->settings()->create([
+            'attendance_days' => [today()->isoWeekday()],
+            'transport_required' => true,
+        ]);
+        TransportRun::create(['run_date' => today(), 'member_id' => $member->id, 'phase' => 'morning']);
+        Attendance::create([
+            'member_id' => $member->id,
+            'date' => today(),
+            'checked_in' => true,
+            'arrival_mood' => 'happy',
+        ]);
+
+        $items = collect(app(TodayChecklist::class)->build(today()))->keyBy('key');
+        $this->assertFalse($items['return_transport']['available']);
+        $this->assertFalse($items['return_transport']['done']);
+
+        EndOfDayRecord::create(['member_id' => $member->id, 'date' => today(), 'user_id' => $user->id]);
+
+        $items = collect(app(TodayChecklist::class)->build(today()))->keyBy('key');
+        $this->assertTrue($items['return_transport']['available']);
+        $this->assertFalse($items['return_transport']['done']);
     }
 
     public function test_welfare_is_parallel_while_the_other_steps_are_sequential(): void

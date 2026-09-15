@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
@@ -51,6 +51,7 @@ interface Row {
 interface Props {
     date: string;
     isToday: boolean;
+    afternoonAvailable: boolean;
     rows: Row[];
     dailyRate: number;
     legRate: number;
@@ -83,7 +84,7 @@ const OUTCOME_LABEL: Record<Outcome, string> = {
     absent: 'Absent all day',
 };
 
-export default function Transport({ date, isToday, rows, dailyRate, legRate, suggestedAmounts, monthly }: Props) {
+export default function Transport({ date, isToday, afternoonAvailable, rows, dailyRate, legRate, suggestedAmounts, monthly }: Props) {
     const [paying, setPaying] = useState<Row | null>(null);
     const [statement, setStatement] = useState<{ member: string; balance: number; returns_remaining: number; entries: StatementRow[] } | null>(null);
     const [amount, setAmount] = useState<number>(dailyRate);
@@ -98,7 +99,8 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
     const afternoonComplete = morningComplete && afternoonQueue.length === 0;
     const phase = afternoonComplete ? 3 : morningComplete ? 2 : 1;
 
-    const next = phase === 1 ? morningQueue[0] : phase === 2 ? afternoonQueue[0] : null;
+    const afternoonLocked = phase === 2 && !afternoonAvailable;
+    const next = phase === 1 ? morningQueue[0] : phase === 2 && afternoonAvailable ? afternoonQueue[0] : null;
 
     function openStatement(row: Row) {
         fetch(`/transport/${row.id}/statement`, { headers: { Accept: 'application/json' } })
@@ -159,8 +161,8 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
 
             {/* Morning summary banner during afternoon phase */}
             {phase === 2 && (
-                <div className="rounded-card bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold px-4 py-2.5 mb-3">
-                    ✓ Morning complete — all {rows.length} collected. Now dropping off.
+                <div className={`rounded-card border text-sm font-semibold px-4 py-2.5 mb-3 ${afternoonLocked ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+                    {afternoonLocked ? 'Morning transport is complete — finish the register, arrival moods and end-of-day records before return transport.' : `✓ Morning complete — all ${rows.length} recorded. Now completing return transport.`}
                 </div>
             )}
 
@@ -192,6 +194,15 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                     <p className="text-slate-500">
                         No members have transport enabled. Turn it on from a member's Settings tab.
                     </p>
+                </Card>
+            )}
+
+            {afternoonLocked && (
+                <Card className="mb-4 text-center border-l-4 border-l-amber-400">
+                    <div className="text-3xl mb-1">🔒</div>
+                    <div className="font-bold text-brand-dark">Return transport is not open yet</div>
+                    <p className="text-sm text-slate-500 mt-1">Complete the earlier jobs in Today first.</p>
+                    <Link href="/today" className="inline-block mt-3 rounded-full bg-brand text-white font-bold text-sm px-5 py-2.5">Back to Today</Link>
                 </Card>
             )}
 
@@ -308,7 +319,7 @@ export default function Transport({ date, isToday, rows, dailyRate, legRate, sug
                     </ul>
                 </Card>
             )}
-            {phase === 2 && afternoonQueue.length > 1 && (
+            {phase === 2 && afternoonAvailable && afternoonQueue.length > 1 && (
                 <Card title="Still to drop off" className="mb-4">
                     <ul className="divide-y divide-slate-100">
                         {afternoonQueue.slice(1).map((r) => (

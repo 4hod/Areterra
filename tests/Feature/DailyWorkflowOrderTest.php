@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Animal;
 use App\Models\Attendance;
+use App\Models\EndOfDayRecord;
 use App\Models\Member;
 use App\Models\TransportRun;
 use App\Models\User;
@@ -92,5 +93,46 @@ class DailyWorkflowOrderTest extends TestCase
         ])->assertRedirect('/today');
 
         $this->assertDatabaseCount('end_of_day_records', 0);
+    }
+
+    public function test_return_transport_cannot_be_recorded_before_end_of_day_is_complete(): void
+    {
+        TransportRun::create([
+            'run_date' => today(),
+            'member_id' => $this->member->id,
+            'phase' => 'morning',
+            'outcome' => 'collected',
+        ]);
+        Attendance::create([
+            'member_id' => $this->member->id,
+            'date' => today(),
+            'checked_in' => true,
+            'arrival_mood' => 'happy',
+        ]);
+
+        $this->actingAs($this->staff)->post("/transport/{$this->member->id}/complete", [
+            'phase' => 'afternoon',
+        ])->assertRedirect('/today');
+
+        $this->assertDatabaseMissing('transport_runs', [
+            'member_id' => $this->member->id,
+            'phase' => 'afternoon',
+        ]);
+
+        EndOfDayRecord::create([
+            'member_id' => $this->member->id,
+            'date' => today(),
+            'user_id' => $this->staff->id,
+        ]);
+
+        $this->actingAs($this->staff)->post("/transport/{$this->member->id}/complete", [
+            'phase' => 'afternoon',
+        ])->assertSessionHas('success');
+
+        $this->assertDatabaseHas('transport_runs', [
+            'member_id' => $this->member->id,
+            'phase' => 'afternoon',
+            'outcome' => 'collected',
+        ]);
     }
 }
