@@ -92,6 +92,15 @@ function isBirthday(dob: string | null) {
     return d.getDate() === now.getDate() && d.getMonth() === now.getMonth();
 }
 
+function ageFromDob(dob: string | null) {
+    if (!dob) return null;
+    const born = new Date(dob);
+    const now = new Date();
+    let age = now.getFullYear() - born.getFullYear();
+    if (now.getMonth() < born.getMonth() || (now.getMonth() === born.getMonth() && now.getDate() < born.getDate())) age--;
+    return age;
+}
+
 export default function Show(props: Props) {
     const { member, memberNotes, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, alerts, consents, canEdit } = props;
     const [tab, setTab] = useState<(typeof TABS)[number]>('Profile');
@@ -193,7 +202,7 @@ export default function Show(props: Props) {
     return (
         <AppShell title={member.name}>
             <Head title={member.name} />
-            <Link href="/members" className="inline-block text-sm font-semibold text-brand mb-2">
+            <Link href="/members" className="member-back-link-4a">
                 ← Back to members
             </Link>
 
@@ -232,12 +241,18 @@ export default function Show(props: Props) {
                         </>
                     )}
                 </div>
-                <div>
+                <div className="member-record-identity-4a">
                     <div className="text-xl font-extrabold text-brand-dark">
                         {member.name}
                         {isBirthday(member.dob) && <span className="ml-2" title="Birthday today!">🎂</span>}
                     </div>
                     <StatusPill status={member.status} />
+                    <div className="member-record-meta-4a">
+                        {member.dob && <span>♟ Born {fmt(member.dob)}{ageFromDob(member.dob) !== null && ` (${ageFromDob(member.dob)})`}</span>}
+                        {member.nhs_number && <span><b>NHS</b> {member.nhs_number}</span>}
+                        {member.phone && <span>☎ {member.phone}</span>}
+                        {(member.town || member.postcode) && <span>● {[member.town, member.postcode].filter(Boolean).join(', ')}</span>}
+                    </div>
                 </div>
                 <div className="ml-auto flex max-w-full flex-wrap justify-end gap-1.5">
                     <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
@@ -284,7 +299,7 @@ export default function Show(props: Props) {
             {/* ── Profile ── */}
             {tab === 'Profile' && (
                 <div className="grid md:grid-cols-2 gap-3 ah-profile-grid">
-                    <Card title="Contact & details">
+                    <Card title="Contact & details" className="member-panel-4a member-contact-panel-4a">
                         <dl className="space-y-2 text-sm">
                             {member.dob && (
                                 <div>
@@ -321,7 +336,7 @@ export default function Show(props: Props) {
                         </dl>
                     </Card>
 
-                    <Card title="Medical & medication" className="border-l-4 border-l-status-red">
+                    <Card title="Medical & medication" className="member-panel-4a member-medical-panel-4a">
                         <dl className="space-y-2 text-sm">
                             <div>
                                 <dt className="text-slate-400 font-medium">Diagnoses</dt>
@@ -350,7 +365,7 @@ export default function Show(props: Props) {
                         </dl>
                     </Card>
 
-                    <Card title="Staff notes" className="md:col-span-2">
+                    <Card title="Staff notes" className="md:col-span-2 member-panel-4a member-notes-panel-4a">
                         {staffNotes.length === 0 && <p className="text-sm text-slate-400">No staff notes recorded.</p>}
                         <ul className="divide-y divide-slate-100 text-sm">
                             {staffNotes.map((note) => (
@@ -368,7 +383,7 @@ export default function Show(props: Props) {
                         </ul>
                     </Card>
 
-                    <Card title="Emergency contacts" className="md:col-span-2">
+                    <Card title="Emergency contacts" className="md:col-span-2 member-panel-4a member-contacts-panel-4a">
                         {member.emergency_contacts.length === 0 && <p className="text-sm text-slate-400">None recorded.</p>}
                         <ul className="divide-y divide-slate-100 text-sm">
                             {member.emergency_contacts.map((c, i) => (
