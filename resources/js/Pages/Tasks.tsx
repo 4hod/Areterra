@@ -27,6 +27,7 @@ interface Props {
     mine: boolean;
     staff: { id: number; name: string }[];
     counts: { open: number; overdue: number };
+    canManage: boolean;
 }
 
 const PRIORITY_STYLE: Record<Priority, string> = {
@@ -54,7 +55,7 @@ function dueLabel(task: Task) {
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function Tasks({ tasks, show, mine, staff, counts }: Props) {
+export default function Tasks({ tasks, show, mine, staff, counts, canManage }: Props) {
     const [adding, setAdding] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -74,7 +75,7 @@ export default function Tasks({ tasks, show, mine, staff, counts }: Props) {
                 description: description || null,
                 priority,
                 due_date: dueDate || null,
-                assigned_to: assignedTo || null,
+                ...(canManage ? { assigned_to: assignedTo || null } : {}),
             },
             {
                 onSuccess: () => {
@@ -172,7 +173,7 @@ export default function Tasks({ tasks, show, mine, staff, counts }: Props) {
                                     <span className={task.overdue ? 'text-red-600 font-bold' : 'text-slate-500'}>
                                         {task.completed_at ? `Done ${new Date(task.completed_at).toLocaleDateString('en-GB')}` : dueLabel(task)}
                                     </span>
-                                    <select
+                                    {canManage ? <select
                                         value=""
                                         onChange={(e) => router.put(`/tasks/${task.id}`, { assigned_to: e.target.value || null })}
                                         className="bg-transparent text-slate-500 border-none p-0 text-xs"
@@ -183,7 +184,7 @@ export default function Tasks({ tasks, show, mine, staff, counts }: Props) {
                                                 {person.name}
                                             </option>
                                         ))}
-                                    </select>
+                                    </select> : <span className="text-slate-500">{task.assignee ?? 'Assigned to you'}</span>}
                                 </div>
                             </div>
 
@@ -204,14 +205,14 @@ export default function Tasks({ tasks, show, mine, staff, counts }: Props) {
 
             <Modal open={adding} title="Add a task" onClose={() => setAdding(false)}>
                 <div className="space-y-4">
-                    <label className="block text-sm font-medium">
+                    {canManage && <label className="block text-sm font-medium">
                         What needs doing
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         />
-                    </label>
+                    </label>}
                     <label className="block text-sm font-medium">
                         Detail
                         <textarea

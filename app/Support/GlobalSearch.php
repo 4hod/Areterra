@@ -6,16 +6,15 @@ use App\Models\Animal;
 use App\Models\ComplianceItem;
 use App\Models\Document;
 use App\Models\Grant;
-use App\Models\Incident;
 use App\Models\Member;
 use App\Models\MemberInvoice;
-use App\Models\Task;
 
 /**
  * Point 13 — one search across everything.
  *
- * Search "Amy Buckle" and get her member record, invoices, documents, incidents
- * and tasks. Search "National Lottery" and get the grant and its expenditure.
+ * Search "Amy Buckle" and get her member record and authorised linked modules.
+ * Encrypted free-text sources such as incidents and tasks are deliberately not
+ * database-searched because doing so would require storing a plaintext index.
  *
  * Results are capability-filtered: a volunteer searching for a member will not
  * see safeguarding or finance hits, because each source declares the capability
@@ -103,22 +102,6 @@ final class GlobalSearch
                     ->where('title', 'like', $like)->orWhere('original_name', 'like', $like)
                     ->limit(self::PER_TYPE)->get()
                     ->map(fn ($d) => self::hit($d->id, $d->title, $d->category, null))->all(),
-            ],
-            [
-                'label' => 'Tasks',
-                'capability' => null,
-                'query' => fn (string $like) => Task::query()->open()
-                    ->where('title', 'like', $like)
-                    ->limit(self::PER_TYPE)->get()
-                    ->map(fn ($t) => self::hit($t->id, $t->title, $t->due_date?->format('j M Y'), null))->all(),
-            ],
-            [
-                'label' => 'Incidents',
-                'capability' => 'view_all_incidents',
-                'query' => fn (string $like) => Incident::query()
-                    ->where('title', 'like', $like)
-                    ->limit(self::PER_TYPE)->get()
-                    ->map(fn ($i) => self::hit($i->id, $i->title, $i->severity ?? null, null))->all(),
             ],
             [
                 'label' => 'Compliance',

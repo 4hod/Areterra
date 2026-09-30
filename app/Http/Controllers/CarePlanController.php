@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Support\PrivateMedia;
 use Inertia\Inertia;
 
 // Printable one-page care plan: who they are, their typical week, support
@@ -14,18 +15,26 @@ class CarePlanController extends Controller
 
     public function show(Member $member)
     {
-        $member->load('settings.keyWorker', 'goals');
+        $member->load('settings.keyWorker', 'goals', 'contacts');
 
         return Inertia::render('CarePlan', [
             'generated_at' => now()->format('j F Y'),
             'member' => [
                 'name' => $member->displayName(),
                 'dob' => $member->dob?->format('j F Y'),
-                'photo_path' => $member->photo_path,
+                'photo_path' => PrivateMedia::memberPhotoUrl($member),
                 'support_needs' => $member->support_needs,
                 'diagnoses' => $member->diagnoses,
                 'medication' => $member->medication,
+                'allergies' => $member->allergies,
                 'emergency_contacts' => $member->emergency_contacts ?? [],
+                'circle_of_care' => $member->contacts->map(fn ($contact) => [
+                    'name' => $contact->name,
+                    'role' => $contact->role,
+                    'organisation' => $contact->organisation,
+                    'email' => $contact->email,
+                    'phone' => $contact->phone,
+                ])->values(),
                 'key_worker' => $member->settings?->keyWorker?->name,
                 'transport_required' => (bool) $member->settings?->transport_required,
                 'typical_week' => collect($member->settings?->attendance_days ?? [])

@@ -19,6 +19,12 @@ class EndOfDayRecord extends Model
             'medication_given' => 'boolean',
             'incident' => 'boolean',
             'photos' => 'array',
+            'activities' => 'encrypted',
+            'toileting_notes' => 'encrypted',
+            'medication_notes' => 'encrypted',
+            'incident_detail' => 'encrypted',
+            'notes' => 'encrypted',
+            'concern_detail' => 'encrypted',
         ];
     }
 

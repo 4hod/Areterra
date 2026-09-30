@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import AppIcon from './AppIcon';
 
 interface Props {
     name: string;
@@ -30,13 +31,10 @@ export default function AccountMenu({ name, role, canManageSettings }: Props) {
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen((o) => !o)}
-                className="hidden md:flex items-center gap-2 rounded-full pl-1 pr-2.5 py-1 hover:bg-black/5"
+                className="portal-account-button hidden md:flex"
             >
-                <span className="h-8 w-8 rounded-full bg-brand/15 text-brand-dark font-bold text-xs flex items-center justify-center">
-                    {name.charAt(0)}
-                </span>
-                <span className="text-sm font-semibold text-ink/80 max-w-[100px] truncate">{name}</span>
-                <span className={`text-ink/40 text-xs transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden>▾</span>
+                <span>{name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase()}</span>
+                <i className={open ? 'is-open' : ''}>⌄</i>
             </button>
 
             {open && (
@@ -46,14 +44,14 @@ export default function AccountMenu({ name, role, canManageSettings }: Props) {
                         <div className="text-xs text-ink/40 capitalize">{role.replace('_', ' ')}</div>
                     </div>
                     <Link href="/account" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-ink/75 hover:bg-black/[0.03]">
-                        <span aria-hidden>👤</span> My profile
+                        <AppIcon name="users" className="h-4 w-4"/> My profile
                     </Link>
                     <Link href="/notifications" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-ink/75 hover:bg-black/[0.03]">
-                        <span aria-hidden>🔔</span> Notification settings
+                        <AppIcon name="bell" className="h-4 w-4"/> Notification settings
                     </Link>
                     {canManageSettings && (
                         <Link href="/settings" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-ink/75 hover:bg-black/[0.03]">
-                            <span aria-hidden>⚙️</span> Hub settings
+                            <AppIcon name="settings" className="h-4 w-4"/> Hub settings
                         </Link>
                     )}
                     <div className="my-1 border-t border-black/[0.05]" />
@@ -61,7 +59,7 @@ export default function AccountMenu({ name, role, canManageSettings }: Props) {
                         onClick={() => router.post('/logout')}
                         className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-status-red hover:bg-black/[0.03] text-left"
                     >
-                        <span aria-hidden>⎋</span> Log out
+                        <span aria-hidden>↪</span> Log out
                     </button>
                 </div>
             )}

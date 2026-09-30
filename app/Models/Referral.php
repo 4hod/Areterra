@@ -15,6 +15,11 @@ class Referral extends Model
     {
         return [
             'details' => 'encrypted',
+            'referrer_name' => 'encrypted',
+            'referrer_email' => 'encrypted',
+            'referrer_phone' => 'encrypted',
+            'organisation' => 'encrypted',
+            'person_name' => 'encrypted',
             'reviewed_at' => 'datetime',
         ];
     }

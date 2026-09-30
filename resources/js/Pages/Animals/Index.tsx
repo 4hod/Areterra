@@ -41,6 +41,7 @@ function blankCheck(animal_id: number): AnimalCheck {
 export default function Index({ bySpecies }: { species: string[]; bySpecies: Record<string, AnimalRow[]> }) {
     const [checking, setChecking] = useState<string | null>(null);
     const [checks, setChecks] = useState<Record<number, AnimalCheck>>({});
+    const [verificationConfirmed, setVerificationConfirmed] = useState(false);
 
     function getCheck(id: number): AnimalCheck {
         return checks[id] ?? blankCheck(id);
@@ -73,6 +74,7 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
             '/welfare-checks/species',
             {
                 species: checking,
+                verification_confirmed: verificationConfirmed,
                 checks: animals.map((a) => {
                     const c = getCheck(a.id);
                     return {
@@ -89,6 +91,7 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
                 onSuccess: () => {
                     setChecking(null);
                     setChecks({});
+                    setVerificationConfirmed(false);
                 },
             },
         );
@@ -111,6 +114,7 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
                                     onClick={() => {
                                         setChecking(species);
                                         setChecks({});
+                                        setVerificationConfirmed(false);
                                     }}
                                     className={`rounded-full text-xs font-bold px-3 py-1.5 ${
                                         allChecked ? 'bg-emerald-100 text-emerald-800' : 'bg-brand text-white'
@@ -148,7 +152,7 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
 
             <Modal open={checking !== null} title={`${checking} daily check`} onClose={() => setChecking(null)}>
                 <p className="text-sm text-slate-500 mb-4">
-                    Everyone is recorded as healthy and fed unless you note otherwise below.
+                    Review every animal below. The form starts at healthy and fed, but nothing is saved until you confirm you personally checked the full group.
                 </p>
                 <div className="space-y-3">
                     {(bySpecies[checking ?? ''] ?? []).map((a) => {
@@ -228,7 +232,11 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
                         );
                     })}
                 </div>
-                <button onClick={submitGroup} className="mt-4 w-full rounded-lg bg-brand text-white font-bold py-3">
+                <label className="mt-4 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-medium">
+                    <input type="checkbox" checked={verificationConfirmed} onChange={(e) => setVerificationConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4" />
+                    <span>I confirm I personally checked every animal listed above and the feeding status shown is accurate.</span>
+                </label>
+                <button disabled={!verificationConfirmed} onClick={submitGroup} className="mt-3 w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
                     {exceptionCount() === 0 ? 'All healthy & fed ✓' : `Save (${exceptionCount()} noted)`}
                 </button>
             </Modal>

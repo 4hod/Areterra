@@ -85,15 +85,21 @@ class Phase4Test extends TestCase
     {
         $this->post('/refer', [
             'referrer_name' => 'Jane Social Worker',
+            'referrer_email' => 'jane@example.test',
             'person_name' => 'John Smith',
             'details' => 'Looking for weekday placements.',
+            'authority_confirmed' => true,
+            'privacy_acknowledged' => true,
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertSame(1, Referral::count());
 
         $this->post('/refer', [
             'referrer_name' => 'Bot',
+            'referrer_email' => 'bot@example.test',
             'person_name' => 'Bot Person',
+            'authority_confirmed' => true,
+            'privacy_acknowledged' => true,
             'website' => 'spam.example',
         ])->assertSessionHasErrors('website');
 

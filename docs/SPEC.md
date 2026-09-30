@@ -35,14 +35,14 @@ Address: Little Croft, Fenn Green, WV15 6JA. Phone: 01562 307 306. Email: team@a
 | Role | Key capabilities |
 |---|---|
 | administrator | Full access, manage settings, manage all users |
-| manager | Approve leave, view all timeclock, manage members, manage animals, view reports, manage compliance |
-| staff | Own timeclock, request leave, view members, log sessions, welfare checks |
-| volunteer | Own timeclock, request leave, view members (limited) |
+| manager | Approve leave, manage members, manage animals, view reports, manage compliance |
+| staff | Request leave, view members, log sessions, welfare checks |
+| volunteer | Request leave, view members (limited) |
 | safeguarding_lead | All staff caps + access safeguarding records |
 
 Capabilities checked: `access_hub`, `view_members`, `edit_members`, `create_members`,
 `delete_members`, `view_animals`, `edit_animals`, `approve_leave`, `view_all_leave`,
-`view_all_timeclock`, `edit_timeclock`, `manage_incidents`, `view_all_incidents`,
+`manage_incidents`, `view_all_incidents`,
 `build_forms`, `view_reports`, `export_reports`, `manage_vehicles`, `view_vehicles`,
 `upload_documents`, `manage_compliance`, `view_all_compliance`, `manage_directory`,
 `manage_settings`, `view_audit_log`, `access_safeguarding`.
@@ -120,6 +120,9 @@ Five-item checklist that auto-checks based on real data:
 - Arrival mood: emoji selection (😊😐😟😠😰)
 - Notes per member
 - Shows scheduled members for the day vs who's actually in
+- Includes a simple daily staff presence list sourced from active user and roster records
+- Prints a combined fire register of members and staff marked present; staff presence
+  is not used by transport, member attendance, billing or payroll
 
 ### 8. End of Day records (session handover)
 Per member per day:
@@ -289,7 +292,8 @@ Not a full invoicing system — QuickBooks raises/manages invoices. The Hub stor
 `am_end_of_day`, `am_animals`, `am_welfare_checks`, `am_vet_records`,
 `am_daily_monitoring`, `am_transport_runs`, `am_transport_fees` (charge/payment
 ledger), `am_comms_log`, `am_email_templates`, `am_leave_requests`,
-`am_leave_balances`, `am_timeclock`, `am_payroll_periods`, `am_payroll_entries`,
+`am_leave_balances`, `am_timeclock` (legacy data retained; no staff-facing feature),
+`am_payroll_periods`, `am_payroll_entries`,
 `am_payroll_rates`, `am_staff_roster` (manual staff w/ NI number), `am_supervisions`,
 `am_grants`, `am_in_kind`, `am_member_invoices`, `am_policies`, `am_documents`,
 `am_doc_reads`, `am_risk_assessments`, `am_reviews`, `am_announcements`,

@@ -6,6 +6,7 @@ use App\Models\ComplianceItem;
 use App\Models\Grant;
 use App\Models\MemberInvoice;
 use App\Models\Task;
+use App\Models\User;
 
 /**
  * Point 12 — notifications come from data, not from someone remembering to
@@ -29,21 +30,27 @@ final class DueScanner
      * appear whenever somebody is actually using the Hub. If you do get cron
      * working later, call scan() from the scheduler and this still behaves.
      */
-    public static function scanThrottled(int $horizonDays = 30): array
+    public static function scanThrottled(int $horizonDays = 30, ?User $user = null): array
     {
+        $scope = $user
+            ? $user->id.':'.sha1(implode('|', $user->capabilities()))
+            : 'system';
+
         return \Illuminate\Support\Facades\Cache::remember(
-            'due_scan:'.today()->toDateString().':'.$horizonDays,
+            'due_scan:'.today()->toDateString().':'.$horizonDays.':'.$scope,
             now()->addHour(),
-            fn () => self::scan($horizonDays),
+            fn () => self::scan($horizonDays, $user),
         );
     }
 
-    public static function scan(int $horizonDays = 30): array
+    public static function scan(int $horizonDays = 30, ?User $user = null): array
     {
         $horizon = today()->addDays($horizonDays);
         $notices = [];
 
-        foreach (ComplianceItem::query()->whereNull('completed_at')->whereNotNull('due_date')->whereDate('due_date', '<=', $horizon)->get() as $item) {
+        foreach (($user && ! $user->hasCapability('view_all_compliance')
+            ? collect()
+            : ComplianceItem::query()->whereNull('completed_at')->whereNotNull('due_date')->whereDate('due_date', '<=', $horizon)->get()) as $item) {
             $notices[] = self::notice(
                 'compliance_due',
                 $item,
@@ -52,7 +59,9 @@ final class DueScanner
             );
         }
 
-        foreach (MemberInvoice::query()->where('status', '!=', 'paid')->whereNotNull('due_date')->whereDate('due_date', '<', today())->get() as $invoice) {
+        foreach (($user && ! $user->hasCapability('manage_finance')
+            ? collect()
+            : MemberInvoice::query()->where('status', '!=', 'paid')->whereNotNull('due_date')->whereDate('due_date', '<', today())->get()) as $invoice) {
             $notices[] = self::notice(
                 'invoice_overdue',
                 $invoice,
@@ -61,7 +70,9 @@ final class DueScanner
             );
         }
 
-        foreach (Grant::query()->whereNotNull('end_date')->whereDate('end_date', '<=', $horizon)->where('status', 'active')->get() as $grant) {
+        foreach (($user && ! $user->hasCapability('manage_finance')
+            ? collect()
+            : Grant::query()->whereNotNull('end_date')->whereDate('end_date', '<=', $horizon)->where('status', 'active')->get()) as $grant) {
             $notices[] = self::notice(
                 'grant_reporting_due',
                 $grant,
@@ -70,7 +81,12 @@ final class DueScanner
             );
         }
 
-        foreach (Task::query()->overdue()->get() as $task) {
+        $tasks = Task::query()->overdue()
+            ->when($user && ! $user->hasCapability('manage_operations'), fn ($q) => $q->where(function ($owned) use ($user) {
+                $owned->where('assigned_to', $user->id)->orWhere('created_by', $user->id);
+            }))
+            ->get();
+        foreach ($tasks as $task) {
             $notices[] = self::notice('task_overdue', $task, $task->due_date, "{$task->title} is overdue");
         }
 

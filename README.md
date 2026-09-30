@@ -27,7 +27,7 @@ React), replacing the previous WordPress-plugin implementation.
   monitoring and vet records.
 - *Phase 2:* Transport planner (three-phase flow) with the £5/day cash fee
   ledger and credit system, Leave management with manager approval and
-  balances, Time Clock, Announcements, and web-push notifications with email
+  balances, a staff-inclusive printable fire register, Announcements, and web-push notifications with email
   fallback, per-user preferences, and the 12:00 / 14:30 reminder crons
   (operating days Mon/Tue/Thu/Fri, deduped once per day).
 - *Phase 3:* Payroll (roster with rate history, pay periods, live-recalc grid,

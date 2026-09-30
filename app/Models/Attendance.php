@@ -41,6 +41,8 @@ class Attendance extends Model
             'date' => 'date',
             'checked_in' => 'boolean',
             'checked_in_at' => 'datetime',
+            'notes' => 'encrypted',
+            'absence_reason' => 'encrypted',
         ];
     }
 

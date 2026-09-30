@@ -9,6 +9,10 @@ use App\Models\Attendance;
 use App\Models\DayCancellation;
 use App\Workflows\CancelDay;
 use App\Models\Member;
+use App\Models\StaffAttendance;
+use App\Models\StaffRosterMember;
+use App\Models\User;
+use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -29,6 +33,34 @@ class RegisterController extends Controller
         $rows = $scheduled->map(fn ($m) => $this->row($m, $attendance->get($m->id), true))
             ->concat($extras->map(fn ($m) => $this->row($m, $attendance->get($m->id), false)));
 
+        $staffAttendance = StaffAttendance::whereDate('date', $today)
+            ->get()
+            ->keyBy(fn (StaffAttendance $entry) => $entry->staff_type.':'.$entry->staff_id);
+
+        $users = User::orderBy('name')->get();
+        $userNames = $users->pluck('name')->map(fn ($name) => mb_strtolower($name));
+
+        $staff = $users->map(fn (User $user) => $this->staffRow(
+            'user',
+            $user->id,
+            $user->name,
+            $user->job_title,
+            $staffAttendance->get(User::class.':'.$user->id),
+        ))->concat(
+            StaffRosterMember::where('active', true)
+                ->whereDoesntHave('user')
+                ->orderBy('name')
+                ->get()
+                ->reject(fn (StaffRosterMember $person) => $userNames->contains(mb_strtolower($person->name)))
+                ->map(fn (StaffRosterMember $person) => $this->staffRow(
+                    'roster',
+                    $person->id,
+                    $person->name,
+                    $person->job_title,
+                    $staffAttendance->get(StaffRosterMember::class.':'.$person->id),
+                ))
+        )->sortBy('name')->values();
+
         return Inertia::render('Register', [
             'date' => $today->toDateString(),
             'rows' => $rows->values(),
@@ -39,7 +71,36 @@ class RegisterController extends Controller
                 ->map(fn ($m) => ['id' => $m->id, 'name' => $m->displayName()]),
             'moods' => Attendance::MOODS,
             'cancellation' => DayCancellation::whereDate('date', $today)->first(),
+            'staff' => $staff,
         ]);
+    }
+
+    public function updateStaff(Request $request, string $kind, int $id)
+    {
+        $data = $request->validate([
+            'present' => ['required', 'boolean'],
+        ]);
+
+        $person = match ($kind) {
+            'user' => User::findOrFail($id),
+            'roster' => StaffRosterMember::where('active', true)->findOrFail($id),
+            default => abort(404),
+        };
+
+        StaffAttendance::updateOrCreate(
+            [
+                'date' => today(),
+                'staff_type' => $person::class,
+                'staff_id' => $person->getKey(),
+            ],
+            [
+                'staff_name' => $person->name,
+                'present' => $data['present'],
+                'recorded_by' => $request->user()->id,
+            ],
+        );
+
+        return back()->with('success', "{$person->name} marked ".($data['present'] ? 'here today.' : 'not on site.'));
     }
 
     public function checkIn(Request $request, Member $member)
@@ -143,7 +204,7 @@ class RegisterController extends Controller
         return [
             'id' => $member->id,
             'name' => $member->displayName(),
-            'photo_path' => $member->photo_path,
+            'photo_path' => PrivateMedia::memberPhotoUrl($member),
             'scheduled' => $scheduled,
             'status' => $attendance?->status ?? 'expected',
             'absence_reason' => $attendance?->absence_reason,
@@ -151,6 +212,18 @@ class RegisterController extends Controller
             'checked_in_at' => $attendance?->checked_in_at?->format('H:i'),
             'arrival_mood' => $attendance?->arrival_mood,
             'notes' => $attendance?->notes,
+        ];
+    }
+
+    private function staffRow(string $kind, int $id, string $name, ?string $jobTitle, ?StaffAttendance $attendance): array
+    {
+        return [
+            'key' => $kind.':'.$id,
+            'kind' => $kind,
+            'id' => $id,
+            'name' => $name,
+            'job_title' => $jobTitle,
+            'present' => (bool) $attendance?->present,
         ];
     }
 }

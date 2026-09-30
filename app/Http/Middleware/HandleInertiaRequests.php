@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
                 'orgName' => \App\Models\Setting::get('org_name') ?? 'Areterra Hub',
             ],
             'unreadNotifications' => $user ? $user->unreadNotifications()->count() : 0,
+            'pushConfigured' => filled(config('webpush.vapid.public_key')),
         ];
     }
 }

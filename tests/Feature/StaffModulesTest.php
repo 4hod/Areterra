@@ -251,6 +251,8 @@ class StaffModulesTest extends TestCase
             'referrer_email' => 'smith@example.com',
             'person_name' => 'New Person',
             'details' => 'Would benefit from animal-assisted sessions.',
+            'authority_confirmed' => true,
+            'privacy_acknowledged' => true,
         ])->assertRedirect();
 
         $this->assertDatabaseCount('referrals', 1);
@@ -260,7 +262,7 @@ class StaffModulesTest extends TestCase
     {
         $amy = $this->member();
 
-        $this->actingAs($this->staff)->post("/members/{$amy->id}/goals", [
+        $this->actingAs($this->manager)->post("/members/{$amy->id}/goals", [
             'title' => 'Handle a bird unaided',
             'target_date' => today()->addMonths(3)->toDateString(),
         ])->assertRedirect();
@@ -272,7 +274,7 @@ class StaffModulesTest extends TestCase
     {
         $amy = $this->member();
 
-        $this->actingAs($this->staff)->post("/members/{$amy->id}/contacts", [
+        $this->actingAs($this->manager)->post("/members/{$amy->id}/contacts", [
             'name' => 'Jane Buckle',
             'relationship' => 'Mother',
             'phone' => '01234 567890',

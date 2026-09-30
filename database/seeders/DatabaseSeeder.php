@@ -12,6 +12,12 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        if (app()->environment('production')) {
+            $this->command?->warn('Development seed data was not installed in production. Create named user accounts through an approved setup process.');
+
+            return;
+        }
+
         // Dev credentials only — set real passwords before any production deploy.
         User::firstOrCreate(['email' => 'ekilburn@areterra.co.uk'], [
             'name' => 'E Kilburn',

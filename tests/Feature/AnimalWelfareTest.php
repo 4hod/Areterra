@@ -40,11 +40,13 @@ class AnimalWelfareTest extends TestCase
 
         $this->actingAs($user)->post('/welfare-checks/species', [
             'species' => 'Macaw',
+            'verification_confirmed' => true,
             // The controller and the Animals page both use 'checks'. This test
             // posted 'flagged', so the override never applied and the flagged
             // animal silently came back green.
             'checks' => [
-                ['animal_id' => $angel->id, 'status' => 'amber', 'notes' => 'Feather plucking'],
+                ['animal_id' => $demon->id, 'status' => null, 'fed' => true, 'treats_given' => false],
+                ['animal_id' => $angel->id, 'status' => 'amber', 'notes' => 'Feather plucking', 'fed' => true, 'treats_given' => false],
             ],
         ])->assertRedirect();
 
@@ -66,6 +68,8 @@ class AnimalWelfareTest extends TestCase
             'status' => 'red',
             'notes' => 'Not eating',
             'concern' => true,
+            'fed' => false,
+            'treats_given' => false,
         ])->assertRedirect();
 
         $this->assertSame('red', $animal->fresh()->welfare_status);

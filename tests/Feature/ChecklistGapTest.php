@@ -22,7 +22,7 @@ class ChecklistGapTest extends TestCase
 
     public function test_comms_log_entries_can_be_added_and_deleted(): void
     {
-        $staff = $this->staff();
+        $staff = User::factory()->create(['role' => 'manager']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
 
         $this->actingAs($staff)->post("/members/{$member->id}/comms", [
@@ -44,7 +44,7 @@ class ChecklistGapTest extends TestCase
     public function test_email_composer_sends_with_merge_tags_and_logs_to_comms(): void
     {
         Mail::fake();
-        $staff = $this->staff();
+        $staff = User::factory()->create(['role' => 'manager']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
 
         $this->actingAs($staff)->post('/email/send', [
@@ -89,7 +89,7 @@ class ChecklistGapTest extends TestCase
 
     public function test_goals_outcomes_alerts_and_consents_store(): void
     {
-        $staff = $this->staff();
+        $staff = User::factory()->create(['role' => 'manager']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
 
         $this->actingAs($staff)->post("/members/{$member->id}/goals", ['title' => 'Feed the chickens independently']);
@@ -110,8 +110,8 @@ class ChecklistGapTest extends TestCase
         $this->assertSame('Nut allergy', $member->alerts()->first()->text);
 
         // Consents upsert on (member, type).
-        $this->actingAs($staff)->post("/members/{$member->id}/consents", ['consent_type' => 'photos', 'granted' => true]);
-        $this->actingAs($staff)->post("/members/{$member->id}/consents", ['consent_type' => 'photos', 'granted' => false]);
+        $this->actingAs($staff)->post("/members/{$member->id}/consents", ['consent_type' => 'photos', 'granted' => true, 'notes' => 'Member gave verbal consent.']);
+        $this->actingAs($staff)->post("/members/{$member->id}/consents", ['consent_type' => 'photos', 'granted' => false, 'notes' => 'Member withdrew verbal consent.']);
         $this->assertSame(1, $member->consents()->count());
         $this->assertFalse($member->consents()->first()->granted);
     }

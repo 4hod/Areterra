@@ -12,7 +12,6 @@ interface Props {
         sessionsRecorded: number;
         welfareChecks: number;
         activities: number;
-        staffHours: number;
     };
 }
 
@@ -29,7 +28,6 @@ export default function Reports({ from, to, impact }: Props) {
         ['Session records', impact.sessionsRecorded, '🌙'],
         ['Welfare checks', impact.welfareChecks, '🦜'],
         ['Activities', impact.activities, '📅'],
-        ['Staff hours', impact.staffHours, '⏱️'],
     ];
 
     return (
@@ -69,11 +67,8 @@ export default function Reports({ from, to, impact }: Props) {
                     <a href={`/reports/activities.csv${range}`} className="rounded-full bg-brand text-white text-sm font-semibold px-4 py-2.5">
                         ⬇ Activities
                     </a>
-                    <a href={`/reports/hours.csv${range}`} className="rounded-full bg-brand text-white text-sm font-semibold px-4 py-2.5">
-                        ⬇ Staff hours
-                    </a>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">Activities and hours respect the date range above.</p>
+                <p className="text-xs text-slate-400 mt-2">Activities respect the date range above.</p>
             </Card>
         </AppShell>
     );

@@ -34,7 +34,7 @@ class NotificationController extends Controller
         ]);
 
         $request->user()->pref()->update([
-            'push_enabled' => $data['push_enabled'],
+            'push_enabled' => filled(config('webpush.vapid.public_key')) && $data['push_enabled'],
             'email_enabled' => $data['email_enabled'],
             'categories' => collect($data['categories'])
                 ->only(NotificationPref::CATEGORIES)

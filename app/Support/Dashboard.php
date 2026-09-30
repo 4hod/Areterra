@@ -19,7 +19,7 @@ final class Dashboard
 
         return [
             'period' => $period->toArray(),
-            'needs_attention' => DueScanner::scanThrottled(14),
+            'needs_attention' => DueScanner::scanThrottled(14, auth()->user()),
             'open_tasks' => Task::query()->open()->count(),
             'overdue_tasks' => Task::query()->overdue()->count(),
             'unpaid_invoices' => [

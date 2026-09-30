@@ -23,12 +23,14 @@ class Activity extends Model
     public function members()
     {
         return $this->belongsToMany(Member::class, 'activity_participants')
+            ->using(ActivityParticipant::class)
             ->withPivot(['attended', 'outcome_notes'])->withTimestamps();
     }
 
     public function animals()
     {
         return $this->belongsToMany(Animal::class, 'activity_participants')
+            ->using(ActivityParticipant::class)
             ->withPivot(['attended'])->withTimestamps();
     }
 

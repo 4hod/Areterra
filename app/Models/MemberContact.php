@@ -12,6 +12,18 @@ class MemberContact extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'name' => 'encrypted',
+            'role' => 'encrypted',
+            'organisation' => 'encrypted',
+            'email' => 'encrypted',
+            'phone' => 'encrypted',
+            'notes' => 'encrypted',
+        ];
+    }
+
     public function member()
     {
         return $this->belongsTo(Member::class);

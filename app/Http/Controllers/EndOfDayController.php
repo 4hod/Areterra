@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\EndOfDayRecord;
 use App\Models\Member;
+use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class EndOfDayController extends Controller
@@ -23,18 +25,25 @@ class EndOfDayController extends Controller
 
         return Inertia::render('EndOfDay', [
             'date' => $today->toDateString(),
-            'rows' => $attendees->map(fn ($a) => [
-                'id' => $a->member->id,
-                'name' => $a->member->displayName(),
-                'arrival_mood' => $a->arrival_mood,
-                'record' => $records->get($a->member_id)?->only([
-                    'end_mood', 'session_type', 'activities',
-                    'food_intake', 'fluid_intake', 'toileting_notes',
-                    'medication_given', 'medication_notes',
-                    'incident', 'incident_detail', 'photos',
-                    'notes', 'concern', 'concern_detail',
-                ]),
-            ])->values(),
+            'rows' => $attendees->map(function ($a) use ($records) {
+                $record = $records->get($a->member_id);
+
+                return [
+                    'id' => $a->member->id,
+                    'name' => $a->member->displayName(),
+                    'arrival_mood' => $a->arrival_mood,
+                    'record' => $record ? [
+                        ...$record->only([
+                            'end_mood', 'session_type', 'activities',
+                            'food_intake', 'fluid_intake', 'toileting_notes',
+                            'medication_given', 'medication_notes',
+                            'incident', 'incident_detail',
+                            'notes', 'concern', 'concern_detail',
+                        ]),
+                        'photos' => PrivateMedia::endOfDayPhotoUrls($a->member, $record),
+                    ] : null,
+                ];
+            })->values(),
             'moods' => Attendance::MOODS,
         ]);
     }
@@ -66,12 +75,19 @@ class EndOfDayController extends Controller
             ->value('arrival_mood');
 
         $existing = EndOfDayRecord::where('member_id', $member->id)->whereDate('date', today())->first();
-        $photos = collect($existing?->photos ?? [])
-            ->reject(fn ($p) => in_array($p, $data['remove_photos'] ?? [], true))
+        $existingPhotos = collect($existing?->photos ?? []);
+        $existingUrls = $existing ? PrivateMedia::endOfDayPhotoUrls($member, $existing) : [];
+        $removeUrls = $data['remove_photos'] ?? [];
+        $removedPaths = $existingPhotos
+            ->filter(fn ($path, $index) => in_array($existingUrls[$index] ?? '', $removeUrls, true));
+        $photos = $existingPhotos
+            ->reject(fn ($path, $index) => in_array($existingUrls[$index] ?? '', $removeUrls, true))
+            ->map(fn ($path) => PrivateMedia::path($path))
+            ->filter()
             ->values();
 
         foreach ($request->file('photos', []) as $file) {
-            $photos->push('/storage/'.$file->store('end-of-day-photos', 'public'));
+            $photos->push($file->store('end-of-day-photos', 'local'));
         }
 
         $record = EndOfDayRecord::updateOrCreate(
@@ -83,6 +99,13 @@ class EndOfDayController extends Controller
                 'user_id' => $request->user()->id,
             ],
         );
+
+        foreach ($removedPaths as $removedPath) {
+            if ($path = PrivateMedia::path($removedPath)) {
+                Storage::disk('local')->delete($path);
+                Storage::disk('public')->delete($path);
+            }
+        }
 
         if ($record->concern && ($record->wasRecentlyCreated || $record->wasChanged('concern'))) {
             // Concerns flagged at end of day auto-create a safeguarding entry (SPEC.md §25).

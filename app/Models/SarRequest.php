@@ -20,6 +20,9 @@ class SarRequest extends Model
             'received_date' => 'date',
             'deadline_date' => 'date',
             'fulfilled_date' => 'date',
+            'requester_name' => 'encrypted',
+            'requester_relationship' => 'encrypted',
+            'notes' => 'encrypted',
         ];
     }
 

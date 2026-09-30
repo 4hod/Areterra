@@ -1,483 +1,171 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { Link, usePage } from '@inertiajs/react';
+import { ReactNode, useEffect, useState } from 'react';
 import { SharedProps } from '../types';
-import SearchOverlay from './SearchOverlay';
-import DialogHost from './DialogHost';
 import AccountMenu from './AccountMenu';
+import AppIcon from './AppIcon';
+import DialogHost from './DialogHost';
 import NotificationBell from './NotificationBell';
+import SearchOverlay from './SearchOverlay';
 
-interface NavItem {
-    href: string;
-    label: string;
-    icon: string;
-    cap?: string;
-}
+interface NavItem { href: string; label: string; icon: string; cap?: string }
+interface NavSection { title: string; items: NavItem[] }
 
-export const NAV_SECTIONS: { title: string | null; color: string; items: NavItem[] }[] = [
-    {
-        title: null,
-        color: 'brand',
-        items: [
-            { href: '/', label: 'Dashboard', icon: '🏠' },
-            { href: '/today', label: 'Today', icon: '✅' },
-            { href: '/tasks', label: 'Tasks', icon: '☑️' },
-        ],
-    },
-    {
-        title: 'People & animals',
-        color: 'cat-people',
-        items: [
-            { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
-            { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
-            { href: '/monitoring', label: 'Daily Monitoring', icon: '📊', cap: 'log_welfare' },
-            { href: '/reviews', label: 'Member Reviews', icon: '🔄', cap: 'view_members' },
-            { href: '/sar-requests', label: 'SAR Requests', icon: '🔐', cap: 'edit_members' },
-        ],
-    },
-    {
-        title: 'Staff',
-        color: 'cat-staff',
-        items: [
-            { href: '/announcements', label: 'Announcements', icon: '📢' },
-            { href: '/leave', label: 'Leave', icon: '🌴', cap: 'request_leave' },
-            { href: '/timeclock', label: 'Time Clock', icon: '⏱️', cap: 'own_timeclock' },
-            { href: '/directory', label: 'Directory', icon: '📖' },
-            { href: '/orders', label: 'Orders', icon: '📦', cap: 'request_products' },
-            { href: '/supervisions', label: 'Supervisions', icon: '🗣️', cap: 'manage_supervisions' },
-        ],
-    },
-    {
-        title: 'Operations',
-        color: 'cat-ops',
-        items: [
-            { href: '/calendar', label: 'Calendar & Activities', icon: '🗓️' },
-            { href: '/vehicles', label: 'Vehicles', icon: '🚚', cap: 'view_vehicles' },
-            { href: '/maintenance', label: 'Maintenance', icon: '🔧', cap: 'manage_operations' },
-            { href: '/projects', label: 'Projects', icon: '🗂️', cap: 'manage_operations' },
-            { href: '/funding', label: 'Funding', icon: '💰', cap: 'manage_operations' },
-            { href: '/insurance', label: 'Insurance', icon: '🛡️', cap: 'manage_operations' },
-            { href: '/referrals', label: 'Referrals', icon: '📨', cap: 'create_members' },
-            { href: '/finance', label: 'Finance & Grants', icon: '💰', cap: 'manage_finance' },
-            { href: '/invoices', label: 'Invoices', icon: '🧾', cap: 'manage_finance' },
-        ],
-    },
-    {
-        title: 'Governance & safety',
-        color: 'cat-governance',
-        items: [
-            { href: '/policies', label: 'Policies', icon: '📜' },
-            { href: '/documents', label: 'Documents', icon: '📁' },
-            { href: '/risk-assessments', label: 'Risk Assessments', icon: '⚖️' },
-            { href: '/compliance', label: 'Compliance', icon: '📋', cap: 'view_all_compliance' },
-            { href: '/incidents', label: 'Incidents', icon: '🚨', cap: 'report_incidents' },
-            { href: '/safeguarding', label: 'Safeguarding', icon: '🛡️', cap: 'access_safeguarding' },
-        ],
-    },
-    {
-        title: 'Reporting & admin',
-        color: 'cat-admin',
-        items: [
-            { href: '/audit', label: 'System Audit', icon: '🩺', cap: 'view_reports' },
-            { href: '/reports', label: 'Reports', icon: '📈', cap: 'view_reports' },
-            { href: '/audit-log', label: 'Audit Log', icon: '🧾', cap: 'view_audit_log' },
-            { href: '/forms', label: 'Forms', icon: '📝' },
-            { href: '/notifications', label: 'Notifications', icon: '🔔' },
-            { href: '/import', label: 'CSV Import', icon: '📥', cap: 'manage_settings' },
-            { href: '/settings', label: 'Hub Settings', icon: '⚙️', cap: 'manage_settings' },
-            { href: '/settings/permissions', label: 'Permissions', icon: '🔑', cap: 'manage_settings' },
-            { href: '/account', label: 'My Account', icon: '👤' },
-        ],
-    },
+export const NAV_SECTIONS: NavSection[] = [
+    { title: 'Workspace', items: [
+        { href: '/', label: 'Overview', icon: 'grid' },
+        { href: '/today', label: 'Today', icon: 'today' },
+        { href: '/tasks', label: 'Tasks', icon: 'tasks' },
+        { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
+        { href: '/animals', label: 'Animals & welfare', icon: 'paw', cap: 'view_animals' },
+        { href: '/calendar', label: 'Activities & outcomes', icon: 'activity' },
+    ] },
+    { title: 'Daily operations', items: [
+        { href: '/transport', label: 'Transport', icon: 'truck', cap: 'log_sessions' },
+        { href: '/register', label: 'Morning register', icon: 'register', cap: 'log_sessions' },
+        { href: '/end-of-day', label: 'End of day', icon: 'moon', cap: 'log_sessions' },
+        { href: '/monitoring', label: 'Daily monitoring', icon: 'monitor', cap: 'log_welfare' },
+    ] },
+    { title: 'Records', items: [
+        { href: '/forms', label: 'Forms', icon: 'file' },
+        { href: '/reports', label: 'Impact reporting', icon: 'chart', cap: 'view_reports' },
+        { href: '/reviews', label: 'Member reviews', icon: 'activity', cap: 'view_members' },
+        { href: '/incidents', label: 'Incidents', icon: 'alert', cap: 'report_incidents' },
+        { href: '/compliance', label: 'Compliance', icon: 'shield', cap: 'view_all_compliance' },
+        { href: '/documents', label: 'Documents', icon: 'folder' },
+        { href: '/sar-requests', label: 'SAR requests', icon: 'lock', cap: 'edit_members' },
+    ] },
+    { title: 'Team', items: [
+        { href: '/leave', label: 'Leave', icon: 'leave', cap: 'request_leave' },
+        { href: '/directory', label: 'Staff directory', icon: 'directory' },
+        { href: '/announcements', label: 'Announcements', icon: 'megaphone' },
+        { href: '/orders', label: 'Orders', icon: 'receipt', cap: 'request_products' },
+        { href: '/supervisions', label: 'Supervisions', icon: 'users', cap: 'manage_supervisions' },
+    ] },
+    { title: 'Management', items: [
+        { href: '/vehicles', label: 'Vehicles', icon: 'truck', cap: 'view_vehicles' },
+        { href: '/maintenance', label: 'Maintenance', icon: 'wrench', cap: 'manage_operations' },
+        { href: '/projects', label: 'Projects', icon: 'briefcase', cap: 'manage_operations' },
+        { href: '/funding', label: 'Funding', icon: 'money', cap: 'manage_operations' },
+        { href: '/insurance', label: 'Insurance', icon: 'shield', cap: 'manage_operations' },
+        { href: '/referrals', label: 'Referrals', icon: 'mail', cap: 'create_members' },
+        { href: '/finance', label: 'Finance & grants', icon: 'money', cap: 'manage_finance' },
+        { href: '/invoices', label: 'Invoices', icon: 'receipt', cap: 'manage_finance' },
+    ] },
+    { title: 'Administration', items: [
+        { href: '/audit', label: 'System audit', icon: 'shield', cap: 'view_reports' },
+        { href: '/audit-log', label: 'Audit log', icon: 'file', cap: 'view_audit_log' },
+        { href: '/notifications', label: 'Notifications', icon: 'bell' },
+        { href: '/import', label: 'Data import', icon: 'upload', cap: 'manage_settings' },
+        { href: '/settings', label: 'Settings', icon: 'settings', cap: 'manage_settings' },
+        { href: '/settings/permissions', label: 'Permissions', icon: 'lock', cap: 'manage_settings' },
+    ] },
 ];
 
-// Keep the three primary workspaces immediately available on mobile.
 const MOBILE_NAV: NavItem[] = [
-    { href: '/', label: 'Dashboard', icon: '🏠' },
-    { href: '/today', label: 'Today', icon: '✅' },
-    { href: '/tasks', label: 'Tasks', icon: '☑️' },
-    { href: '/members', label: 'Members', icon: '👥', cap: 'view_members' },
-    { href: '/animals', label: 'Animals', icon: '🦜', cap: 'view_animals' },
-    { href: '/more', label: 'More', icon: '⋯' },
+    { href: '/', label: 'Overview', icon: 'grid' },
+    { href: '/today', label: 'Today', icon: 'today' },
+    { href: '/register', label: 'Register', icon: 'register', cap: 'log_sessions' },
+    { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
+    { href: '/more', label: 'More', icon: 'grid' },
 ];
 
 function isActive(href: string, url: string) {
-    return href === '/' ? url === '/' : url.startsWith(href);
+    if (href === '/') return url === '/';
+    if (href === '/settings') return url === '/settings';
+    return url === href || url.startsWith(`${href}/`) || url.startsWith(`${href}?`);
 }
-
-export function allowed(item: NavItem, caps: string[]) {
-    return !item.cap || caps.includes(item.cap);
-}
+export function allowed(item: NavItem, caps: string[]) { return !item.cap || caps.includes(item.cap); }
 
 export default function AppShell({ title, children }: { title: string; children: ReactNode }) {
-    const { auth, flash, branding, unreadNotifications } = usePage<SharedProps>().props;
+    const { auth, flash, branding, unreadNotifications, pushConfigured } = usePage<SharedProps>().props;
     const url = usePage().url;
     const caps = auth.user?.capabilities ?? [];
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const [drawer, setDrawer] = useState(false);
     const [searching, setSearching] = useState(false);
-    const sidebarRef = useRef<HTMLElement | null>(null);
     const [pushPrompt, setPushPrompt] = useState(false);
-    const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
-        let stored: Record<string, boolean> = {};
-        try {
-            stored = JSON.parse(localStorage.getItem('ah-nav-open') ?? '{}');
-        } catch {
-            stored = {};
-        }
-        // Always auto-open whichever section contains the current page, regardless
-        // of stored state, so navigating somewhere never hides where you just went.
-        for (const section of NAV_SECTIONS) {
-            if (section.title && section.items.some((item) => isActive(item.href, url))) {
-                stored[section.title] = true;
-            }
-        }
-        return stored;
-    });
-
-
-    // Keep the desktop navigation's own scroll position between Inertia page visits.
-    // The content page itself is still allowed to return to the top normally.
-    useEffect(() => {
-        const sidebar = sidebarRef.current;
-        if (!sidebar) return;
-
-        const saved = Number(sessionStorage.getItem('ah-sidebar-scroll') ?? '0');
-        if (Number.isFinite(saved)) {
-            sidebar.scrollTop = saved;
-        }
-
-        const rememberPosition = () => {
-            sessionStorage.setItem('ah-sidebar-scroll', String(sidebar.scrollTop));
-        };
-
-        sidebar.addEventListener('scroll', rememberPosition, { passive: true });
-        return () => sidebar.removeEventListener('scroll', rememberPosition);
-    }, []);
-
-    function rememberSidebarPosition() {
-        if (sidebarRef.current) {
-            sessionStorage.setItem('ah-sidebar-scroll', String(sidebarRef.current.scrollTop));
-        }
-    }
-
-    function toggleSection(title: string) {
-        setOpenSections((prev) => {
-            const next = { ...prev, [title]: !prev[title] };
-            localStorage.setItem('ah-nav-open', JSON.stringify(next));
-            return next;
-        });
-    }
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+    const initials = (auth.user?.name ?? 'User').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
     useEffect(() => {
-        if (flash.success) {
-            setToast({ message: flash.success, type: 'success' });
-        } else if (flash.error) {
-            setToast({ message: flash.error, type: 'error' });
-        } else {
-            setToast(null);
-            return;
-        }
-        const t = setTimeout(() => setToast(null), 3500);
-        return () => clearTimeout(t);
+        const next = flash.success ? { message: flash.success, type: 'success' as const }
+            : flash.error ? { message: flash.error, type: 'error' as const } : null;
+        setToast(next);
+        if (!next) return;
+        const timer = window.setTimeout(() => setToast(null), 3500);
+        return () => window.clearTimeout(timer);
     }, [flash]);
 
-    // Cmd+K / Ctrl+K opens search from anywhere.
     useEffect(() => {
-        function onKey(e: KeyboardEvent) {
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
+        const onKey = (event: KeyboardEvent) => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault();
                 setSearching(true);
             }
-        }
+        };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, []);
 
-    // Push permission prompt: 3s after login, dismissible, once per session (SPEC.md §22).
     useEffect(() => {
-        if (
-            'Notification' in window &&
-            Notification.permission === 'default' &&
-            !sessionStorage.getItem('ah-push-prompted')
-        ) {
-            const t = setTimeout(() => setPushPrompt(true), 3000);
-            return () => clearTimeout(t);
-        }
-    }, []);
+        if (!pushConfigured || !('Notification' in window) || Notification.permission !== 'default' || sessionStorage.getItem('ah-push-prompted')) return;
+        const timer = window.setTimeout(() => setPushPrompt(true), 3000);
+        return () => window.clearTimeout(timer);
+    }, [pushConfigured]);
 
     function dismissPushPrompt() {
         sessionStorage.setItem('ah-push-prompted', '1');
         setPushPrompt(false);
     }
 
-    return (
-        <div className="min-h-screen md:flex hub-app-shell">
-            {/* Desktop sidebar */}
-            <aside
-                ref={sidebarRef}
-                className="hub-sidebar hidden md:flex md:flex-col w-60 shrink-0 text-white h-screen max-h-screen sticky top-0 overflow-y-auto overscroll-contain"
-                style={{ background: 'linear-gradient(180deg, var(--color-brand-dark) 0%, var(--color-ink) 100%)' }}
-            >
-                <div className="px-5 py-5">
-                    {branding.logoUrl ? (
-                        <img src={branding.logoUrl} alt={branding.orgName} className="h-9 max-w-[160px] object-contain object-left mb-1" />
-                    ) : (
-                        <div className="text-xl font-extrabold">{branding.orgName}</div>
-                    )}
-                    <div className="text-xs text-white/60 mt-1">Animals. People. Purpose.</div>
-                </div>
-                <nav className="flex-1 px-3 pb-4 space-y-1">
-                    {NAV_SECTIONS.map((section, i) => {
-                        const items = section.items.filter((item) => allowed(item, caps));
-                        if (items.length === 0) return null;
+    const nav = (close = false) => NAV_SECTIONS.map((section) => {
+        const items = section.items.filter((item) => allowed(item, caps));
+        if (!items.length) return null;
+        return <section className="portal-nav-section" key={section.title}>
+            <p>{section.title}</p>
+            {items.map((item) => <Link key={item.href} href={item.href} onClick={() => close && setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}>
+                <AppIcon name={item.icon}/><span>{item.label}</span>
+            </Link>)}
+        </section>;
+    });
 
-                        // The untitled top section (Dashboard/Today/etc) has no header
-                        // and is always expanded — everything else collapses.
-                        if (!section.title) {
-                            return (
-                                <div key={i} className="space-y-0.5 pb-3">
-                                    {items.map((item) => (
-                                        <Link
-                                            onClick={rememberSidebarPosition}
-                                            key={item.href}
-                                            href={item.href}
-                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
-                                                isActive(item.href, url)
-                                                    ? 'bg-brand text-white shadow-sm'
-                                                    : 'text-white/70 hover:bg-white/5 hover:text-white'
-                                            }`}
-                                        >
-                                            <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
-                                            <span className="flex-1">{item.label}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-                            );
-                        }
-
-                        const isOpen = openSections[section.title] ?? false;
-
-                        return (
-                            <div key={i} className="pt-2 mt-1 border-t border-white/10 first:border-t-0 first:mt-0 first:pt-0">
-                                <button
-                                    onClick={() => toggleSection(section.title!)}
-                                    className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white/55 hover:text-white"
-                                >
-                                    <span>{section.title}</span>
-                                    <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`} aria-hidden>
-                                        ›
-                                    </span>
-                                </button>
-                                {isOpen && (
-                                    <div className="space-y-0.5 pb-2">
-                                        {items.map((item) => (
-                                            <Link
-                                                onClick={rememberSidebarPosition}
-                                                key={item.href}
-                                                href={item.href}
-                                                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
-                                                    isActive(item.href, url)
-                                                        ? 'bg-brand text-white shadow-sm'
-                                                        : 'text-white/70 hover:bg-white/5 hover:text-white'
-                                                }`}
-                                            >
-                                                <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
-                                                <span className="flex-1">{item.label}</span>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </nav>
-                <div className="p-4 border-t border-white/10 text-sm">
-                    <div className="font-semibold truncate">{auth.user?.name}</div>
-                    <div className="text-white/50 capitalize text-xs">{auth.user?.role?.replace('_', ' ')}</div>
-                    <div className="mt-2 flex gap-3 text-xs">
-                        <Link href="/account" className="text-white/70 hover:text-white">
-                            My account
-                        </Link>
-                        <button onClick={() => router.post('/logout')} className="text-white/70 hover:text-white">
-                            Log out
-                        </button>
-                    </div>
-                </div>
-            </aside>
-
-            <div className="hub-main-column flex-1 min-w-0">
-                <header className="hub-topbar sticky top-0 z-40 px-4 py-3.5 flex items-center gap-3 md:px-8">
-                    <button
-                        onClick={() => setDrawer(true)}
-                        aria-label="Open menu"
-                        className="md:hidden h-11 w-11 -ml-2 rounded-full hover:bg-black/5 text-xl"
-                    >
-                        ☰
-                    </button>
-                    <h1 className="hub-topbar-title text-xl font-semibold text-brand-dark truncate">{title}</h1>
-
-                    <div className="flex items-center gap-1 md:gap-2 ml-auto">
-                        <button
-                            onClick={() => setSearching(true)}
-                            aria-label="Search"
-                            title="Search (⌘K)"
-                            className="h-10 w-10 rounded-full hover:bg-black/5 flex items-center justify-center text-lg"
-                        >
-                            🔍
-                        </button>
-                        <NotificationBell unreadCount={unreadNotifications} />
-                        <AccountMenu
-                            name={auth.user?.name ?? ''}
-                            role={auth.user?.role ?? ''}
-                            canManageSettings={caps.includes('manage_settings')}
-                        />
-                        <button
-                            onClick={() => router.post('/logout')}
-                            aria-label="Log out"
-                            className="md:hidden h-11 w-11 rounded-full hover:bg-black/5"
-                        >
-                            ⎋
-                        </button>
-                    </div>
-                </header>
-
-                <main className="hub-page-content p-4 md:p-8 pb-28 md:pb-20 max-w-[1600px]">{children}</main>
+    return <div className="portal-shell hub-app-shell">
+        <aside className="portal-sidebar hidden md:flex">
+            <div className="portal-brand">
+                {branding.logoUrl ? <img src={branding.logoUrl} alt={branding.orgName}/> : <strong>{branding.orgName}</strong>}
             </div>
+            <div className="portal-sidebar-tabs"><b>HUB</b><span>TEAM WORKSPACE</span></div>
+            <nav>{nav()}</nav>
+            <div className="portal-sidebar-footer">
+                {caps.includes('manage_settings') && <Link href="/settings"><AppIcon name="settings"/><span>Settings</span></Link>}
+                <Link href="/account" className="portal-user-card"><i>{initials}</i><span><b>{auth.user?.name}</b><small>{auth.user?.role?.replace('_', ' ')}</small></span></Link>
+            </div>
+        </aside>
 
-            <a
-                href="https://rockitfox.co.uk"
-                target="_blank"
-                rel="noreferrer"
-                className="fixed right-4 bottom-20 md:bottom-4 z-30 rounded-full border border-slate-200/80 bg-slate-800/80 px-4 py-2 text-[11px] font-medium text-white/70 shadow-lg backdrop-blur transition hover:bg-slate-800 hover:text-white"
-                aria-label="Website designed and built by RockitFox"
-            >
-                Site designed &amp; built by <span className="font-extrabold text-orange-300">🚀 RockitFox</span>
-            </a>
-
-            {/* Mobile bottom nav */}
-            <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 flex pb-[env(safe-area-inset-bottom)]">
-                {MOBILE_NAV.filter((item) => allowed(item, caps)).map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium min-h-11 ${
-                            isActive(item.href, url) ? 'text-brand' : 'text-slate-500'
-                        }`}
-                    >
-                        <span className="text-xl" aria-hidden>
-                            {item.icon}
-                        </span>
-                        {item.label}
-                    </Link>
-                ))}
-            </nav>
-
-            {/* Mobile drawer */}
-            {drawer && (
-                <div className="md:hidden fixed inset-0 z-50 bg-black/40" onClick={() => setDrawer(false)}>
-                    <div
-                        className="absolute inset-y-0 left-0 w-72 bg-brand-dark text-white overflow-y-auto p-4"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {branding.logoUrl ? (
-                            <img src={branding.logoUrl} alt={branding.orgName} className="h-8 max-w-[160px] object-contain object-left mb-3" />
-                        ) : (
-                            <div className="text-lg font-extrabold mb-3">{branding.orgName}</div>
-                        )}
-                        {NAV_SECTIONS.map((section, i) => {
-                            const items = section.items.filter((item) => allowed(item, caps));
-                            if (items.length === 0) return null;
-
-                            if (!section.title) {
-                                return (
-                                    <div key={i} className="mb-3">
-                                        {items.map((item) => (
-                                            <Link
-                                                key={item.href}
-                                                href={item.href}
-                                                onClick={() => setDrawer(false)}
-                                                className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
-                                                    isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
-                                                }`}
-                                            >
-                                                <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
-                                                {item.label}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                );
-                            }
-
-                            const isOpen = openSections[section.title] ?? false;
-
-                            return (
-                                <div key={i} className="mb-1">
-                                    <button
-                                        onClick={() => toggleSection(section.title!)}
-                                        className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/40"
-                                    >
-                                        <span>{section.title}</span>
-                                        <span className={`transition-transform ${isOpen ? 'rotate-90' : ''}`} aria-hidden>›</span>
-                                    </button>
-                                    {isOpen && (
-                                        <div className="mb-2">
-                                            {items.map((item) => (
-                                                <Link
-                                                    key={item.href}
-                                                    href={item.href}
-                                                    onClick={() => setDrawer(false)}
-                                                    className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium ${
-                                                        isActive(item.href, url) ? 'bg-brand text-white' : 'text-white/75'
-                                                    }`}
-                                                >
-                                                    <span className="text-base shrink-0 w-5 text-center" aria-hidden>{item.icon}</span>
-                                                    {item.label}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+        <div className="portal-main hub-main-column">
+            <header className="portal-topbar hub-topbar">
+                <button className="portal-menu-button md:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation">☰</button>
+                <div className="portal-crumb hidden lg:flex"><AppIcon name="grid"/><span>Workspace</span><i>/</i><b>{title === 'Dashboard' ? 'Overview' : title}</b></div>
+                <button className="portal-search" onClick={() => setSearching(true)}><AppIcon name="search"/><span>Search members, animals, records…</span><kbd>Ctrl K</kbd></button>
+                <div className="portal-topbar-actions">
+                    <span className="portal-security-label hidden xl:inline-flex">SECURE CARE HUB</span>
+                    <NotificationBell unreadCount={unreadNotifications}/>
+                    <AccountMenu name={auth.user?.name ?? ''} role={auth.user?.role ?? ''} canManageSettings={caps.includes('manage_settings')}/>
                 </div>
-            )}
-
-            {/* Push permission prompt (3s after login, once per session) */}
-            {pushPrompt && (
-                <div className="fixed bottom-20 md:bottom-6 right-4 z-50 max-w-xs bg-white rounded-card shadow-xl border border-slate-200 p-4">
-                    <div className="font-bold text-brand-dark text-sm">🔔 Stay in the loop</div>
-                    <p className="text-xs text-slate-500 mt-1">
-                        Turn on notifications for announcements, welfare alerts and reminders.
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                        <Link
-                            href="/notifications"
-                            onClick={dismissPushPrompt}
-                            className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2"
-                        >
-                            Enable
-                        </Link>
-                        <button onClick={dismissPushPrompt} className="rounded-full bg-slate-100 text-slate-500 text-xs font-bold px-3 py-2">
-                            Not now
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {toast && (
-                <div
-                    className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 ${
-                        toast.type === 'success' ? 'bg-status-green' : toast.type === 'error' ? 'bg-status-red' : 'bg-status-amber'
-                    }`}
-                >
-                    <span aria-hidden>{toast.type === 'success' ? '✓' : toast.type === 'error' ? '✕' : '⚠'}</span>
-                    {toast.message}
-                </div>
-            )}
-
-            {searching && <SearchOverlay onClose={() => setSearching(false)} />}
-            <DialogHost />
+            </header>
+            <main className="portal-content hub-page-content">{children}</main>
         </div>
-    );
+
+        <nav className="portal-mobile-nav md:hidden">
+            {MOBILE_NAV.filter((item) => allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} className={isActive(item.href, url) ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
+        </nav>
+
+        {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>
+            <div className="portal-drawer-head">{branding.logoUrl ? <img src={branding.logoUrl} alt={branding.orgName}/> : <strong>{branding.orgName}</strong>}<button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
+            <nav>{nav(true)}</nav>
+        </aside></div>}
+
+        {pushPrompt && <div className="portal-prompt"><b>Stay in the loop</b><p>Turn on notifications for announcements, welfare alerts and reminders.</p><div><Link href="/notifications" onClick={dismissPushPrompt}>Enable</Link><button onClick={dismissPushPrompt}>Not now</button></div></div>}
+        {toast && <div className={`portal-toast is-${toast.type}`}><span>{toast.type === 'success' ? '✓' : '!'}</span>{toast.message}</div>}
+        {searching && <SearchOverlay onClose={() => setSearching(false)}/>}<DialogHost/>
+    </div>;
 }

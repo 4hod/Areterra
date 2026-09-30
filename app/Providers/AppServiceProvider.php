@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\Member::class, \App\Models\MemberSetting::class, \App\Models\Animal::class,
             \App\Models\WelfareCheck::class, \App\Models\DailyMonitoring::class, \App\Models\VetRecord::class,
             \App\Models\Attendance::class, \App\Models\EndOfDayRecord::class, \App\Models\TransportRun::class,
-            \App\Models\TransportLedgerEntry::class, \App\Models\LeaveRequest::class, \App\Models\TimeclockEntry::class,
+            \App\Models\LeaveRequest::class, \App\Models\TimeclockEntry::class, \App\Models\StaffAttendance::class,
             \App\Models\Announcement::class, \App\Models\PayrollPeriod::class, \App\Models\PayrollEntry::class,
             \App\Models\PayrollRate::class, \App\Models\StaffRosterMember::class, \App\Models\Supervision::class,
             \App\Models\Policy::class, \App\Models\Document::class, \App\Models\RiskAssessment::class,

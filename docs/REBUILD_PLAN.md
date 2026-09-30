@@ -41,7 +41,7 @@ app/
     Attendance/     # daily register, moods, end-of-day records, Today checklist
     Animals/        # animals, welfare checks, vet records, daily monitoring
     Transport/      # planner (3-phase flow), fee ledger, credit system
-    People/         # staff roster, directory, supervisions, leave, timeclock, payroll
+    People/         # staff roster, directory, supervisions, leave, payroll
     Finance/        # grants, in-kind, invoice tracker (QuickBooks refs)
     Governance/     # policies, documents, risk assessments, compliance, system audit
     Safeguarding/   # gated section, concerns, auto-created from end-of-day flags

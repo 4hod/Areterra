@@ -18,6 +18,7 @@ class MemberConsent extends Model
         return [
             'granted' => 'boolean',
             'recorded_on' => 'date',
+            'notes' => 'encrypted',
         ];
     }
 

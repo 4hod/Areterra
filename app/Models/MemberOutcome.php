@@ -15,6 +15,7 @@ class MemberOutcome extends Model
     {
         return [
             'date' => 'date',
+            'outcome' => 'encrypted',
         ];
     }
 

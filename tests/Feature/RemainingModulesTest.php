@@ -111,7 +111,7 @@ class RemainingModulesTest extends TestCase
     {
         $amy = $this->member();
 
-        $this->actingAs($this->staff)->post("/members/{$amy->id}/comms", [
+        $this->actingAs($this->manager)->post("/members/{$amy->id}/comms", [
             'type' => 'phone',
             'direction' => 'outbound',
             'date' => today()->toDateString(),

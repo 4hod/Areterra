@@ -93,7 +93,7 @@ class FinalGapsTest extends TestCase
         $amy = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle', 'status' => 'active']);
         $goal = $amy->goals()->create(['title' => 'Handle a bird unaided']);
 
-        $this->actingAs($this->staff)->post("/members/{$amy->id}/outcomes", [
+        $this->actingAs($this->admin)->post("/members/{$amy->id}/outcomes", [
             'date' => today()->toDateString(),
             'outcome' => 'Held Rico for the first time.',
             'member_goal_id' => $goal->id,

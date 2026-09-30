@@ -39,8 +39,21 @@ class SettingsController extends Controller
             'login_photo_url' => ['nullable', 'url', 'max:500'],
             'reply_to' => ['required', 'email', 'max:255'],
             'banner_text' => ['nullable', 'string', 'max:500'],
-            'ms_client_id' => ['nullable', 'string', 'max:100'],
-            'ms_tenant_id' => ['nullable', 'string', 'max:100', 'required_with:ms_client_id'],
+            'ms_client_id' => [
+                'nullable',
+                'string',
+                'max:100',
+                fn (string $attribute, mixed $value, \Closure $fail) => MicrosoftAuthController::validClientId($value)
+                    ?: $fail('The Microsoft client ID must be a valid application UUID.'),
+            ],
+            'ms_tenant_id' => [
+                'nullable',
+                'string',
+                'max:100',
+                'required_with:ms_client_id',
+                fn (string $attribute, mixed $value, \Closure $fail) => MicrosoftAuthController::validTenant($value)
+                    ?: $fail('Use your organisation tenant UUID or verified domain; shared Microsoft tenants are not allowed.'),
+            ],
             'ms_client_secret' => ['nullable', 'string', 'max:200'],
             'wordpress_url' => ['nullable', 'url', 'max:500'],
             'wordpress_username' => ['nullable', 'string', 'max:100', 'required_with:wordpress_url'],

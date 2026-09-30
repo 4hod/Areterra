@@ -34,6 +34,11 @@ class StaffRosterMember extends Model
         return $this->morphMany(PayrollRate::class, 'payable');
     }
 
+    public function attendances()
+    {
+        return $this->morphMany(StaffAttendance::class, 'staff');
+    }
+
     public function currentRate(): ?float
     {
         $rate = $this->rates()->where('effective_from', '<=', today())

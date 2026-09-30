@@ -16,6 +16,8 @@ class MemberGoal extends Model
         return [
             'target_date' => 'date',
             'achieved_at' => 'date',
+            'title' => 'encrypted',
+            'description' => 'encrypted',
         ];
     }
 

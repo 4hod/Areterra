@@ -151,7 +151,7 @@ class CoreRecordsSweepTest extends SweepTestCase
 
         // Welfare check
         $r = $this->post("/animals/{$a->id}/welfare-checks", [
-            'status' => 'green', 'notes' => 'Bright and active', 'fed' => true,
+            'status' => 'green', 'notes' => 'Bright and active', 'fed' => true, 'treats_given' => false,
         ]);
         $this->assertWriteOk($r, 'welfare.store');
         $this->assertNotNull(DB::table('welfare_checks')->where('animal_id', $a->id)->first(), 'welfare check not created');
@@ -159,7 +159,8 @@ class CoreRecordsSweepTest extends SweepTestCase
         // Species-wide round
         $r = $this->post('/welfare-checks/species', [
             'species' => 'Chinchilla',
-            'checks' => [['animal_id' => $a->id, 'status' => 'amber', 'notes' => 'Eating less', 'fed' => true]],
+            'verification_confirmed' => true,
+            'checks' => [['animal_id' => $a->id, 'status' => 'amber', 'notes' => 'Eating less', 'fed' => true, 'treats_given' => false]],
         ]);
         $this->assertWriteOk($r, 'welfare.species');
 

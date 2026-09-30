@@ -2,15 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class ActivityParticipant extends Model
+class ActivityParticipant extends Pivot
 {
+    public $incrementing = true;
+
+    protected $table = 'activity_participants';
+
     protected $guarded = [];
 
     protected function casts(): array
     {
-        return ['attended' => 'boolean'];
+        return [
+            'attended' => 'boolean',
+            'outcome_notes' => 'encrypted',
+        ];
     }
 
     public function activity()

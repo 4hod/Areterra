@@ -8,7 +8,10 @@ use App\Models\MemberAlert;
 use App\Models\MemberConsent;
 use App\Models\MemberContact;
 use App\Models\MemberGoal;
+use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 // Writes for the member profile tabs: Comms, Goals, Outcomes, Alerts,
 // Circle of Care, Consents, and photo upload.
@@ -16,18 +19,26 @@ class MemberProfileController extends Controller
 {
     public function storePhoto(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $request->validate([
             'photo' => ['required', 'image', 'max:8192'],
         ]);
 
-        $path = $request->file('photo')->store('member-photos', 'public');
-        $member->update(['photo_path' => '/storage/'.$path]);
+        $oldPath = PrivateMedia::path($member->photo_path);
+        $path = $request->file('photo')->store('member-photos', 'local');
+        $member->update(['photo_path' => $path]);
+
+        if ($oldPath && $oldPath !== $path) {
+            Storage::disk('local')->delete($oldPath);
+            Storage::disk('public')->delete($oldPath);
+        }
 
         return back()->with('success', 'Photo updated.');
     }
 
     public function storeComms(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $member->commsLog()->create([
             ...$request->validate([
                 'type' => ['required', 'in:'.implode(',', CommsLog::TYPES)],
@@ -46,6 +57,7 @@ class MemberProfileController extends Controller
 
     public function destroyComms(Member $member, CommsLog $comms)
     {
+        $this->ensureMemberMutable($member);
         abort_unless($comms->member_id === $member->id, 404);
         $comms->delete();
 
@@ -54,6 +66,7 @@ class MemberProfileController extends Controller
 
     public function storeContact(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $member->contacts()->create($request->validate([
             'name' => ['required', 'string', 'max:100'],
             'role' => ['nullable', 'string', 'max:100'],
@@ -68,6 +81,7 @@ class MemberProfileController extends Controller
 
     public function destroyContact(Member $member, MemberContact $contact)
     {
+        $this->ensureMemberMutable($member);
         abort_unless($contact->member_id === $member->id, 404);
         $contact->delete();
 
@@ -76,6 +90,7 @@ class MemberProfileController extends Controller
 
     public function storeGoal(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $member->goals()->create($request->validate([
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string'],
@@ -87,6 +102,7 @@ class MemberProfileController extends Controller
 
     public function updateGoal(Request $request, Member $member, MemberGoal $goal)
     {
+        $this->ensureMemberMutable($member);
         abort_unless($goal->member_id === $member->id, 404);
 
         $data = $request->validate([
@@ -103,11 +119,15 @@ class MemberProfileController extends Controller
 
     public function storeOutcome(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $member->outcomes()->create([
             ...$request->validate([
                 'date' => ['required', 'date'],
                 'outcome' => ['required', 'string'],
-                'member_goal_id' => ['nullable', 'exists:member_goals,id'],
+                'member_goal_id' => [
+                    'nullable',
+                    Rule::exists('member_goals', 'id')->where('member_id', $member->id),
+                ],
             ]),
             'user_id' => $request->user()->id,
         ]);
@@ -117,6 +137,7 @@ class MemberProfileController extends Controller
 
     public function storeAlert(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $member->alerts()->create($request->validate([
             'type' => ['required', 'in:allergy,medical,behaviour,dietary,other'],
             'text' => ['required', 'string'],
@@ -128,6 +149,7 @@ class MemberProfileController extends Controller
 
     public function destroyAlert(Member $member, MemberAlert $alert)
     {
+        $this->ensureMemberMutable($member);
         abort_unless($alert->member_id === $member->id, 404);
         $alert->delete();
 
@@ -136,10 +158,11 @@ class MemberProfileController extends Controller
 
     public function storeConsent(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $data = $request->validate([
             'consent_type' => ['required', 'in:'.implode(',', MemberConsent::TYPES)],
             'granted' => ['required', 'boolean'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['required', 'string', 'min:10'],
         ]);
 
         MemberConsent::updateOrCreate(
@@ -148,5 +171,10 @@ class MemberProfileController extends Controller
         );
 
         return back()->with('success', 'Consent recorded.');
+    }
+
+    private function ensureMemberMutable(Member $member): void
+    {
+        abort_if($member->status === 'archived', 422, 'Archived member records are read-only. Restore the member before editing.');
     }
 }
