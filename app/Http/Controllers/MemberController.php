@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -27,7 +28,7 @@ class MemberController extends Controller
                 'id' => $m->id,
                 'name' => $m->displayName(),
                 'status' => $m->status,
-                'photo_path' => $m->photo_path,
+                'photo_path' => Gate::allows('view_member_details') ? PrivateMedia::memberPhotoUrl($m) : null,
                 'attendance_days' => $m->settings?->attendance_days ?? [],
             ]);
 
@@ -51,6 +52,7 @@ class MemberController extends Controller
                 'name' => $member->displayName(),
                 'status' => $member->status,
                 'dob' => $detailed ? $member->dob?->toDateString() : null,
+                'gender' => $detailed ? $member->gender : null,
                 'nhs_number' => $detailed ? $member->nhs_number : null,
                 'support_needs' => $detailed ? $member->support_needs : null,
                 'medical_notes' => $detailed ? $member->medical_notes : null,
@@ -63,11 +65,12 @@ class MemberController extends Controller
                 'address_line2' => $member->address_line2,
                 'town' => $member->town,
                 'postcode' => $member->postcode,
-                'photo_path' => $member->photo_path,
+                'photo_path' => PrivateMedia::memberPhotoUrl($member),
                 'gp_name' => $detailed ? $member->gp_name : null,
                 'gp_practice' => $detailed ? $member->gp_practice : null,
                 'gp_phone' => $detailed ? $member->gp_phone : null,
                 'medication' => $detailed ? $member->medication : null,
+                'allergies' => $detailed ? $member->allergies : null,
                 'settings' => [
                     'transport_required' => (bool) $member->settings?->transport_required,
                     'attendance_days' => $member->settings?->attendance_days ?? [],
@@ -174,7 +177,7 @@ class MemberController extends Controller
                     'notes' => $c->notes,
                 ])
                 : [],
-            'canEdit' => Gate::allows('edit_members'),
+            'canEdit' => Gate::allows('edit_members') && $member->status !== 'archived',
         ]);
     }
 
@@ -190,6 +193,8 @@ class MemberController extends Controller
 
     public function update(Request $request, Member $member)
     {
+        abort_if($member->status === 'archived', 422, 'Archived member records are read-only. Restore the member before editing.');
+
         $data = $this->validated($request);
 
         $member->update($data['member']);
@@ -219,9 +224,13 @@ class MemberController extends Controller
             'preferred_name' => ['nullable', 'string', 'max:100'],
             'status' => ['required', 'in:active,inactive,on-leave,archived'],
             'dob' => ['nullable', 'date'],
+            'gender' => ['nullable', 'string', 'max:50'],
             'nhs_number' => ['nullable', 'string', 'max:20'],
             'support_needs' => ['nullable', 'string'],
+            'medical_notes' => ['nullable', 'string'],
+            'interests' => ['nullable', 'string'],
             'diagnoses' => ['nullable', 'string'],
+            'allergies' => ['nullable', 'string'],
             'emergency_contacts' => ['nullable', 'array'],
             'emergency_contacts.*.name' => ['required', 'string', 'max:100'],
             'emergency_contacts.*.relationship' => ['nullable', 'string', 'max:100'],

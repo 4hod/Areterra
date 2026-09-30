@@ -8,7 +8,7 @@ use App\Models\Attendance;
 use App\Models\LeaveBalance;
 use App\Models\Member;
 use App\Models\Setting;
-use App\Models\User;
+use App\Models\StaffAttendance;
 use App\Services\TodayChecklist;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,7 +22,9 @@ class DashboardController extends Controller
 
         $activeAnimals = Animal::active()->count();
         $checkedAnimals = Animal::active()
-            ->whereHas('welfareChecks', fn ($q) => $q->whereDate('created_at', $today))
+            ->whereHas('welfareChecks', fn ($q) => $q
+                ->whereDate('created_at', $today)
+                ->where('fed', true))
             ->count();
 
         // 7-day attendance trend for the dashboard sparkline.
@@ -35,7 +37,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             // Derived from the records themselves — nothing here is a stored
             // reminder. Cached for an hour so it costs nothing on page load.
-            'needsAttention' => \App\Support\DueScanner::scanThrottled(14),
+            'needsAttention' => \App\Support\DueScanner::scanThrottled(14, $user),
             'orgIsEmpty' => Member::count() === 0 && Animal::count() === 0,
             'birthdays' => Member::active()->whereNotNull('dob')->get()
                 ->filter(function ($m) {
@@ -54,8 +56,11 @@ class DashboardController extends Controller
                 ])
                 ->values(),
             'stats' => [
+                'memberRecords' => Member::active()->count(),
                 'membersInToday' => Attendance::whereDate('date', $today)->where('checked_in', true)->count(),
                 'membersScheduled' => Member::scheduledFor($today)->count(),
+                'animalsChecked' => $checkedAnimals,
+                'animalsTotal' => $activeAnimals,
                 'animalsNeedingChecks' => max(0, $activeAnimals - $checkedAnimals),
                 'attendanceTrend' => $attendanceTrend,
             ],
@@ -64,7 +69,11 @@ class DashboardController extends Controller
                 ->get(['id', 'name', 'species', 'welfare_status']),
             'checklist' => $checklist->build($today),
             'banner' => Setting::get('banner_text'),
-            'staffAvatars' => User::orderBy('name')->limit(12)->pluck('name'),
+            'staffAvatars' => StaffAttendance::whereDate('date', $today)
+                ->where('present', true)
+                ->orderBy('staff_name')
+                ->limit(12)
+                ->pluck('staff_name'),
             'leaveBalance' => LeaveBalance::remainingFor($user),
             'announcements' => Announcement::with('author:id,name')->latest()->limit(3)->get()
                 ->map(fn ($a) => [

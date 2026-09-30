@@ -97,7 +97,7 @@ class OperationsSweepTest extends SweepTestCase
             'due_date' => now()->addWeek()->toDateString(),
             'assigned_to' => $this->admin->id,
         ]), 'tasks.store');
-        $t = Task::where('title', 'Order more bedding')->first();
+        $t = Task::all()->first(fn (Task $task) => $task->title === 'Order more bedding');
         $this->assertNotNull($t, 'task not created');
 
         $this->assertWriteOk($this->post("/tasks/{$t->id}/complete"), 'tasks.complete');
@@ -148,7 +148,7 @@ class OperationsSweepTest extends SweepTestCase
             'subject_type' => Vehicle::class,
             'subject_id' => $v->id,
         ]), 'incidents.store');
-        $i = DB::table('incidents')->where('title', 'Minibus clipped a post')->first();
+        $i = \App\Models\Incident::all()->first(fn ($incident) => $incident->title === 'Minibus clipped a post');
         $this->assertNotNull($i, 'incident not created');
 
         $this->assertWriteOk($this->put("/incidents/{$i->id}", [

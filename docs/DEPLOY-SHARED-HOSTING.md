@@ -54,6 +54,12 @@ APP_NAME="Areterra Hub"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://hub.areterra.co.uk
+SESSION_ENCRYPT=true
+SESSION_LIFETIME=60
+SESSION_SECURE_COOKIE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
+REQUIRE_MICROSOFT_SSO=false
 
 DB_CONNECTION=mysql
 DB_HOST=localhost
@@ -79,14 +85,33 @@ Leave `APP_KEY` and the VAPID keys empty — the next step fills them.
 cPanel → **Terminal** (most hosts have it; if not, run each line as a
 one-off cron job):
 
+Before running migrations, take and verify a restorable database backup, copy both
+`storage/app/public` and `storage/app/private`, and securely back up the production
+`.env`/`APP_KEY`. Application-encrypted care data cannot be recovered if that key is
+lost or casually rotated.
+
 ```bash
 cd ~/hub-app
 php artisan key:generate --force
-php artisan migrate --seed --force
+php artisan migrate --force
+php artisan hub:migrate-private-media
+php artisan hub:migrate-private-media --commit
 php artisan storage:link
 php artisan webpush:vapid          # then paste the two printed keys into .env
 php artisan config:cache && php artisan route:cache
+php artisan hub:security-check
 ```
+
+The first private-media command is a dry run. Do not run `--commit` if it reports
+missing files. After the committed run, confirm member, staff and end-of-day images
+still load through the authenticated portal and are no longer retrievable from their
+old `/storage/member-photos`, `/storage/staff-photos` or
+`/storage/end-of-day-photos` URLs.
+
+For an existing installation, enable maintenance mode, take the same verified backup,
+deploy, run `php artisan migrate --force`, run the media dry run and committed run,
+rebuild the configuration cache, test with manager/staff/volunteer accounts, and only
+then leave maintenance mode.
 
 ## 7 · The scheduler cron
 
@@ -105,11 +130,23 @@ cPanel hosts normally issue a free certificate automatically (AutoSSL)
 within an hour of the subdomain existing. Check **SSL/TLS Status** and
 "Run AutoSSL" if `hub.areterra.co.uk` isn't green yet.
 
-## 9 · First login — immediately
+## 9 · First login
 
-Log in at `https://hub.areterra.co.uk` as `ekilburn@areterra.co.uk` /
-`password` and **change every seeded password before inviting anyone else**
-(the three seeded users all start with `password`).
+Production deliberately refuses to install the development seed accounts. Create the
+first named administrator using `php artisan hub:create-administrator`; it prompts for the
+password without putting it in shell history. Use a unique password of at least 12 characters,
+then configure Microsoft Entra sign-in with MFA before inviting staff.
+
+On an existing installation, run `php artisan hub:security-check`. If it reports a
+known deployment password, reset each affected account with
+`php artisan hub:reset-user-password user@example.com`, then rerun the check. The
+password is prompted securely and is never passed as a command-line argument.
+
+After tenant-specific Microsoft sign-in has been tested and Conditional Access
+requires MFA for every Hub user, set `REQUIRE_MICROSOFT_SSO=true` and rebuild the
+configuration cache. This disables the local password form and endpoint. Keep the
+hosting account recovery procedure outside the Hub; temporarily changing this value
+must be treated as a logged emergency action.
 
 Then in **Hub Settings**, set the reply-to address and, if you want
 Microsoft sign-in, the Azure Client/Tenant IDs (the settings card shows the

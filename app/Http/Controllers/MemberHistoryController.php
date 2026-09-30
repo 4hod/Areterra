@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\EndOfDayRecord;
 use App\Models\Member;
+use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -45,7 +46,7 @@ class MemberHistoryController extends Controller
                 'medication_notes' => $r->medication_notes,
                 'incident' => $r->incident,
                 'incident_detail' => $r->incident_detail,
-                'photos' => $r->photos ?? [],
+                'photos' => PrivateMedia::endOfDayPhotoUrls($member, $r),
                 'notes' => $r->notes,
                 'concern' => $r->concern,
                 'concern_detail' => $r->concern_detail,

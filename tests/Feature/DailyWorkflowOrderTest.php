@@ -62,6 +62,7 @@ class DailyWorkflowOrderTest extends TestCase
         $this->actingAs($this->staff)->post("/animals/{$this->animal->id}/welfare-checks", [
             'status' => 'green',
             'fed' => true,
+            'treats_given' => false,
         ])->assertRedirect();
 
         $this->assertDatabaseHas('welfare_checks', [

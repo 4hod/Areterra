@@ -5,7 +5,7 @@ import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import SegmentedControl from '../components/SegmentedControl';
-import { confirmDialog, promptDialog } from '../utils/dialogs';
+import { confirmDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
 
 interface Invoice {
@@ -39,6 +39,8 @@ export default function Invoices({ invoices, summary, members }: Props) {
     const [adding, setAdding] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
     const [selected, setSelected] = useState<number[]>([]);
+    const [editing, setEditing] = useState<Invoice | null>(null);
+    const [editData, setEditData] = useState({ due_date: '', status: 'sent', qb_url: '' });
     const filtered = statusFilter === 'all' ? invoices : invoices.filter((i) => i.status === statusFilter);
     const payableSelected = selected.filter((id) => {
         const inv = invoices.find((i) => i.id === id);
@@ -54,6 +56,25 @@ export default function Invoices({ invoices, summary, members }: Props) {
             preserveScroll: true,
             onSuccess: () => setSelected([]),
         });
+    }
+
+    function openEdit(invoice: Invoice) {
+        setEditing(invoice);
+        setEditData({
+            due_date: invoice.due_date ?? '',
+            status: invoice.status === 'overdue' ? 'sent' : invoice.status,
+            qb_url: invoice.qb_url ?? '',
+        });
+    }
+
+    function saveEdit(e: FormEvent) {
+        e.preventDefault();
+        if (!editing) return;
+        router.put(`/invoices/${editing.id}`, {
+            due_date: editData.due_date || null,
+            status: editData.status,
+            qb_url: editData.qb_url || null,
+        }, { onSuccess: () => setEditing(null) });
     }
 
     const { data, setData, post, processing, reset } = useForm({
@@ -165,13 +186,7 @@ export default function Invoices({ invoices, summary, members }: Props) {
                                     </button>
                                 )}
                                 <button
-                                    onClick={async () => {
-                                        const due = await promptDialog('Update due date (YYYY-MM-DD), or leave blank to keep:', i.due_date ?? '');
-                                        if (due === null) return;
-                                        const status = await promptDialog('Status (draft/sent/paid/cancelled):', i.status);
-                                        if (status === null) return;
-                                        router.put(`/invoices/${i.id}`, { due_date: due || null, status });
-                                    }}
+                                    onClick={() => openEdit(i)}
                                     className="rounded-full bg-slate-100 text-slate-500 text-xs font-bold px-2.5 py-1.5"
                                     aria-label="Edit invoice"
                                 >
@@ -231,6 +246,27 @@ export default function Invoices({ invoices, summary, members }: Props) {
                     <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
                         Track invoice
                     </button>
+                </form>
+            </Modal>
+
+            <Modal open={editing !== null} title={`Edit invoice — ${editing?.qb_reference ?? ''}`} onClose={() => setEditing(null)}>
+                <form onSubmit={saveEdit} className="space-y-3">
+                    <label className="block text-sm font-medium">
+                        Due date
+                        <input type="date" value={editData.due_date} onChange={(e) => setEditData({ ...editData, due_date: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Status
+                        <select value={editData.status} onChange={(e) => setEditData({ ...editData, status: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white">
+                            {['draft', 'sent', 'cancelled'].map((status) => <option key={status}>{status}</option>)}
+                        </select>
+                        <span className="mt-1 block text-xs text-slate-400">Use the Paid action to record payment and its date.</span>
+                    </label>
+                    <label className="block text-sm font-medium">
+                        QuickBooks link
+                        <input type="url" value={editData.qb_url} onChange={(e) => setEditData({ ...editData, qb_url: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <button type="submit" className="w-full rounded-lg bg-brand text-white font-bold py-3">Save invoice</button>
                 </form>
             </Modal>
         </AppShell>

@@ -10,6 +10,7 @@ class CareController extends Controller
 {
     public function storeAbc(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $member->abcObservations()->create([
             ...$request->validate([
                 'observed_at' => ['required', 'date'],
@@ -27,6 +28,7 @@ class CareController extends Controller
 
     public function storeBodyMap(Request $request, Member $member)
     {
+        $this->ensureMemberMutable($member);
         $member->bodyMaps()->create([
             ...$request->validate([
                 'markers' => ['required', 'array', 'min:1'],
@@ -41,5 +43,10 @@ class CareController extends Controller
         ]);
 
         return back()->with('success', 'Body map recorded.');
+    }
+
+    private function ensureMemberMutable(Member $member): void
+    {
+        abort_if($member->status === 'archived', 422, 'Archived member records are read-only. Restore the member before editing.');
     }
 }

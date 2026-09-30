@@ -19,15 +19,17 @@ class ReferralController extends Controller
     {
         $data = $request->validate([
             'referrer_name' => ['required', 'string', 'max:100'],
-            'referrer_email' => ['nullable', 'email', 'max:255'],
-            'referrer_phone' => ['nullable', 'string', 'max:30'],
+            'referrer_email' => ['nullable', 'email', 'max:255', 'required_without:referrer_phone'],
+            'referrer_phone' => ['nullable', 'string', 'max:30', 'required_without:referrer_email'],
             'organisation' => ['nullable', 'string', 'max:200'],
             'person_name' => ['required', 'string', 'max:100'],
             'details' => ['nullable', 'string', 'max:5000'],
+            'authority_confirmed' => ['accepted'],
+            'privacy_acknowledged' => ['accepted'],
             'website' => ['prohibited'], // honeypot
         ]);
 
-        Referral::create(collect($data)->except('website')->all());
+        Referral::create(collect($data)->except(['website', 'authority_confirmed', 'privacy_acknowledged'])->all());
 
         return back()->with('success', 'Thank you — your referral has been received. We\'ll be in touch soon.');
     }

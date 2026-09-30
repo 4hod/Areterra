@@ -10,6 +10,7 @@ export interface SharedProps {
     flash: { success?: string; error?: string };
     branding: { logoUrl: string | null; orgName: string };
     unreadNotifications: number;
+    pushConfigured: boolean;
     [key: string]: unknown;
 }
 

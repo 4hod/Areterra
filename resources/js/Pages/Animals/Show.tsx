@@ -103,6 +103,8 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     const [checkOpen, setCheckOpen] = useState(false);
     const [checkStatus, setCheckStatus] = useState<WelfareStatus>('green');
     const [checkNotes, setCheckNotes] = useState('');
+    const [checkFed, setCheckFed] = useState<boolean | null>(null);
+    const [checkTreats, setCheckTreats] = useState(false);
     const [monitorOpen, setMonitorOpen] = useState(false);
     const [m, setM] = useState<Monitoring>(todayMonitoring ?? emptyMonitoring());
     const [vetOpen, setVetOpen] = useState(false);
@@ -111,8 +113,16 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     function saveCheck() {
         router.post(
             `/animals/${animal.id}/welfare-checks`,
-            { status: checkStatus, notes: checkNotes, concern: checkStatus !== 'green' },
-            { onSuccess: () => setCheckOpen(false) },
+            { status: checkStatus, notes: checkNotes, concern: checkStatus !== 'green', fed: checkFed, treats_given: checkTreats },
+            {
+                onSuccess: () => {
+                    setCheckOpen(false);
+                    setCheckFed(null);
+                    setCheckTreats(false);
+                    setCheckNotes('');
+                    setCheckStatus('green');
+                },
+            },
         );
     }
 
@@ -339,7 +349,14 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         className="w-full rounded-lg border border-slate-300 p-3"
                         rows={3}
                     />
-                    <button onClick={saveCheck} className="w-full rounded-lg bg-brand text-white font-bold py-3">
+                    <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => setCheckFed(true)} className={`rounded-lg py-3 text-sm font-bold ${checkFed === true ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>🍽️ Fed</button>
+                        <button onClick={() => setCheckFed(false)} className={`rounded-lg py-3 text-sm font-bold ${checkFed === false ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-500'}`}>🚫 Not fed</button>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                        <input type="checkbox" checked={checkTreats} onChange={(e) => setCheckTreats(e.target.checked)} /> Treats given
+                    </label>
+                    <button disabled={checkFed === null} onClick={saveCheck} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
                         Save check
                     </button>
                 </div>

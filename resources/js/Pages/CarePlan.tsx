@@ -7,6 +7,14 @@ interface EmergencyContact {
     phone?: string;
 }
 
+interface CircleOfCareContact {
+    name: string;
+    role: string | null;
+    organisation: string | null;
+    email: string | null;
+    phone: string | null;
+}
+
 interface Props {
     generated_at: string;
     member: {
@@ -16,7 +24,9 @@ interface Props {
         support_needs: string | null;
         diagnoses: string | null;
         medication: string | null;
+        allergies: string | null;
         emergency_contacts: EmergencyContact[];
+        circle_of_care: CircleOfCareContact[];
         key_worker: string | null;
         transport_required: boolean;
         typical_week: string[];
@@ -97,6 +107,12 @@ export default function CarePlan({ generated_at, member, goals }: Props) {
                 </Section>
             )}
 
+            <Section title="Allergies">
+                <p className={member.allergies ? 'whitespace-pre-wrap font-semibold' : 'text-slate-400'}>
+                    {member.allergies || 'None recorded.'}
+                </p>
+            </Section>
+
             {goals.length > 0 && (
                 <Section title="Current goals">
                     <ul className="list-disc pl-5 space-y-1">
@@ -121,6 +137,28 @@ export default function CarePlan({ generated_at, member, goals }: Props) {
                                     <td className="py-1 pr-3 font-semibold">{c.name}</td>
                                     <td className="py-1 pr-3 text-slate-500">{c.relationship}</td>
                                     <td className="py-1">{c.phone}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </Section>
+
+            <Section title="Circle of care">
+                {member.circle_of_care.length === 0 ? (
+                    <p className="text-slate-400">None recorded.</p>
+                ) : (
+                    <table className="w-full text-left">
+                        <tbody>
+                            {member.circle_of_care.map((contact, i) => (
+                                <tr key={i} className="border-b border-slate-100 align-top">
+                                    <td className="py-1 pr-3 font-semibold">{contact.name}</td>
+                                    <td className="py-1 pr-3 text-slate-500">
+                                        {[contact.role, contact.organisation].filter(Boolean).join(' · ')}
+                                    </td>
+                                    <td className="py-1">
+                                        {[contact.phone, contact.email].filter(Boolean).join(' · ')}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

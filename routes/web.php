@@ -18,7 +18,6 @@ use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RiskAssessmentController;
 use App\Http\Controllers\SupervisionController;
-use App\Http\Controllers\TimeclockController;
 use App\Http\Controllers\TodayController;
 use App\Http\Controllers\TransportController;
 use App\Http\Controllers\VetRecordController;
@@ -32,8 +31,8 @@ Route::middleware('guest')->group(function () {
 });
 
 // Microsoft SSO (Azure OAuth2). Callback path matches the legacy Hub.
-Route::get('/auth/microsoft', [App\Http\Controllers\MicrosoftAuthController::class, 'redirect'])->name('microsoft.redirect');
-Route::get('/ah-ms-callback', [App\Http\Controllers\MicrosoftAuthController::class, 'callback'])->name('microsoft.callback');
+Route::get('/auth/microsoft', [App\Http\Controllers\MicrosoftAuthController::class, 'redirect'])->middleware('throttle:10,1')->name('microsoft.redirect');
+Route::get('/ah-ms-callback', [App\Http\Controllers\MicrosoftAuthController::class, 'callback'])->middleware('throttle:10,1')->name('microsoft.callback');
 
 // Public referral form — no auth.
 Route::get('/refer', [App\Http\Controllers\ReferralController::class, 'create'])->name('refer');
@@ -42,15 +41,24 @@ Route::post('/refer', [App\Http\Controllers\ReferralController::class, 'store'])
 Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    Route::get('/media/staff/{user}/photo', [App\Http\Controllers\PrivateMediaController::class, 'staffPhoto'])
+        ->name('media.staff.photo');
+    Route::middleware(['can:view_members', 'can:view_member_details'])->group(function () {
+        Route::get('/media/members/{member}/photo', [App\Http\Controllers\PrivateMediaController::class, 'memberPhoto'])
+            ->name('media.members.photo');
+        Route::get('/media/members/{member}/end-of-day/{record}/photos/{index}', [App\Http\Controllers\PrivateMediaController::class, 'endOfDayPhoto'])
+            ->whereNumber('index')->name('media.end-of-day.photo');
+    });
+
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('/today', TodayController::class)->name('today');
 
     Route::get('/members', [MemberController::class, 'index'])
         ->middleware('can:view_members')->name('members.index');
     Route::get('/members/{member}', [MemberController::class, 'show'])
-        ->middleware('can:view_members')->name('members.show');
+        ->middleware(['can:view_members', 'can:view_member_details'])->name('members.show');
     Route::get('/members/{member}/history', [App\Http\Controllers\MemberHistoryController::class, 'show'])
-        ->middleware('can:view_members')->name('members.history');
+        ->middleware(['can:view_members', 'can:view_member_details'])->name('members.history');
     Route::post('/members', [MemberController::class, 'store'])
         ->middleware('can:create_members')->name('members.store');
     Route::put('/members/{member}', [MemberController::class, 'update'])
@@ -75,27 +83,31 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:log_welfare')->name('monitoring.store');
 
     Route::get('/register', [RegisterController::class, 'index'])
-        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register');
+        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register');
     Route::post('/register/{member}/check-in', [RegisterController::class, 'checkIn'])
-        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register.check-in');
+        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register.check-in');
     Route::put('/register/{member}', [RegisterController::class, 'update'])
-        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register.update');
+        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register.update');
     Route::post('/register/{member}/absent', [RegisterController::class, 'markAbsent'])
-        ->middleware(['can:log_sessions', 'daily.step:register'])->name('register.absent');
+        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register.absent');
     Route::post('/register/cancel-day', [RegisterController::class, 'cancelDay'])
         ->middleware('can:manage_operations')->name('register.cancel-day');
+    Route::put('/register/staff/{kind}/{id}', [RegisterController::class, 'updateStaff'])
+        ->whereIn('kind', ['user', 'roster'])
+        ->whereNumber('id')
+        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register.staff.update');
 
     Route::get('/end-of-day', [EndOfDayController::class, 'index'])
-        ->middleware(['can:log_sessions', 'daily.step:end_of_day'])->name('end-of-day');
+        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:end_of_day'])->name('end-of-day');
     Route::post('/end-of-day/{member}', [EndOfDayController::class, 'store'])
-        ->middleware(['can:log_sessions', 'daily.step:end_of_day'])->name('end-of-day.store');
+        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:end_of_day'])->name('end-of-day.store');
 
     Route::post('/animals/{animal}/vet-records', [VetRecordController::class, 'store'])
         ->middleware('can:log_welfare')->name('vet-records.store');
 
     // ── Phase 2 ──────────────────────────────────────────────────────────
 
-    Route::middleware('can:log_sessions')->group(function () {
+    Route::middleware(['can:view_member_details', 'can:log_sessions'])->group(function () {
         Route::get('/transport', [TransportController::class, 'index'])->name('transport');
         Route::post('/transport/{member}/complete', [TransportController::class, 'complete'])->name('transport.complete');
         Route::post('/transport/{member}/outcome', [TransportController::class, 'outcome'])->name('transport.outcome');
@@ -109,15 +121,6 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:request_leave')->name('leave.store');
     Route::put('/leave/{leave}/review', [LeaveController::class, 'review'])
         ->middleware('can:approve_leave')->name('leave.review');
-
-    Route::middleware('can:own_timeclock')->group(function () {
-        Route::get('/timeclock', [TimeclockController::class, 'index'])->name('timeclock');
-        Route::post('/timeclock/in', [TimeclockController::class, 'clockIn'])->name('timeclock.in');
-        Route::post('/timeclock/out', [TimeclockController::class, 'clockOut'])->name('timeclock.out');
-        Route::post('/timeclock/additional', [TimeclockController::class, 'storeAdditional'])->name('timeclock.additional');
-        Route::put('/timeclock/contracts/{user}', [TimeclockController::class, 'updateContract'])->name('timeclock.contracts.update');
-        Route::put('/timeclock/{entry}', [TimeclockController::class, 'update'])->name('timeclock.update');
-    });
 
     Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements');
     Route::post('/announcements', [AnnouncementController::class, 'store'])
@@ -195,7 +198,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/risk-assessments/{riskAssessment}/sign-off', [RiskAssessmentController::class, 'signOff'])
         ->middleware('can:manage_compliance')->name('risks.sign-off');
 
-    Route::get('/reviews', [MemberReviewController::class, 'index'])->name('reviews');
+    Route::get('/reviews', [MemberReviewController::class, 'index'])
+        ->middleware('can:view_member_details')->name('reviews');
     Route::post('/reviews', [MemberReviewController::class, 'store'])
         ->middleware('can:edit_members')->name('reviews.store');
 
@@ -205,10 +209,10 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     // ── Phase 4 ──────────────────────────────────────────────────────────
 
     Route::get('/confirm-password', [AuthController::class, 'confirmShow'])->name('password.confirm');
-    Route::post('/confirm-password', [AuthController::class, 'confirm']);
+    Route::post('/confirm-password', [AuthController::class, 'confirm'])->middleware('throttle:5,1');
 
     Route::get('/account', [AuthController::class, 'account'])->name('account');
-    Route::put('/account/password', [AuthController::class, 'updatePassword'])->name('account.password');
+    Route::put('/account/password', [AuthController::class, 'updatePassword'])->middleware('throttle:5,1')->name('account.password');
     Route::put('/account/profile', [AuthController::class, 'updateProfile'])->name('account.profile');
     Route::post('/account/photo', [AuthController::class, 'updatePhoto'])->name('account.photo');
     Route::delete('/account/photo', [AuthController::class, 'removePhoto'])->name('account.photo.remove');
@@ -251,9 +255,9 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_compliance')->name('compliance.complete');
 
     Route::post('/members/{member}/abc', [App\Http\Controllers\CareController::class, 'storeAbc'])
-        ->middleware('can:log_sessions')->name('abc.store');
+        ->middleware(['can:view_member_details', 'can:log_sessions'])->name('abc.store');
     Route::post('/members/{member}/body-maps', [App\Http\Controllers\CareController::class, 'storeBodyMap'])
-        ->middleware('can:log_sessions')->name('body-maps.store');
+        ->middleware(['can:view_member_details', 'can:log_sessions'])->name('body-maps.store');
     Route::get('/members/{member}/sar', [App\Http\Controllers\SarController::class, 'show'])
         ->middleware('can:edit_members')->name('members.sar');
     Route::get('/members/{member}/care-plan', [App\Http\Controllers\CarePlanController::class, 'show'])
@@ -314,9 +318,9 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     // ── Checklist gap-fill ───────────────────────────────────────────────
 
     // Member profile tabs
-    Route::middleware('can:view_member_details')->group(function () {
+    Route::middleware(['can:view_member_details', 'can:edit_members'])->group(function () {
         Route::post('/members/{member}/photo', [App\Http\Controllers\MemberProfileController::class, 'storePhoto'])
-            ->middleware('can:edit_members')->name('members.photo');
+            ->name('members.photo');
         Route::post('/members/{member}/comms', [App\Http\Controllers\MemberProfileController::class, 'storeComms'])->name('comms.store');
         Route::delete('/members/{member}/comms/{comms}', [App\Http\Controllers\MemberProfileController::class, 'destroyComms'])->name('comms.destroy');
         Route::post('/members/{member}/contacts', [App\Http\Controllers\MemberProfileController::class, 'storeContact'])->name('contacts.store');
@@ -366,7 +370,6 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
             Route::get('/reports/members.csv', [App\Http\Controllers\ReportsController::class, 'membersCsv'])->name('reports.members');
             Route::get('/reports/animals.csv', [App\Http\Controllers\ReportsController::class, 'animalsCsv'])->name('reports.animals');
             Route::get('/reports/activities.csv', [App\Http\Controllers\ReportsController::class, 'activitiesCsv'])->name('reports.activities');
-            Route::get('/reports/hours.csv', [App\Http\Controllers\ReportsController::class, 'hoursCsv'])->name('reports.hours');
         });
     });
 

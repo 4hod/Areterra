@@ -37,6 +37,9 @@ class Incident extends Model
             'description' => 'encrypted',
             'persons_involved' => 'encrypted',
             'injury_details' => 'encrypted',
+            'title' => 'encrypted',
+            'location' => 'encrypted',
+            'actions_taken' => 'encrypted',
         ];
     }
 

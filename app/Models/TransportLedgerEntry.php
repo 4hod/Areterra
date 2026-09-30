@@ -25,6 +25,7 @@ class TransportLedgerEntry extends Model
             'entry_date' => 'date',
             'charge_date' => 'date',
             'amount' => 'decimal:2',
+            'notes' => 'encrypted',
         ];
     }
 

@@ -17,12 +17,16 @@ class MicrosoftAuthController extends Controller
     {
         $clientId = Setting::get('ms_client_id') ?? config('services.microsoft.client_id');
         $tenant = Setting::get('ms_tenant_id') ?? config('services.microsoft.tenant_id');
+        $secret = Setting::get('ms_client_secret') ?? config('services.microsoft.client_secret');
 
         // Require an explicit tenant — accepting sign-ins via the 'common'
         // endpoint would let any Microsoft/Entra tenant (or personal account)
         // attempt to authenticate, relying solely on email-matching to keep
         // outsiders out.
-        return (bool) ($clientId && $tenant);
+        return self::validClientId($clientId)
+            && self::validTenant($tenant)
+            && is_string($secret)
+            && $secret !== '';
     }
 
     public function redirect(Request $request)
@@ -87,7 +91,7 @@ class MicrosoftAuthController extends Controller
             return redirect('/login')->with('error', 'No Hub account matches that Microsoft account — ask a manager to set one up.');
         }
 
-        Auth::login($user, remember: true);
+        Auth::login($user);
         $request->session()->regenerate();
 
         return redirect()->intended('/');
@@ -110,5 +114,24 @@ class MicrosoftAuthController extends Controller
         // configured() guarantees one of these is set before redirect()/callback()
         // are ever reached, so no 'common' fallback here.
         return Setting::get('ms_tenant_id') ?? config('services.microsoft.tenant_id');
+    }
+
+    public static function validClientId(mixed $clientId): bool
+    {
+        return is_string($clientId) && Str::isUuid($clientId);
+    }
+
+    public static function validTenant(mixed $tenant): bool
+    {
+        if (! is_string($tenant) || $tenant === '') {
+            return false;
+        }
+
+        if (in_array(mb_strtolower($tenant), ['common', 'organizations', 'consumers'], true)) {
+            return false;
+        }
+
+        return Str::isUuid($tenant)
+            || filter_var($tenant, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
     }
 }

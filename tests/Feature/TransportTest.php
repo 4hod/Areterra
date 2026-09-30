@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Member;
+use App\Models\Attendance;
+use App\Models\EndOfDayRecord;
 use App\Models\TransportLedgerEntry;
 use App\Models\TransportRun;
 use App\Models\User;
@@ -41,6 +43,27 @@ class TransportTest extends TestCase
 
     public function test_afternoon_drop_off_charges_its_own_leg(): void
     {
+        TransportRun::create([
+            'run_date' => today(),
+            'member_id' => $this->member->id,
+            'phase' => 'morning',
+            'outcome' => 'not_collected',
+            'user_id' => $this->user->id,
+        ]);
+        Attendance::create([
+            'member_id' => $this->member->id,
+            'date' => today(),
+            'status' => 'present',
+            'checked_in' => true,
+            'arrival_mood' => 'happy',
+            'recorded_by' => $this->user->id,
+        ]);
+        EndOfDayRecord::create([
+            'member_id' => $this->member->id,
+            'date' => today(),
+            'user_id' => $this->user->id,
+        ]);
+
         $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'afternoon']);
 
         // Each leg stands on its own now — a drop-off home is £2.50 whether or

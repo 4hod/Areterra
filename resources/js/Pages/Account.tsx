@@ -160,7 +160,7 @@ export default function Account({ profile }: { profile: Profile }) {
                             )}
                         </label>
                         <label className="block text-sm font-medium">
-                            New password (10+ characters)
+                            New password (12+ characters, including letters and numbers)
                             <input
                                 type="password"
                                 value={passwordForm.data.password}

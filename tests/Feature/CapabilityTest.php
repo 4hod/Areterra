@@ -77,12 +77,22 @@ class CapabilityTest extends TestCase
 
         $this->actingAs($this->user('volunteer'))
             ->get("/members/{$member->id}")
-            ->assertOk()
-            ->assertDontSee('123 456 7890');
+            ->assertForbidden();
 
         $this->actingAs($this->user('staff'))
             ->get("/members/{$member->id}")
             ->assertOk()
             ->assertSee('123 456 7890');
+    }
+
+    public function test_staff_cannot_mutate_member_profile_records_without_edit_permission(): void
+    {
+        $member = Member::create(['first_name' => 'Test', 'last_name' => 'Member']);
+
+        $this->actingAs($this->user('staff'))
+            ->post("/members/{$member->id}/goals", ['title' => 'Unauthorised goal'])
+            ->assertForbidden();
+
+        $this->assertSame(0, $member->goals()->count());
     }
 }

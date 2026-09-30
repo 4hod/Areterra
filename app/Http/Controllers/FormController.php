@@ -110,6 +110,7 @@ class FormController extends Controller
     public function submit(Request $request, string $slug)
     {
         $form = FormDefinition::where('slug', $slug)->with('fields')->firstOrFail();
+        abort_unless($form->is_active || Gate::allows('build_forms'), 404);
 
         $rules = [];
         foreach ($form->fields as $field) {
@@ -157,13 +158,17 @@ class FormController extends Controller
             return null;
         }
 
-        $model = match ($about) {
-            'member' => \App\Models\Member::class,
-            'animal' => \App\Models\Animal::class,
-            'vehicle' => \App\Models\Vehicle::class,
-            'grant' => \App\Models\Grant::class,
-            default => null,
+        [$model, $capability] = match ($about) {
+            'member' => [\App\Models\Member::class, 'view_member_details'],
+            'animal' => [\App\Models\Animal::class, 'view_animals'],
+            'vehicle' => [\App\Models\Vehicle::class, 'view_vehicles'],
+            'grant' => [\App\Models\Grant::class, 'manage_finance'],
+            default => [null, null],
         };
+
+        if ($capability) {
+            Gate::authorize($capability);
+        }
 
         return $model ? $model::find($id) : null;
     }

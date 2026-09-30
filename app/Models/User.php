@@ -132,6 +132,11 @@ class User extends Authenticatable
         return $this->hasMany(TimeclockEntry::class);
     }
 
+    public function staffAttendances()
+    {
+        return $this->morphMany(StaffAttendance::class, 'staff');
+    }
+
     public function additionalHoursEntries()
     {
         return $this->hasMany(AdditionalHoursEntry::class);

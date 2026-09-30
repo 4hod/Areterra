@@ -11,6 +11,13 @@ interface Props {
     reviews: { date: string; outcomes: string | null; actions: string | null }[];
     abc: { date: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null }[];
     transportLedger: { date: string; type: string; amount: number }[];
+    contacts: { name: string; role: string | null; organisation: string | null; email: string | null; phone: string | null; notes: string | null }[];
+    consents: { type: string; granted: boolean; recorded_on: string | null; expires_at: string | null; notes: string | null }[];
+    communications: { date: string | null; type: string; direction: string; subject: string | null; summary: string | null; contact_name: string | null; organisation: string | null; recorded_by: string | null }[];
+    goals: { title: string; description: string | null; status: string; target_date: string | null; achieved_at: string | null }[];
+    outcomes: { date: string | null; outcome: string; goal: string | null; recorded_by: string | null }[];
+    alerts: { type: string; severity: string; text: string }[];
+    bodyMaps: { recorded_at: string | null; markers: { view: string; x: number; y: number; note?: string }[]; notes: string | null; recorded_by: string | null }[];
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -24,7 +31,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     );
 }
 
-export default function Sar({ generated_at, member, attendance, endOfDay, reviews, abc, transportLedger }: Props) {
+export default function Sar({ generated_at, member, attendance, endOfDay, reviews, abc, transportLedger, contacts, consents, communications, goals, outcomes, alerts, bodyMaps }: Props) {
     const { branding } = usePage<SharedProps>().props;
 
     return (
@@ -58,13 +65,19 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                             'Preferred name': member.preferred_name,
                             Status: member.status,
                             'Date of birth': member.dob,
+                            Gender: member.gender,
                             'NHS number': member.nhs_number,
                             Phone: member.phone,
                             Email: member.email,
                             Address: member.address,
                             'Key worker': member.key_worker,
                             'Support needs': member.support_needs,
+                            'Medical notes': member.medical_notes,
+                            Interests: member.interests,
                             Diagnoses: member.diagnoses,
+                            Medication: member.medication,
+                            Allergies: member.allergies,
+                            GP: [member.gp_name, member.gp_practice, member.gp_phone].filter(Boolean).join(' · '),
                         })
                             .filter(([, v]) => v)
                             .map(([k, v]) => (
@@ -81,6 +94,75 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                         {member.emergency_contacts.map((c: any) => `${c.name}${c.relationship ? ` (${c.relationship})` : ''}${c.phone ? ` ${c.phone}` : ''}`).join('; ')}
                     </p>
                 )}
+            </Section>
+
+            <Section title={`Circle of care (${contacts.length})`}>
+                {contacts.map((contact, i) => (
+                    <div key={i} className="py-1 border-b border-slate-50">
+                        <b>{contact.name}</b>
+                        {[contact.role, contact.organisation].filter(Boolean).length > 0 && ` — ${[contact.role, contact.organisation].filter(Boolean).join(' · ')}`}
+                        {[contact.phone, contact.email].filter(Boolean).length > 0 && <div>{[contact.phone, contact.email].filter(Boolean).join(' · ')}</div>}
+                        {contact.notes && <div>Notes: {contact.notes}</div>}
+                    </div>
+                ))}
+                {contacts.length === 0 && <p className="text-slate-400">None.</p>}
+            </Section>
+
+            <Section title={`Alerts (${alerts.length})`}>
+                {alerts.map((alert, i) => (
+                    <div key={i} className="py-1 border-b border-slate-50">
+                        <b>{alert.severity.toUpperCase()} · {alert.type}</b> — {alert.text}
+                    </div>
+                ))}
+                {alerts.length === 0 && <p className="text-slate-400">None.</p>}
+            </Section>
+
+            <Section title={`Consents (${consents.length})`}>
+                {consents.map((consent, i) => (
+                    <div key={i} className="py-1 border-b border-slate-50">
+                        <b>{consent.type.replace(/_/g, ' ')}</b> — {consent.granted ? 'granted' : 'declined'}
+                        {consent.recorded_on && ` on ${new Date(consent.recorded_on).toLocaleDateString('en-GB')}`}
+                        {consent.expires_at && ` · review by ${new Date(consent.expires_at).toLocaleDateString('en-GB')}`}
+                        {consent.notes && <div>Notes: {consent.notes}</div>}
+                    </div>
+                ))}
+                {consents.length === 0 && <p className="text-slate-400">None.</p>}
+            </Section>
+
+            <Section title={`Goals (${goals.length})`}>
+                {goals.map((goal, i) => (
+                    <div key={i} className="py-1 border-b border-slate-50">
+                        <b>{goal.title}</b> — {goal.status}
+                        {goal.target_date && ` · target ${new Date(goal.target_date).toLocaleDateString('en-GB')}`}
+                        {goal.description && <div>{goal.description}</div>}
+                    </div>
+                ))}
+                {goals.length === 0 && <p className="text-slate-400">None.</p>}
+            </Section>
+
+            <Section title={`Outcomes (${outcomes.length})`}>
+                {outcomes.map((outcome, i) => (
+                    <div key={i} className="py-1 border-b border-slate-50">
+                        <b>{outcome.date ? new Date(outcome.date).toLocaleDateString('en-GB') : 'Undated'}</b>
+                        {outcome.goal && ` · ${outcome.goal}`}
+                        <div>{outcome.outcome}</div>
+                        {outcome.recorded_by && <div className="text-slate-500">Recorded by {outcome.recorded_by}</div>}
+                    </div>
+                ))}
+                {outcomes.length === 0 && <p className="text-slate-400">None.</p>}
+            </Section>
+
+            <Section title={`Communications (${communications.length})`}>
+                {communications.map((communication, i) => (
+                    <div key={i} className="py-1 border-b border-slate-50">
+                        <b>{communication.date ? new Date(communication.date).toLocaleDateString('en-GB') : 'Undated'} · {communication.type} · {communication.direction}</b>
+                        {communication.subject && ` — ${communication.subject}`}
+                        {communication.summary && <div>{communication.summary}</div>}
+                        {[communication.contact_name, communication.organisation].filter(Boolean).length > 0 && <div>Contact: {[communication.contact_name, communication.organisation].filter(Boolean).join(' · ')}</div>}
+                        {communication.recorded_by && <div className="text-slate-500">Recorded by {communication.recorded_by}</div>}
+                    </div>
+                ))}
+                {communications.length === 0 && <p className="text-slate-400">None.</p>}
             </Section>
 
             <Section title={`Attendance (${attendance.length} records)`}>
@@ -131,6 +213,21 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                     </div>
                 ))}
                 {abc.length === 0 && <p className="text-slate-400">None.</p>}
+            </Section>
+
+            <Section title={`Body maps (${bodyMaps.length})`}>
+                {bodyMaps.map((bodyMap, i) => (
+                    <div key={i} className="py-1 border-b border-slate-50">
+                        <b>{bodyMap.recorded_at ? new Date(bodyMap.recorded_at.replace(' ', 'T')).toLocaleString('en-GB') : 'Undated'}</b>
+                        <div>{bodyMap.markers.length} marker{bodyMap.markers.length === 1 ? '' : 's'}</div>
+                        {bodyMap.markers.map((marker, markerIndex) => (
+                            <div key={markerIndex}>{marker.view} ({marker.x}%, {marker.y}%){marker.note ? ` — ${marker.note}` : ''}</div>
+                        ))}
+                        {bodyMap.notes && <div>Notes: {bodyMap.notes}</div>}
+                        {bodyMap.recorded_by && <div className="text-slate-500">Recorded by {bodyMap.recorded_by}</div>}
+                    </div>
+                ))}
+                {bodyMaps.length === 0 && <p className="text-slate-400">None.</p>}
             </Section>
 
             <Section title={`Transport ledger (${transportLedger.length} entries)`}>

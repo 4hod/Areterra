@@ -43,6 +43,8 @@ class GovernanceTest extends TestCase
             'status' => 'amber',
             'concern' => true,
             'notes' => 'Off his food',
+            'fed' => false,
+            'treats_given' => false,
         ])->assertRedirect();
 
         Notification::assertSentTo($manager, ConcernRaised::class);

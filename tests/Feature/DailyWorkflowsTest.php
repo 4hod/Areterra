@@ -9,7 +9,6 @@ use App\Models\Member;
 use App\Models\ProductOrder;
 use App\Models\Recognition;
 use App\Models\Task;
-use App\Models\TimeclockEntry;
 use App\Models\User;
 use App\Models\WelfareCheck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -87,6 +86,8 @@ class DailyWorkflowsTest extends TestCase
             'status' => 'amber',
             'concern' => true,
             'notes' => 'Off his food.',
+            'fed' => false,
+            'treats_given' => false,
         ])->assertRedirect();
 
         $this->assertSame(1, $rico->welfareChecks()->count());
@@ -135,6 +136,10 @@ class DailyWorkflowsTest extends TestCase
         $amy = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
         $amy->settings()->create(['attendance_days' => [today()->isoWeekday()], 'transport_required' => true]);
 
+        \App\Models\TransportRun::create([
+            'run_date' => today(), 'member_id' => $amy->id,
+            'phase' => 'morning', 'outcome' => 'not_collected',
+        ]);
         \App\Models\TransportRun::create([
             'run_date' => today(), 'member_id' => $amy->id,
             'phase' => 'afternoon', 'outcome' => 'not_collected',
@@ -186,20 +191,6 @@ class DailyWorkflowsTest extends TestCase
         $this->assertNotNull($order, 'The order was not saved.');
         $this->assertSame('pending', $order->status);
         $this->assertSame($this->staff->id, $order->requested_by);
-    }
-
-    // ----------------------------------------------------------- timeclock
-
-    public function test_clocking_in_and_out_records_a_shift(): void
-    {
-        $this->actingAs($this->staff)->post('/timeclock/in')->assertRedirect();
-
-        $entry = TimeclockEntry::where('user_id', $this->staff->id)->first();
-        $this->assertNotNull($entry, 'No timeclock entry was created.');
-        $this->assertNull($entry->clock_out);
-
-        $this->actingAs($this->staff)->post('/timeclock/out')->assertRedirect();
-        $this->assertNotNull($entry->fresh()->clock_out, 'Clocking out did not close the shift.');
     }
 
     // ---------------------------------------------------------- recognition

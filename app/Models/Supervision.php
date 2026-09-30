@@ -20,6 +20,9 @@ class Supervision extends Model
             'date' => 'date',
             'next_due_date' => 'date',
             'staff_signed_off' => 'boolean',
+            'discussion' => 'encrypted',
+            'actions_agreed' => 'encrypted',
+            'development_notes' => 'encrypted',
         ];
     }
 

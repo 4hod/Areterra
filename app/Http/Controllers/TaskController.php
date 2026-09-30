@@ -5,13 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class TaskController extends Controller
 {
     public function index(Request $request)
     {
-        $tasks = Task::query()
+        $visible = Task::query()
+            ->when(! Gate::allows('manage_operations'), fn ($q) => $q->where(function ($owned) use ($request) {
+                $owned->where('assigned_to', $request->user()->id)
+                    ->orWhere('created_by', $request->user()->id);
+            }));
+
+        $tasks = (clone $visible)
             ->with(['taskable', 'assignee'])
             ->when($request->query('show') !== 'done', fn ($q) => $q->open())
             ->when($request->query('show') === 'done', fn ($q) => $q->whereNotNull('completed_at')->latest('completed_at'))
@@ -29,7 +36,7 @@ class TaskController extends Controller
                 'completed_at' => $t->completed_at?->toDateString(),
                 'assignee' => $t->assignee?->name,
                 // Which record this is about — the whole point of a shared task list.
-                'about' => $t->taskable ? [
+                'about' => $t->taskable && (! ($t->taskable instanceof \App\Models\Member) || Gate::allows('view_member_details')) ? [
                     'type' => class_basename($t->taskable_type),
                     'name' => $t->taskable->name
                         ?? (method_exists($t->taskable, 'displayName') ? $t->taskable->displayName() : null)
@@ -45,9 +52,10 @@ class TaskController extends Controller
             'show' => $request->query('show', 'open'),
             'mine' => (bool) $request->query('mine'),
             'staff' => User::orderBy('name')->get(['id', 'name']),
+            'canManage' => Gate::allows('manage_operations'),
             'counts' => [
-                'open' => Task::open()->count(),
-                'overdue' => Task::overdue()->count(),
+                'open' => (clone $visible)->open()->count(),
+                'overdue' => (clone $visible)->overdue()->count(),
             ],
         ]);
     }
@@ -62,6 +70,11 @@ class TaskController extends Controller
             'assigned_to' => ['nullable', 'exists:users,id'],
         ]);
 
+        if (! Gate::allows('manage_operations')) {
+            abort_if(isset($data['assigned_to']) && (int) $data['assigned_to'] !== $request->user()->id, 403);
+            $data['assigned_to'] = $request->user()->id;
+        }
+
         Task::create([...$data, 'created_by' => $request->user()->id]);
 
         return back()->with('success', 'Task added.');
@@ -69,6 +82,7 @@ class TaskController extends Controller
 
     public function complete(Request $request, Task $task)
     {
+        $this->authorizeTask($request, $task);
         $task->update([
             'completed_at' => now(),
             'completed_by' => $request->user()->id,
@@ -77,8 +91,9 @@ class TaskController extends Controller
         return back()->with('success', 'Task completed.');
     }
 
-    public function reopen(Task $task)
+    public function reopen(Request $request, Task $task)
     {
+        $this->authorizeTask($request, $task);
         $task->update(['completed_at' => null, 'completed_by' => null]);
 
         return back()->with('success', 'Task reopened.');
@@ -86,12 +101,27 @@ class TaskController extends Controller
 
     public function update(Request $request, Task $task)
     {
-        $task->update($request->validate([
+        $this->authorizeTask($request, $task);
+        $data = $request->validate([
             'assigned_to' => ['nullable', 'exists:users,id'],
             'due_date' => ['nullable', 'date'],
             'priority' => ['nullable', 'in:low,medium,high'],
-        ]));
+        ]);
+        if (! Gate::allows('manage_operations')) {
+            abort_if(array_key_exists('assigned_to', $data) && (int) $data['assigned_to'] !== $request->user()->id, 403);
+        }
+        $task->update($data);
 
         return back()->with('success', 'Task updated.');
+    }
+
+    private function authorizeTask(Request $request, Task $task): void
+    {
+        abort_unless(
+            Gate::allows('manage_operations')
+            || $task->assigned_to === $request->user()->id
+            || $task->created_by === $request->user()->id,
+            403,
+        );
     }
 }

@@ -28,13 +28,14 @@ function urlBase64ToUint8Array(base64: string) {
     return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
-function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ on, onChange, disabled = false }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
     return (
         <button
             type="button"
-            onClick={() => onChange(!on)}
+            onClick={() => !disabled && onChange(!on)}
+            disabled={disabled}
             aria-pressed={on}
-            className={`w-12 h-7 rounded-full relative transition ${on ? 'bg-brand' : 'bg-slate-300'}`}
+            className={`w-12 h-7 rounded-full relative transition disabled:cursor-not-allowed disabled:opacity-50 ${on ? 'bg-brand' : 'bg-slate-300'}`}
         >
             <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${on ? 'left-6' : 'left-1'}`} />
         </button>
@@ -117,7 +118,7 @@ export default function NotificationPrefs({ prefs, vapidPublicKey, hasSubscripti
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <span className="font-semibold text-sm">Push notifications</span>
-                            <Toggle on={data.push_enabled} onChange={(v) => setData('push_enabled', v)} />
+                            <Toggle on={vapidPublicKey ? data.push_enabled : false} disabled={!vapidPublicKey} onChange={(v) => setData('push_enabled', v)} />
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="font-semibold text-sm">Email notifications</span>

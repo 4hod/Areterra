@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'daily.step' => \App\Http\Middleware\EnforceDailyWorkflowOrder::class,
         ]);
         $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
             HandleInertiaRequests::class,
         ]);
         $middleware->redirectGuestsTo('/login');

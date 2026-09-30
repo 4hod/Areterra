@@ -21,6 +21,9 @@ class CommsLog extends Model
         return [
             'date' => 'date',
             'summary' => 'encrypted',
+            'subject' => 'encrypted',
+            'contact_name' => 'encrypted',
+            'organisation' => 'encrypted',
         ];
     }
 

@@ -16,6 +16,8 @@ class MemberReview extends Model
         return [
             'review_date' => 'date',
             'next_review_date' => 'date',
+            'outcomes' => 'encrypted',
+            'actions' => 'encrypted',
         ];
     }
 

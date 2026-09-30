@@ -11,6 +11,11 @@ class FormSubmissionData extends Model
 
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return ['value' => 'encrypted'];
+    }
+
     public function field()
     {
         return $this->belongsTo(FormField::class, 'field_id');

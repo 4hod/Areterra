@@ -3,6 +3,7 @@ import AppShell, { NAV_SECTIONS, allowed } from '../components/AppShell';
 import Card from '../components/Card';
 import { SharedProps } from '../types';
 import ModuleHero from '../components/ModuleHero';
+import AppIcon from '../components/AppIcon';
 
 export default function More() {
     const { auth } = usePage<SharedProps>().props;
@@ -25,9 +26,7 @@ export default function More() {
                                         href={item.href}
                                         className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-3 font-semibold text-sm text-brand-dark hover:bg-slate-50"
                                     >
-                                        <span className="text-xl" aria-hidden>
-                                            {item.icon}
-                                        </span>
+                                        <AppIcon name={item.icon} className="h-5 w-5 text-brand" />
                                         {item.label}
                                     </Link>
                                 ))}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DirectoryContact;
 use App\Models\StaffRosterMember;
 use App\Models\User;
+use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -20,7 +21,7 @@ class DirectoryController extends Controller
             'email' => $u->email,
             'phone' => $u->phone,
             'bio' => $u->bio,
-            'photo_path' => $u->photo_path,
+            'photo_path' => PrivateMedia::staffPhotoUrl($u),
             'has_account' => true,
         ]);
 

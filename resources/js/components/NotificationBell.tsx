@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
+import AppIcon from './AppIcon';
 
 interface Notif {
     id: string;
@@ -55,9 +56,9 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
             <button
                 onClick={toggle}
                 aria-label="Notifications"
-                className="relative hidden md:flex h-10 w-10 rounded-full hover:bg-black/5 items-center justify-center text-lg"
+                className="portal-notification-button relative hidden md:flex"
             >
-                🔔
+                <AppIcon name="bell"/>
                 {unreadCount > 0 && (
                     <span className="absolute top-1 right-1.5 h-4 min-w-4 px-1 rounded-full bg-status-red text-white text-[10px] font-bold flex items-center justify-center">
                         {unreadCount > 9 ? '9+' : unreadCount}
@@ -78,7 +79,7 @@ export default function NotificationBell({ unreadCount }: { unreadCount: number 
                         )}
                         {!loading && notifications.length === 0 && (
                             <div className="text-center py-8">
-                                <span className="text-2xl block mb-1 opacity-40" aria-hidden>🔔</span>
+                                <AppIcon name="bell" className="h-6 w-6 mx-auto mb-2 text-slate-300" />
                                 <p className="text-sm text-ink/40">Nothing to show yet.</p>
                             </div>
                         )}

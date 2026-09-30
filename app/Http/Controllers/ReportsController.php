@@ -7,7 +7,6 @@ use App\Models\Animal;
 use App\Models\Attendance;
 use App\Models\EndOfDayRecord;
 use App\Models\Member;
-use App\Models\TimeclockEntry;
 use App\Models\WelfareCheck;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,12 +28,6 @@ class ReportsController extends Controller
                 'sessionsRecorded' => EndOfDayRecord::whereBetween('date', [$from, $to])->count(),
                 'welfareChecks' => WelfareCheck::whereBetween('created_at', [$from, $to->copy()->endOfDay()])->count(),
                 'activities' => Activity::whereBetween('activity_date', [$from, $to])->count(),
-                'staffHours' => round(
-                    TimeclockEntry::whereBetween('clock_in', [$from, $to->copy()->endOfDay()])
-                        ->whereNotNull('clock_out')->get()
-                        ->sum(fn ($e) => $e->workedMinutes() ?? 0) / 60,
-                    1,
-                ),
             ],
         ]);
     }
@@ -80,26 +73,6 @@ class ReportsController extends Controller
                     $a->user->name,
                 ]),
         );
-    }
-
-    public function hoursCsv(Request $request): StreamedResponse
-    {
-        $from = $request->date('from') ?? today()->startOfMonth();
-        $to = $request->date('to') ?? today();
-
-        $rows = TimeclockEntry::with('user:id,name')
-            ->whereBetween('clock_in', [$from, $to->copy()->endOfDay()])
-            ->whereNotNull('clock_out')
-            ->get()
-            ->groupBy('user_id')
-            ->map(fn ($entries) => [
-                $entries->first()->user->name,
-                $entries->count(),
-                round($entries->sum(fn ($e) => $e->workedMinutes() ?? 0) / 60, 2),
-            ])
-            ->values();
-
-        return $this->csv('hours.csv', ['Staff', 'Shifts', 'Hours'], $rows);
     }
 
     private function csv(string $filename, array $headers, $rows): StreamedResponse

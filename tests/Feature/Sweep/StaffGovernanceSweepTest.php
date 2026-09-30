@@ -27,45 +27,6 @@ class StaffGovernanceSweepTest extends SweepTestCase
         $this->assertSame('approved', DB::table('leave_requests')->find($l->id)->status);
     }
 
-    public function test_timeclock_in_out_and_correction(): void
-    {
-        $this->get('/timeclock')->assertOk();
-
-        $this->assertWriteOk($this->post('/timeclock/in'), 'timeclock.in');
-        $e = DB::table('timeclock_entries')->where('user_id', $this->admin->id)->first();
-        $this->assertNotNull($e, 'clock-in not recorded');
-        $this->assertNull($e->clock_out, 'clock_out set on clock-in');
-
-        $this->assertWriteOk($this->post('/timeclock/out', ['break_minutes' => 30]), 'timeclock.out');
-        $this->assertNotNull(DB::table('timeclock_entries')->find($e->id)->clock_out, 'clock-out not recorded');
-
-        $this->assertWriteOk($this->put("/timeclock/{$e->id}", [
-            'clock_in' => now()->subHours(8)->toDateTimeString(),
-            'clock_out' => now()->toDateTimeString(),
-            'break_minutes' => 45, 'notes' => 'Forgot to clock out.',
-        ]), 'timeclock.update');
-        $this->assertEquals(45, DB::table('timeclock_entries')->find($e->id)->break_minutes);
-    }
-
-    public function test_additional_hours_and_contracts(): void
-    {
-        $this->assertWriteOk($this->post('/timeclock/additional', [
-            'work_date' => today()->toDateString(),
-            'hours' => 2.5,
-            'notes' => 'Covered an evening event.',
-        ]), 'timeclock.additional');
-
-        $this->assertDatabaseHas('additional_hours_entries', [
-            'user_id' => $this->admin->id,
-            'minutes' => 150,
-        ]);
-
-        $this->assertWriteOk($this->put("/timeclock/contracts/{$this->admin->id}", [
-            'contracted_hours' => 37.5,
-        ]), 'timeclock.contracts.update');
-        $this->assertEquals(37.5, $this->admin->fresh()->contracted_hours);
-    }
-
     public function test_directory_contacts_can_be_added_and_removed(): void
     {
         $this->assertWriteOk($this->post('/directory/contacts', [
@@ -246,6 +207,7 @@ class StaffGovernanceSweepTest extends SweepTestCase
         $this->post('/refer', [
             'referrer_name' => 'GP Surgery', 'referrer_email' => 'gp@example.test',
             'person_name' => 'New Person', 'details' => 'Would benefit from animal contact.',
+            'authority_confirmed' => true, 'privacy_acknowledged' => true,
         ]);
         $ref = DB::table('referrals')->first();
         $this->assertNotNull($ref, 'public referral not created');
@@ -345,7 +307,7 @@ class StaffGovernanceSweepTest extends SweepTestCase
             '/', '/today', '/directory', '/calendar', '/search?q=test',
             '/audit', '/audit-log', '/reports', '/import', '/more', '/email',
             '/reports/members.csv', '/reports/animals.csv',
-            '/reports/activities.csv', '/reports/hours.csv',
+            '/reports/activities.csv',
         ] as $url) {
             $r = $this->get($url);
             $this->assertTrue(

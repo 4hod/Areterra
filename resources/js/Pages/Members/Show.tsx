@@ -38,12 +38,14 @@ interface Props {
         preferred_name: string | null;
         status: string;
         dob: string | null;
+        gender: string | null;
         nhs_number: string | null;
         support_needs: string | null;
         medical_notes: string | null;
         interests: string | null;
         diagnoses: string | null;
         medication: string | null;
+        allergies: string | null;
         emergency_contacts: EmergencyContact[];
         phone: string | null;
         email: string | null;
@@ -109,10 +111,14 @@ export default function Show(props: Props) {
         preferred_name: member.preferred_name ?? '',
         status: member.status,
         dob: member.dob ?? '',
+        gender: member.gender ?? '',
         nhs_number: member.nhs_number ?? '',
         support_needs: member.support_needs ?? '',
+        medical_notes: member.medical_notes ?? '',
+        interests: member.interests ?? '',
         diagnoses: member.diagnoses ?? '',
         medication: member.medication ?? '',
+        allergies: member.allergies ?? '',
         phone: member.phone ?? '',
         email: member.email ?? '',
         address_line1: member.address_line1 ?? '',
@@ -194,8 +200,14 @@ export default function Show(props: Props) {
                 ← Back
             </Link>
 
+            {!canEdit && member.status === 'archived' && (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                    Archived record — this profile is read-only. Restore the member from the members list before making changes.
+                </div>
+            )}
+
             {/* Header */}
-            <div className="flex items-center gap-4 mb-2">
+            <div className="flex flex-wrap items-center gap-4 mb-2">
                 <div className="relative">
                     {member.photo_path ? (
                         <img src={member.photo_path} alt={member.name} className="h-16 w-16 rounded-full object-cover" />
@@ -230,21 +242,21 @@ export default function Show(props: Props) {
                     </div>
                     <StatusPill status={member.status} />
                 </div>
-                <div className="ml-auto flex gap-1.5">
+                <div className="ml-auto flex max-w-full flex-wrap justify-end gap-1.5">
                     <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
                         🖨 Print
                     </button>
                     <Link href={`/members/${member.id}/history`} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
                         📜 Full History
                     </Link>
+                    <a href={`/members/${member.id}/care-plan`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
+                        🗓️ Care Plan
+                    </a>
+                    <a href={`/members/${member.id}/sar`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
+                        📄 SAR
+                    </a>
                     {canEdit && (
                         <>
-                            <a href={`/members/${member.id}/care-plan`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                                🗓️ Care Plan
-                            </a>
-                            <a href={`/members/${member.id}/sar`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                                📄 SAR
-                            </a>
                             <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2">
                                 ✏️ Edit Profile
                             </button>
@@ -289,6 +301,12 @@ export default function Show(props: Props) {
                                     <dd className="font-semibold">{member.nhs_number}</dd>
                                 </div>
                             )}
+                            {member.gender && (
+                                <div>
+                                    <dt className="text-slate-400 font-medium">Gender</dt>
+                                    <dd className="font-semibold">{member.gender}</dd>
+                                </div>
+                            )}
                             {member.phone && (
                                 <div>
                                     <dt className="text-slate-400 font-medium">Phone</dt>
@@ -315,6 +333,10 @@ export default function Show(props: Props) {
                             <div>
                                 <dt className="text-slate-400 font-medium">Medication</dt>
                                 <dd className="font-medium whitespace-pre-wrap">{member.medication || '—'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-slate-400 font-medium">Allergies</dt>
+                                <dd className="font-medium whitespace-pre-wrap">{member.allergies || '—'}</dd>
                             </div>
                             <div>
                                 <dt className="text-slate-400 font-medium">Support needs</dt>
@@ -362,6 +384,25 @@ export default function Show(props: Props) {
                                 </li>
                             ))}
                         </ul>
+                        {contacts.length > 0 && (
+                            <>
+                                <h3 className="mt-4 border-t border-slate-100 pt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Circle of care</h3>
+                                <ul className="divide-y divide-slate-100 text-sm">
+                                    {contacts.map((contact) => (
+                                        <li key={contact.id} className="py-2 flex items-start justify-between gap-3">
+                                            <div>
+                                                <div className="font-semibold">{contact.name}</div>
+                                                <div className="text-slate-400">{[contact.role, contact.organisation].filter(Boolean).join(' · ')}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                {contact.phone && <a href={`tel:${contact.phone}`} className="block text-brand font-semibold">{contact.phone}</a>}
+                                                {contact.email && <a href={`mailto:${contact.email}`} className="block text-brand">{contact.email}</a>}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
                     </Card>
                 </div>
             )}
@@ -420,14 +461,16 @@ export default function Show(props: Props) {
             {/* ── Comms ── */}
             {tab === '📞 Comms' && (
                 <div>
-                    <div className="flex gap-2 mb-3">
-                        <button onClick={() => setAddingComms(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5">
-                            + Log communication
-                        </button>
-                        <a href={`/email?member=${member.id}`} className="rounded-full bg-brand-dark text-white font-semibold text-sm px-4 py-2.5">
-                            ✉️ Compose Email
-                        </a>
-                    </div>
+                    {canEdit && (
+                        <div className="flex gap-2 mb-3">
+                            <button onClick={() => setAddingComms(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5">
+                                + Log communication
+                            </button>
+                            <a href={`/email?member=${member.id}`} className="rounded-full bg-brand-dark text-white font-semibold text-sm px-4 py-2.5">
+                                ✉️ Compose Email
+                            </a>
+                        </div>
+                    )}
                     <Card title="Timeline">
                         {commsLog.length === 0 && <p className="text-sm text-slate-400">No communications logged.</p>}
                         <ul className="divide-y divide-slate-100">
@@ -440,13 +483,13 @@ export default function Show(props: Props) {
                                         </span>
                                         <span className="text-xs text-slate-400 flex items-center gap-2">
                                             {fmt(c.date)} · {c.user}
-                                            <button
+                                            {canEdit && <button
                                                 onClick={async () => (await confirmDialog('Delete this entry?')) && router.delete(`/members/${member.id}/comms/${c.id}`)}
                                                 className="text-red-400 hover:text-red-600 font-bold"
                                                 aria-label="Delete entry"
                                             >
                                                 ✕
-                                            </button>
+                                            </button>}
                                         </span>
                                     </div>
                                     {(c.contact_name || c.organisation) && (
@@ -463,9 +506,9 @@ export default function Show(props: Props) {
             {/* ── Goals ── */}
             {tab === 'Goals' && (
                 <div>
-                    <button onClick={() => setAddingGoal(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                    {canEdit && <button onClick={() => setAddingGoal(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
                         + Add goal
-                    </button>
+                    </button>}
                     {goals.length === 0 && <Card><p className="text-sm text-slate-400">No goals set yet.</p></Card>}
                     <div className="space-y-2">
                         {goals.map((g) => (
@@ -483,6 +526,7 @@ export default function Show(props: Props) {
                                     </div>
                                     <select
                                         value={g.status}
+                                        disabled={!canEdit}
                                         onChange={(e) => router.put(`/members/${member.id}/goals/${g.id}`, { status: e.target.value })}
                                         className="rounded-lg border border-slate-200 text-xs font-bold !min-h-9 px-2 bg-white capitalize"
                                     >
@@ -498,9 +542,9 @@ export default function Show(props: Props) {
             {/* ── Outcomes ── */}
             {tab === 'Outcomes' && (
                 <div>
-                    <button onClick={() => setAddingOutcome(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                    {canEdit && <button onClick={() => setAddingOutcome(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
                         + Record outcome
-                    </button>
+                    </button>}
                     <Card title="Outcomes">
                         {outcomes.length === 0 && <p className="text-sm text-slate-400">No outcomes recorded.</p>}
                         <ul className="divide-y divide-slate-100 text-sm">
@@ -521,9 +565,9 @@ export default function Show(props: Props) {
             {/* ── Alerts ── */}
             {tab === '⚠ Alerts' && (
                 <div>
-                    <button onClick={() => setAddingAlert(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                    {canEdit && <button onClick={() => setAddingAlert(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
                         + Add alert
-                    </button>
+                    </button>}
                     {alerts.length === 0 && <Card><p className="text-sm text-slate-400">No alerts.</p></Card>}
                     <div className="space-y-2">
                         {alerts.map((a) => (
@@ -552,9 +596,9 @@ export default function Show(props: Props) {
             {/* ── Circle of Care ── */}
             {tab === 'Circle of Care' && (
                 <div>
-                    <button onClick={() => setAddingContact(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                    {canEdit && <button onClick={() => setAddingContact(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
                         + Add contact
-                    </button>
+                    </button>}
                     {contacts.length === 0 && <Card><p className="text-sm text-slate-400">No contacts in the circle of care yet.</p></Card>}
                     <div className="space-y-2">
                         {contacts.map((c) => (
@@ -570,13 +614,13 @@ export default function Show(props: Props) {
                                             {c.phone && <a href={`tel:${c.phone}`} className="text-brand font-semibold">📞 {c.phone}</a>}
                                         </div>
                                     </div>
-                                    <button
+                                    {canEdit && <button
                                         onClick={async () => (await confirmDialog('Remove this contact?')) && router.delete(`/members/${member.id}/contacts/${c.id}`)}
                                         className="text-red-400 font-bold shrink-0"
                                         aria-label="Remove contact"
                                     >
                                         ✕
-                                    </button>
+                                    </button>}
                                 </div>
                             </Card>
                         ))}
@@ -605,11 +649,14 @@ export default function Show(props: Props) {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex gap-1">
+                                    {canEdit && <div className="flex gap-1">
                                         {[true, false].map((granted) => (
                                             <button
                                                 key={String(granted)}
-                                                onClick={() => router.post(`/members/${member.id}/consents`, { consent_type: type, granted })}
+                                                onClick={async () => {
+                                                    const notes = await promptDialog(`Record who gave or declined ${label} consent, their authority, and the evidence checked.`);
+                                                    if (notes?.trim()) router.post(`/members/${member.id}/consents`, { consent_type: type, granted, notes });
+                                                }}
                                                 className={`rounded-full px-3 py-1.5 text-xs font-bold ${
                                                     c?.granted === granted
                                                         ? granted ? 'bg-status-green text-white' : 'bg-status-red text-white'
@@ -619,7 +666,7 @@ export default function Show(props: Props) {
                                                 {granted ? '✓ Granted' : '✕ Declined'}
                                             </button>
                                         ))}
-                                    </div>
+                                    </div>}
                                 </li>
                             );
                         })}
@@ -630,9 +677,9 @@ export default function Show(props: Props) {
             {/* ── Body Map ── */}
             {tab === 'Body Map' && (
                 <div>
-                    <button onClick={() => setAddingMap(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                    {canEdit && <button onClick={() => setAddingMap(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
                         + New body map
-                    </button>
+                    </button>}
                     {bodyMaps.length === 0 && <Card><p className="text-sm text-slate-400">No body maps recorded.</p></Card>}
                     <div className="space-y-3">
                         {bodyMaps.map((b) => (
@@ -660,9 +707,9 @@ export default function Show(props: Props) {
             {/* ── ABC Obs ── */}
             {tab === 'ABC Obs' && (
                 <div>
-                    <button onClick={() => setAddingAbc(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                    {canEdit && <button onClick={() => setAddingAbc(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
                         + Record observation
-                    </button>
+                    </button>}
                     <Card title="ABC observations">
                         {abcObservations.length === 0 && <p className="text-sm text-slate-400">No observations recorded.</p>}
                         <ul className="divide-y divide-slate-100 text-sm">
@@ -804,10 +851,17 @@ export default function Show(props: Props) {
                             {['active', 'inactive', 'on-leave', 'archived'].map((s) => <option key={s}>{s}</option>)}
                         </select>
                     </label>
+                    <label className="block text-sm font-medium">
+                        Gender
+                        <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white">
+                            <option value="">Not recorded</option>
+                            {['Female', 'Male', 'Non-binary', 'Other', 'Prefer not to say'].map((gender) => <option key={gender}>{gender}</option>)}
+                        </select>
+                    </label>
                 </div>
                 <div className="mt-3 space-y-3">
                     {(
-                        [['diagnoses', 'Diagnoses'], ['medication', 'Medication'], ['support_needs', 'Support needs']] as const
+                        [['diagnoses', 'Diagnoses'], ['allergies', 'Allergies'], ['medication', 'Medication'], ['support_needs', 'Support needs'], ['medical_notes', 'Medical notes'], ['interests', 'Interests']] as const
                     ).map(([key, label]) => (
                         <label key={key} className="block text-sm font-medium">
                             {label}
