@@ -57,6 +57,9 @@ export default function Dashboard(props: Props) {
         ...props.needsAttention,
         ...(openTasks > 0 ? [{ kind: 'workflow', message: `${openTasks} step${openTasks === 1 ? '' : 's'} in today’s workflow remain open.`, due_on: null, overdue: false }] : []),
     ].slice(0, 4);
+    const currentDate = new Date();
+    const dayName = currentDate.toLocaleDateString('en-GB', { weekday: 'long' });
+    const dateLine = currentDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
     if (props.orgIsEmpty) return <AppShell title="Dashboard"><Head title="Dashboard"/><section className="overview-empty"><AppIcon name="paw"/><span>YOUR NEW WORKSPACE</span><h1>Welcome to Areterra Hub, {firstName}.</h1><p>Add your first members and animals to bring attendance, welfare and daily operations to life.</p><div><Link href="/members">Add a member</Link><Link href="/animals">Add an animal</Link></div></section></AppShell>;
 
@@ -66,8 +69,8 @@ export default function Dashboard(props: Props) {
             {props.banner && <div className="overview-banner"><AppIcon name="megaphone"/>{props.banner}</div>}
 
             <section className="overview-intro">
-                <div><span>ADMINISTRATOR OVERVIEW</span><h1>{greeting()}, {firstName}.</h1><p>Your people, animals and priorities. All in one place.</p></div>
-                <Link href="/today" className="overview-primary-action"><AppIcon name="plus"/> Open today</Link>
+                <div className="overview-intro-copy"><span>ARETERRA HUB</span><h1>{dayName} <i aria-hidden="true">☀</i></h1><h2>{dateLine}</h2><p>Your daily view of tasks, animal care and team activity.</p></div>
+                <div className="overview-intro-motto"><b>Support</b><b>Nurture</b><b>Belong</b><i/></div>
             </section>
 
             <section className="overview-metrics">
