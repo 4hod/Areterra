@@ -69,6 +69,19 @@ const MOBILE_NAV: NavItem[] = [
     { href: '/more', label: 'More', icon: 'grid' },
 ];
 
+const PRIMARY_NAV: NavItem[] = [
+    { href: '/', label: 'Dashboard', icon: 'grid' },
+    { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
+    { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
+    { href: '/register', label: 'Attendance', icon: 'register', cap: 'log_sessions' },
+    { href: '/tasks', label: 'Activities', icon: 'tasks' },
+    { href: '/referrals', label: 'Referrals', icon: 'mail', cap: 'create_members' },
+    { href: '/forms', label: 'Forms', icon: 'file' },
+    { href: '/incidents', label: 'Safeguarding', icon: 'shield', cap: 'report_incidents' },
+    { href: '/reports', label: 'Reports', icon: 'chart', cap: 'view_reports' },
+    { href: '/more', label: 'More tools', icon: 'grid' },
+];
+
 function isActive(href: string, url: string) {
     if (href === '/') return url === '/';
     if (href === '/settings') return url === '/settings';
@@ -128,14 +141,23 @@ export default function AppShell({ title, children }: { title: string; children:
         </section>;
     });
 
+    const primaryNav = (close = false) => <section className="portal-nav-section portal-primary-nav">
+        {PRIMARY_NAV.filter((item) => allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} onClick={() => close && setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}>
+            <AppIcon name={item.icon}/><span>{item.label}</span>
+        </Link>)}
+    </section>;
+
+    const today = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+
     return <div className="portal-shell hub-app-shell">
         <aside className="portal-sidebar hidden md:flex">
             <div className="portal-brand">
-                {branding.logoUrl ? <img src={branding.logoUrl} alt={branding.orgName}/> : <strong>{branding.orgName}</strong>}
+                <span className="portal-brand-mark" aria-hidden="true"><i/><i/><i/></span>
+                <strong>Areterra <em>Hub</em></strong>
             </div>
-            <div className="portal-sidebar-tabs"><b>HUB</b><span>TEAM WORKSPACE</span></div>
-            <nav>{nav()}</nav>
+            <nav>{primaryNav()}</nav>
             <div className="portal-sidebar-footer">
+                <div className="portal-sidebar-motto"><span>People</span><span>Animals</span><b>Brighter Futures</b></div>
                 {caps.includes('manage_settings') && <Link href="/settings"><AppIcon name="settings"/><span>Settings</span></Link>}
                 <Link href="/account" className="portal-user-card"><i>{initials}</i><span><b>{auth.user?.name}</b><small>{auth.user?.role?.replace('_', ' ')}</small></span></Link>
             </div>
@@ -144,10 +166,9 @@ export default function AppShell({ title, children }: { title: string; children:
         <div className="portal-main hub-main-column">
             <header className="portal-topbar hub-topbar">
                 <button className="portal-menu-button md:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation">☰</button>
-                <div className="portal-crumb hidden lg:flex"><AppIcon name="grid"/><span>Workspace</span><i>/</i><b>{title === 'Dashboard' ? 'Overview' : title}</b></div>
                 <button className="portal-search" onClick={() => setSearching(true)}><AppIcon name="search"/><span>Search members, animals, records…</span><kbd>Ctrl K</kbd></button>
                 <div className="portal-topbar-actions">
-                    <span className="portal-security-label hidden xl:inline-flex">SECURE CARE HUB</span>
+                    <span className="portal-date hidden lg:inline-flex"><AppIcon name="today"/>{today}</span>
                     <NotificationBell unreadCount={unreadNotifications}/>
                     <AccountMenu name={auth.user?.name ?? ''} role={auth.user?.role ?? ''} canManageSettings={caps.includes('manage_settings')}/>
                 </div>

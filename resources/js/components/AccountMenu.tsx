@@ -34,6 +34,7 @@ export default function AccountMenu({ name, role, canManageSettings }: Props) {
                 className="portal-account-button hidden md:flex"
             >
                 <span>{name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase()}</span>
+                <b><strong>{name}</strong><small>{role.replace('_', ' ')}</small></b>
                 <i className={open ? 'is-open' : ''}>⌄</i>
             </button>
 

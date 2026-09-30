@@ -6,7 +6,6 @@ import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
 import { WelfareStatus } from '../../types';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
-import ModuleHero from '../../components/ModuleHero';
 import Sparkline from '../../components/Sparkline';
 
 interface Monitoring {
@@ -133,10 +132,9 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     return (
         <AppShell title={animal.name}>
             <Head title={animal.name} />
-            <ModuleHero eyebrow="Animal profile" title="Animal record" description="Care notes, routines, health information and history in one place." icon="🐾" tone="green" />
-
-            <div className="flex items-center gap-4 mb-4">
+            <div className="animal-record-hero flex items-center gap-4 mb-4">
                 <div>
+                    <span>ANIMAL RECORD</span>
                     <div className="text-xl font-extrabold text-brand-dark">{animal.name}</div>
                     <div className="text-slate-500 text-sm">
                         {animal.species}
@@ -152,6 +150,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         </button>
                     )}
                 </div>
+                <p>Care notes, routines, health information and history all in one place.</p>
             </div>
 
             {(animal.joined_date || animal.care_requirements || animal.feeding_notes) && (
