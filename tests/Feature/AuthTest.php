@@ -90,8 +90,7 @@ class AuthTest extends TestCase
     {
         $this->app->detectEnvironment(fn () => 'production');
 
-        $this->withServerVariables(['HTTPS' => 'on'])
-            ->get('/login')
+        $this->get('https://localhost/login')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertHeader('X-Frame-Options', 'DENY')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')

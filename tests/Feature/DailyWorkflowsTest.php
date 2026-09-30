@@ -138,6 +138,10 @@ class DailyWorkflowsTest extends TestCase
 
         \App\Models\TransportRun::create([
             'run_date' => today(), 'member_id' => $amy->id,
+            'phase' => 'morning', 'outcome' => 'not_collected',
+        ]);
+        \App\Models\TransportRun::create([
+            'run_date' => today(), 'member_id' => $amy->id,
             'phase' => 'afternoon', 'outcome' => 'not_collected',
         ]);
 

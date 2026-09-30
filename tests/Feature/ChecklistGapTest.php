@@ -130,7 +130,7 @@ class ChecklistGapTest extends TestCase
 
         $updated = AuditLog::where('action', 'updated')->where('subject_type', 'Member')->first();
         $this->assertSame('[redacted]', $updated->changes['nhs_number']);
-        $this->assertSame('Bewdley', $updated->changes['town']);
+        $this->assertSame('[redacted]', $updated->changes['town']);
 
         $this->actingAs($manager)->get('/audit-log')->assertOk();
         $this->actingAs($this->staff())->get('/audit-log')->assertForbidden();
