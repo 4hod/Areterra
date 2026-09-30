@@ -133,7 +133,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
         <AppShell title={animal.name}>
             <Head title={animal.name} />
             <div className="animal-record-hero flex items-center gap-4 mb-4">
-                <div>
+                <div className="animal-record-identity-4a">
                     <span>ANIMAL RECORD</span>
                     <div className="text-xl font-extrabold text-brand-dark">{animal.name}</div>
                     <div className="text-slate-500 text-sm">
@@ -142,7 +142,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         {animal.sex && ` · ${animal.sex}`}
                     </div>
                 </div>
-                <div className="ml-auto flex items-center gap-2">
+                <div className="animal-record-status-4a ml-auto flex items-center gap-2">
                     <StatusPill status={animal.welfare_status} label={`Welfare: ${animal.welfare_status}`} />
                     {canEdit && (
                         <button onClick={() => setDetailsOpen(true)} className="rounded-full bg-ink/[0.06] text-ink/70 text-xs font-bold px-3 py-2">
@@ -154,9 +154,9 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
             </div>
 
             {(animal.joined_date || animal.care_requirements || animal.feeding_notes) && (
-                <div className="grid md:grid-cols-3 gap-3 mb-4">
+                <div className="animal-key-grid-4a grid md:grid-cols-3 gap-3 mb-4">
                     {animal.joined_date && (
-                        <Card>
+                        <Card className="animal-key-card-4a is-date">
                             <div className="text-xs font-bold uppercase tracking-wide text-ink/40">Joined Areterra</div>
                             <div className="font-semibold text-brand-dark mt-1">
                                 {new Date(animal.joined_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -164,20 +164,20 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         </Card>
                     )}
                     {animal.care_requirements && (
-                        <Card title="🛁 Care Requirements">
+                        <Card title="🛁 Care Requirements" className="animal-key-card-4a is-care">
                             <p className="text-sm text-ink/70 whitespace-pre-wrap">{animal.care_requirements}</p>
                         </Card>
                     )}
                     {animal.feeding_notes && (
-                        <Card title="🥣 Feeding">
+                        <Card title="🥣 Feeding" className="animal-key-card-4a is-feed">
                             <p className="text-sm text-ink/70 whitespace-pre-wrap">{animal.feeding_notes}</p>
                         </Card>
                     )}
                 </div>
             )}
 
-            <div className="flex gap-2 mb-4">
-                <button onClick={() => setCheckOpen(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5">
+            <div className="animal-actions-4a flex gap-2 mb-4">
+                <button onClick={() => setCheckOpen(true)} className="animal-action-primary-4a">
                     ✓ Welfare check
                 </button>
                 <button
@@ -185,17 +185,17 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         setM(todayMonitoring ?? emptyMonitoring());
                         setMonitorOpen(true);
                     }}
-                    className="rounded-full bg-brand-dark text-white font-semibold text-sm px-4 py-2.5"
+                    className="animal-action-secondary-4a"
                 >
                     📊 Daily monitoring
                 </button>
-                <button onClick={() => setVetOpen(true)} className="rounded-full bg-slate-700 text-white font-semibold text-sm px-4 py-2.5">
+                <button onClick={() => setVetOpen(true)} className="animal-action-dark-4a">
                     🩺 Vet visit
                 </button>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-3">
-                <Card title="Recent welfare checks">
+            <div className="animal-overview-grid-4a grid md:grid-cols-2 gap-3">
+                <Card title="Recent welfare checks" className="animal-panel-4a is-welfare">
                     {welfareChecks.length === 0 && <p className="text-sm text-slate-400">No checks logged yet.</p>}
                     <ul className="divide-y divide-slate-100 text-sm">
                         {welfareChecks.map((c) => (
@@ -221,7 +221,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                     </ul>
                 </Card>
 
-                <Card title="Daily monitoring history">
+                <Card title="Daily monitoring history" className="animal-panel-4a is-monitoring">
                     {monitoring.length === 0 && <p className="text-sm text-slate-400">No monitoring recorded yet.</p>}
                     {monitoring.filter((m) => m.weight_grams !== null).length >= 2 && (
                         <div className="mb-3">
@@ -252,7 +252,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         ))}
                     </ul>
                 </Card>
-                <Card title="Vet records" className="md:col-span-2">
+                <Card title="Vet records" className="md:col-span-2 animal-panel-4a is-vet">
                     {vetRecords.length === 0 && <p className="text-sm text-slate-400">No vet visits recorded.</p>}
                     <ul className="divide-y divide-slate-100 text-sm">
                         {vetRecords.map((v) => {

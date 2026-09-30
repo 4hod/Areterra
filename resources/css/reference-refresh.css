@@ -114,12 +114,102 @@ body { background: linear-gradient(135deg, #f9fcff, #edf4fa); color: var(--porta
 .portal-content .module-hero p { color: #526b8e; }
 .portal-content .hub-card, .portal-content .rounded-card, .portal-content .finance-card, .portal-content .staff-register-4a, .portal-content .register-member-card-4a { border-radius: 13px; box-shadow: var(--hub-shadow); }
 
+/* Internal modules — the same visual depth and colour language as the reference screens. */
+.tasks-page-4a { display: grid; gap: 12px; }
+.tasks-metrics-4a { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tasks-metrics-4a article { display: flex; align-items: center; gap: 14px; min-height: 100px; padding: 16px; border: 1px solid var(--portal-line); border-radius: 14px; background: #fff; box-shadow: var(--hub-shadow); }
+.tasks-metrics-4a article > span { display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 auto; border-radius: 14px; font-size: 22px; font-weight: 900; }
+.tasks-metrics-4a article div { display: grid; }
+.tasks-metrics-4a strong { color: #0b2249; font-size: 27px; line-height: 1; }
+.tasks-metrics-4a b { margin-top: 3px; color: #18385f; font-size: 12px; }
+.tasks-metrics-4a small { margin-top: 2px; color: #7b8ca3; font-size: 10px; }
+.tasks-metrics-4a .is-red > span { background: #ffebed; color: #db273a; }
+.tasks-metrics-4a .is-red b { color: #d62338; }
+.tasks-metrics-4a .is-amber > span { background: #fff4d6; color: #e58a00; }
+.tasks-metrics-4a .is-amber b { color: #d47b00; }
+.tasks-metrics-4a .is-blue > span { background: #e6f1ff; color: #1679f3; }
+.tasks-metrics-4a .is-green > span { background: #e3f7ed; color: #159962; }
+.tasks-metrics-4a .is-green b { color: #138b59; }
+.tasks-toolbar-4a { display: flex; align-items: center; min-height: 58px; padding: 0 14px; border: 1px solid var(--portal-line); border-radius: 14px; background: #fff; box-shadow: var(--hub-shadow); }
+.tasks-tabs-4a { display: flex; width: 100%; align-items: center; gap: 6px; }
+.tasks-tabs-4a > button:not(.tasks-add-4a) { min-height: 42px; padding: 0 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #5f7391; font-size: 11px; font-weight: 800; }
+.tasks-tabs-4a > button.is-active { border-bottom-color: var(--portal-yellow); color: #0d2d56; }
+.tasks-overdue-4a { padding: 5px 9px; border-radius: 999px; background: #ffeff1; color: #d32438; font-size: 10px; font-weight: 850; }
+.tasks-add-4a { margin-left: auto; padding: 11px 17px; border: 0; border-radius: 9px; background: var(--portal-yellow); color: #082951; font-size: 11px; font-weight: 900; }
+.tasks-list-4a { display: grid; gap: 8px; }
+.task-row-4a { border-radius: 12px !important; }
+.task-row-4a.is-overdue { border-left: 4px solid #e22f43 !important; }
+.task-row-inner-4a { display: flex; align-items: flex-start; gap: 13px; }
+.task-type-icon-4a { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border-radius: 12px; background: #eaf3ff; font-size: 18px; }
+.task-type-icon-4a.is-high { background: #ffeaed; }
+.task-type-icon-4a.is-medium { background: #fff3d6; }
+.task-type-icon-4a.is-low { background: #e7f6ef; }
+
+.member-back-link-4a { display: inline-flex; align-items: center; margin: 12px 0 10px; color: #1679e8; font-size: 12px; font-weight: 800; }
+.member-record-hero { gap: 18px !important; }
+.member-record-hero > div:first-child img, .member-record-hero > div:first-child > div { width: 84px !important; height: 84px !important; }
+.member-record-identity-4a { display: grid; align-items: start; gap: 7px; }
+.member-record-identity-4a > div:first-child { color: #071944 !important; font-size: 32px !important; line-height: 1.05; }
+.member-record-meta-4a { display: flex; flex-wrap: wrap; gap: 5px 15px; margin-top: 5px; color: #617693; font-size: 11px; }
+.member-record-meta-4a span { padding-right: 14px; border-right: 1px solid #dbe5ee; }
+.member-record-meta-4a span:last-child { border: 0; }
+.member-record-meta-4a b { padding: 1px 4px; border-radius: 3px; background: #1686e8; color: #fff; font-size: 8px; }
+.member-record-hero > div:last-child button, .member-record-hero > div:last-child a { min-height: 39px; display: inline-flex; align-items: center; border: 1px solid #dfe7ef; background: #f7fafc; color: #28435f; }
+.hub-tab-bar { margin: 0 0 12px; padding: 5px; border: 1px solid var(--portal-line); border-radius: 13px; background: #eef4f8; box-shadow: 0 5px 16px rgba(24, 55, 91, .05); }
+.hub-tab-bar button { border-radius: 9px; }
+.hub-tab-bar button.is-active { background: #fff; box-shadow: 0 5px 14px rgba(30, 57, 83, .08); }
+.ah-profile-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr); gap: 12px !important; }
+.member-panel-4a { overflow: hidden; border: 1px solid var(--portal-line) !important; }
+.member-panel-4a .hub-card-header h2::before { display: inline-grid; place-items: center; width: 27px; height: 27px; margin-right: 9px; border-radius: 8px; background: #e8f3ff; color: #1679e8; vertical-align: middle; }
+.member-contact-panel-4a .hub-card-header h2::before { content: "●"; }
+.member-medical-panel-4a .hub-card-header h2::before { content: "+"; background: #e6f6ee; color: #159460; }
+.member-notes-panel-4a .hub-card-header h2::before { content: "≡"; background: #fff4d8; color: #d58c00; }
+.member-contacts-panel-4a .hub-card-header h2::before { content: "◎"; background: #eee9ff; color: #7052d7; }
+.member-panel-4a dl > div { display: grid; grid-template-columns: 145px 1fr; gap: 12px; align-items: start; padding: 10px 0; border-bottom: 1px solid #e8eef4; }
+.member-panel-4a dl > div:last-child { border-bottom: 0; }
+.member-panel-4a dt { color: #71839d !important; font-size: 11px; }
+.member-panel-4a dd { color: #173454; font-size: 12px; }
+.member-medical-panel-4a dl > div:nth-child(2) { margin: 2px -7px; padding: 13px 10px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #edfaf4, #f5fcf9); }
+.member-medical-panel-4a dl > div:nth-child(3) { margin: 2px -7px; padding: 12px 10px; border: 0; border-radius: 11px; background: #fff8e5; }
+.member-notes-panel-4a li, .member-contacts-panel-4a li { padding: 13px !important; }
+.member-notes-panel-4a li:nth-child(odd) { border-radius: 10px; background: #fff9e8; }
+
+.animal-record-identity-4a > div:nth-child(2) { color: #071944 !important; font-size: 38px !important; line-height: 1; }
+.animal-record-status-4a button { min-height: 40px; border: 1px solid #dce7ef; border-radius: 9px !important; background: #fff !important; }
+.animal-key-grid-4a { gap: 10px !important; }
+.animal-key-card-4a { min-height: 104px; }
+.animal-key-card-4a.is-date { background: linear-gradient(135deg, #eef6ff, #fff) !important; }
+.animal-key-card-4a.is-care { background: linear-gradient(135deg, #eefaf4, #fff) !important; }
+.animal-key-card-4a.is-feed { background: linear-gradient(135deg, #fff8e4, #fff) !important; }
+.animal-actions-4a { padding: 7px; border: 1px solid var(--portal-line); border-radius: 13px; background: #fff; box-shadow: var(--hub-shadow); }
+.animal-actions-4a button { min-height: 43px; padding: 0 18px; border: 0; border-radius: 9px; font-size: 11px; font-weight: 900; }
+.animal-action-primary-4a { background: var(--portal-yellow); color: #082951; }
+.animal-action-secondary-4a { background: #e5f1ff; color: #1268c7; }
+.animal-action-dark-4a { background: #082f58; color: #fff; }
+.animal-overview-grid-4a { gap: 12px !important; }
+.animal-panel-4a { border: 1px solid var(--portal-line) !important; }
+.animal-panel-4a .hub-card-header h2::before { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 9px; border-radius: 9px; vertical-align: middle; }
+.animal-panel-4a.is-welfare .hub-card-header h2::before { content: "●"; background: #e5f7ed; color: #159561; }
+.animal-panel-4a.is-monitoring .hub-card-header h2::before { content: "▥"; background: #e8f2ff; color: #1679ed; }
+.animal-panel-4a.is-vet .hub-card-header h2::before { content: "+"; background: #f0eaff; color: #744fd8; }
+.animal-panel-4a li { padding: 13px 3px !important; }
+
+/* Give every legacy module a calmer, spacious internal rhythm too. */
+.portal-content > .module-hero + .grid, .portal-content > .module-hero + .space-y-3, .portal-content > .module-hero + .space-y-4 { margin-top: 4px; }
+.portal-content table { border-collapse: separate; border-spacing: 0; }
+.portal-content thead th { background: #f5f8fb; color: #607591; font-size: 10px; letter-spacing: .04em; }
+.portal-content tbody tr { transition: background .15s ease; }
+.portal-content tbody tr:hover { background: #f8fbfd; }
+.portal-content input, .portal-content select, .portal-content textarea { border-color: #d5e0ea; box-shadow: none; }
+.portal-content input:focus, .portal-content select:focus, .portal-content textarea:focus { border-color: #64aef1; box-shadow: 0 0 0 3px rgba(22, 121, 243, .1); }
+
 @media (max-width: 1180px) {
     .portal-sidebar { width: 218px; flex-basis: 218px; }
     .portal-topbar { grid-template-columns: minmax(260px, 1fr) auto; }
     .portal-account-button > b { display: none; }
     .overview-intro { padding-left: 30px; }
     .overview-top-grid { grid-template-columns: 1fr; }
+    .tasks-metrics-4a { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 767px) {
@@ -141,6 +231,12 @@ body { background: linear-gradient(135deg, #f9fcff, #edf4fa); color: var(--porta
     .animal-record-hero { min-height: 240px; align-items: flex-start !important; }
     .member-record-hero { padding: 16px; }
     .member-record-hero > div:last-child { margin-left: 0 !important; }
+    .tasks-toolbar-4a { padding: 8px; }
+    .tasks-tabs-4a { flex-wrap: wrap; }
+    .tasks-add-4a { margin-left: 0; }
+    .ah-profile-grid { grid-template-columns: 1fr; }
+    .member-panel-4a dl > div { grid-template-columns: 110px 1fr; }
+    .animal-actions-4a { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
@@ -152,4 +248,7 @@ body { background: linear-gradient(135deg, #f9fcff, #edf4fa); color: var(--porta
     .animal-record-hero { padding: 20px; }
     .animal-record-hero > p { left: 20px; bottom: 18px; }
     .member-record-hero > div:nth-child(2) > div:first-child { font-size: 24px !important; }
+    .tasks-metrics-4a { grid-template-columns: 1fr; }
+    .member-record-meta-4a { display: grid; }
+    .member-record-meta-4a span { border: 0; }
 }

@@ -62,6 +62,15 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
     const [priority, setPriority] = useState<Priority>('medium');
     const [dueDate, setDueDate] = useState('');
     const [assignedTo, setAssignedTo] = useState<string>('');
+    const dueThisWeek = tasks.filter((task) => {
+        if (!task.due_date || task.completed_at) return false;
+        const due = new Date(task.due_date);
+        const now = new Date();
+        const week = new Date();
+        week.setDate(now.getDate() + 7);
+        return due >= now && due <= week;
+    }).length;
+    const completedVisible = tasks.filter((task) => task.completed_at).length;
 
     function filter(next: Partial<{ show: string; mine: string }>) {
         router.get('/tasks', { show, mine: mine ? 1 : undefined, ...next }, { preserveState: true });
@@ -100,35 +109,45 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                 tone="blue"
             />
 
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="tasks-page-4a">
+            <section className="tasks-metrics-4a">
+                <article className="is-red"><span>!</span><div><strong>{counts.overdue}</strong><b>Overdue</b><small>Need attention</small></div></article>
+                <article className="is-amber"><span>◷</span><div><strong>{dueThisWeek}</strong><b>Due this week</b><small>Next 7 days</small></div></article>
+                <article className="is-blue"><span>✓</span><div><strong>{counts.open}</strong><b>Open tasks</b><small>Total active</small></div></article>
+                <article className="is-green"><span>✓</span><div><strong>{completedVisible}</strong><b>Completed</b><small>Current view</small></div></article>
+            </section>
+
+            <section className="tasks-toolbar-4a">
+            <div className="tasks-tabs-4a">
                 <button
                     onClick={() => filter({ show: 'open' })}
-                    className={`rounded-full font-semibold text-xs px-4 py-2 ${show === 'open' ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}
+                    className={show === 'open' ? 'is-active' : ''}
                 >
                     Open ({counts.open})
                 </button>
                 <button
                     onClick={() => filter({ show: 'done' })}
-                    className={`rounded-full font-semibold text-xs px-4 py-2 ${show === 'done' ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}
+                    className={show === 'done' ? 'is-active' : ''}
                 >
                     Completed
                 </button>
                 <button
                     onClick={() => filter({ mine: mine ? undefined : '1' })}
-                    className={`rounded-full font-semibold text-xs px-4 py-2 ${mine ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'}`}
+                    className={mine ? 'is-active' : ''}
                 >
                     Assigned to me
                 </button>
                 {counts.overdue > 0 && show === 'open' && (
-                    <span className="text-xs font-bold text-red-600">{counts.overdue} overdue</span>
+                    <span className="tasks-overdue-4a">{counts.overdue} overdue</span>
                 )}
                 <button
                     onClick={() => setAdding(true)}
-                    className="ml-auto rounded-full bg-brand text-white font-bold text-xs px-4 py-2"
+                    className="tasks-add-4a"
                 >
-                    Add task
+                    + Add task
                 </button>
             </div>
+            </section>
 
             {tasks.length === 0 && (
                 <Card>
@@ -140,10 +159,11 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                 </Card>
             )}
 
-            <div className="space-y-2">
+            <div className="tasks-list-4a">
                 {tasks.map((task) => (
-                    <Card key={task.id} className={task.overdue ? 'border-l-4 border-l-red-500' : ''}>
-                        <div className="flex items-start gap-3">
+                    <Card key={task.id} className={`task-row-4a ${task.overdue ? 'is-overdue' : ''}`}>
+                        <div className="task-row-inner-4a">
+                            <div className={`task-type-icon-4a is-${task.priority}`}>{task.about ? (ABOUT_ICON[task.about.type] ?? '📎') : '✓'}</div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className={`font-semibold ${task.completed_at ? 'line-through text-slate-400' : ''}`}>
@@ -201,6 +221,7 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                         </div>
                     </Card>
                 ))}
+            </div>
             </div>
 
             <Modal open={adding} title="Add a task" onClose={() => setAdding(false)}>
