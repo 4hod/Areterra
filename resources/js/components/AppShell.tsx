@@ -62,9 +62,9 @@ export const NAV_SECTIONS: NavSection[] = [
 ];
 
 const MOBILE_NAV: NavItem[] = [
-    { href: '/', label: 'Overview', icon: 'grid' },
     { href: '/today', label: 'Today', icon: 'today' },
     { href: '/register', label: 'Register', icon: 'register', cap: 'log_sessions' },
+    { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
     { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
     { href: '/more', label: 'More', icon: 'grid' },
 ];
@@ -166,7 +166,12 @@ export default function AppShell({ title, children }: { title: string; children:
         <div className="portal-main hub-main-column">
             <header className="portal-topbar hub-topbar">
                 <button className="portal-menu-button md:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation">☰</button>
+                <Link href="/today" className="portal-mobile-brand" aria-label="Areterra Hub — Today">
+                    <span className="portal-mobile-brand-mark" aria-hidden="true"><i/><i/><i/></span>
+                    <strong>Areterra <em>Hub</em></strong>
+                </Link>
                 <button className="portal-search" onClick={() => setSearching(true)}><AppIcon name="search"/><span>Search members, animals, records…</span><kbd>Ctrl K</kbd></button>
+                <button className="portal-mobile-search" onClick={() => setSearching(true)} aria-label="Search"><AppIcon name="search"/></button>
                 <div className="portal-topbar-actions">
                     <span className="portal-date hidden lg:inline-flex"><AppIcon name="today"/>{today}</span>
                     <NotificationBell unreadCount={unreadNotifications}/>
