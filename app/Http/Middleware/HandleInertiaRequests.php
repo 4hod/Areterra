@@ -26,6 +26,8 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
+                'import_preview' => $request->session()->get('import_preview'),
+                'archive_import_report' => $request->session()->get('archive_import_report'),
             ],
             'branding' => [
                 'logoUrl' => \App\Models\Setting::get('logo_url'),
