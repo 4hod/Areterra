@@ -215,7 +215,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                                     <span className={c.fed ? 'text-emerald-700' : 'text-red-600 font-bold'}>
                                         {c.fed ? '🍽️ Fed' : '🚫 Not fed'}
                                     </span>
-                                    {c.treats_given && (
+                                    {Boolean(c.treats_given) && (
                                         <span className="text-amber-700">🍪 Treats{c.treats_notes && `: ${c.treats_notes}`}</span>
                                     )}
                                 </div>

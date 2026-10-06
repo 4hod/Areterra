@@ -26,11 +26,19 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function Funding({ entries, canManage }: { entries: Entry[]; canManage: boolean }) {
     const [adding, setAdding] = useState(false);
-    const { data, setData, post, processing, reset } = useForm({ title: '', funder: '', amount: '', deadline: '', status: 'identified', link: '', notes: '' });
+    const [editing, setEditing] = useState<Entry | null>(null);
+    const { data, setData, post, put, processing, reset } = useForm({ title: '', funder: '', amount: '', deadline: '', status: 'identified', link: '', notes: '' });
+
+    function openNew() { reset(); setEditing(null); setAdding(true); }
+    function openEdit(entry: Entry) {
+        setData({ title: entry.title, funder: entry.funder ?? '', amount: entry.amount === null ? '' : String(entry.amount), deadline: entry.deadline ?? '', status: entry.status, link: entry.link ?? '', notes: entry.notes ?? '' });
+        setEditing(entry); setAdding(true);
+    }
 
     function submit(e: FormEvent) {
         e.preventDefault();
-        post('/funding', { onSuccess: () => { setAdding(false); reset(); } });
+        const options = { onSuccess: () => { setAdding(false); setEditing(null); reset(); } };
+        if (editing) put(`/funding/${editing.id}`, options); else post('/funding', options);
     }
 
     return (
@@ -39,7 +47,7 @@ export default function Funding({ entries, canManage }: { entries: Entry[]; canM
             <ModuleHero eyebrow="Growth & sustainability" title="Funding" description="Track opportunities, deadlines and applications from first idea to decision." icon="🌱" tone="green" />
 
             {canManage && (
-                <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
+                <button onClick={openNew} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
                     + New opportunity
                 </button>
             )}
@@ -59,14 +67,17 @@ export default function Funding({ entries, canManage }: { entries: Entry[]; canM
                                 </div>
                                 {f.notes && <p className="text-sm text-slate-500 mt-1">{f.notes}</p>}
                             </div>
-                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLE[f.status]}`}>{f.status}</span>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLE[f.status]}`}>{f.status}</span>
+                                {canManage && <button onClick={() => openEdit(f)} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">Edit</button>}
+                            </div>
                         </div>
                     </Card>
                 ))}
                 {entries.length === 0 && <Card><EmptyState icon="💰" text="No funding opportunities logged yet." /></Card>}
             </div>
 
-            <Modal open={adding} title="New funding opportunity" onClose={() => setAdding(false)}>
+            <Modal open={adding} title={editing ? 'Edit funding opportunity' : 'New funding opportunity'} onClose={() => { setAdding(false); setEditing(null); }}>
                 <form onSubmit={submit} className="space-y-3">
                     <label className="block text-sm font-medium">
                         Title
@@ -106,7 +117,7 @@ export default function Funding({ entries, canManage }: { entries: Entry[]; canM
                         <textarea value={data.notes} onChange={(e) => setData('notes', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />
                     </label>
                     <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
-                        Add opportunity
+                        {editing ? 'Save opportunity' : 'Add opportunity'}
                     </button>
                 </form>
             </Modal>

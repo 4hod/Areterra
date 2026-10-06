@@ -25,11 +25,19 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function Projects({ projects, canManage }: { projects: Project[]; canManage: boolean }) {
     const [adding, setAdding] = useState(false);
-    const { data, setData, post, processing, reset } = useForm({ title: '', description: '', status: 'planning', start_date: '', end_date: '' });
+    const [editing, setEditing] = useState<Project | null>(null);
+    const { data, setData, post, put, processing, reset } = useForm({ title: '', description: '', status: 'planning', start_date: '', end_date: '' });
+
+    function openNew() { reset(); setEditing(null); setAdding(true); }
+    function openEdit(project: Project) {
+        setData({ title: project.title, description: project.description ?? '', status: project.status, start_date: project.start_date ?? '', end_date: project.end_date ?? '' });
+        setEditing(project); setAdding(true);
+    }
 
     function submit(e: FormEvent) {
         e.preventDefault();
-        post('/projects', { onSuccess: () => { setAdding(false); reset(); } });
+        const options = { onSuccess: () => { setAdding(false); setEditing(null); reset(); } };
+        if (editing) put(`/projects/${editing.id}`, options); else post('/projects', options);
     }
 
     return (
@@ -38,7 +46,7 @@ export default function Projects({ projects, canManage }: { projects: Project[];
             <ModuleHero eyebrow="Deliver change" title="Projects" description="Turn service improvements into visible plans, owners and progress." icon="🗂️" tone="purple" />
 
             {canManage && (
-                <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
+                <button onClick={openNew} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
                     + New project
                 </button>
             )}
@@ -56,14 +64,17 @@ export default function Projects({ projects, canManage }: { projects: Project[];
                                 </div>
                                 {p.description && <p className="text-sm text-slate-500 mt-1">{p.description}</p>}
                             </div>
-                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLE[p.status]}`}>{p.status}</span>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLE[p.status]}`}>{p.status}</span>
+                                {canManage && <button onClick={() => openEdit(p)} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">Edit</button>}
+                            </div>
                         </div>
                     </Card>
                 ))}
                 {projects.length === 0 && <Card><EmptyState icon="🗂️" text="No projects yet." /></Card>}
             </div>
 
-            <Modal open={adding} title="New project" onClose={() => setAdding(false)}>
+            <Modal open={adding} title={editing ? 'Edit project' : 'New project'} onClose={() => { setAdding(false); setEditing(null); }}>
                 <form onSubmit={submit} className="space-y-3">
                     <label className="block text-sm font-medium">
                         Title
@@ -93,7 +104,7 @@ export default function Projects({ projects, canManage }: { projects: Project[];
                         </select>
                     </label>
                     <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
-                        Create project
+                        {editing ? 'Save project' : 'Create project'}
                     </button>
                 </form>
             </Modal>

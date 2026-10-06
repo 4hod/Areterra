@@ -25,6 +25,7 @@ class MaintenanceTaskController extends Controller
                 'priority' => $t->priority,
                 'due_date' => $t->due_date?->toDateString(),
                 'assigned_to' => $t->assignedTo?->name,
+                'assigned_to_id' => $t->assigned_to,
                 'created_by' => $t->createdBy->name,
                 'status' => $t->effectiveStatus(),
                 'notes' => $t->notes,

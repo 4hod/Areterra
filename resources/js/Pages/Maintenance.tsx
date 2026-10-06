@@ -13,6 +13,7 @@ interface Task {
     priority: 'low' | 'medium' | 'high';
     due_date: string | null;
     assigned_to: string | null;
+    assigned_to_id: number | null;
     created_by: string;
     status: 'pending' | 'overdue' | 'complete';
     notes: string | null;
@@ -26,11 +27,26 @@ const PRIORITY_STYLE: Record<string, string> = {
 
 export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]; staff: { id: number; name: string }[]; canManage: boolean }) {
     const [adding, setAdding] = useState(false);
-    const { data, setData, post, processing, reset } = useForm({ title: '', description: '', priority: 'medium', due_date: '', assigned_to: '' });
+    const [editing, setEditing] = useState<Task | null>(null);
+    const { data, setData, post, put, processing, reset } = useForm({ title: '', description: '', priority: 'medium', due_date: '', assigned_to: '' });
+
+    function openNew() {
+        reset();
+        setEditing(null);
+        setAdding(true);
+    }
+
+    function openEdit(task: Task) {
+        setData({ title: task.title, description: task.description ?? '', priority: task.priority, due_date: task.due_date ?? '', assigned_to: task.assigned_to_id ? String(task.assigned_to_id) : '' });
+        setEditing(task);
+        setAdding(true);
+    }
 
     function submit(e: FormEvent) {
         e.preventDefault();
-        post('/maintenance', { onSuccess: () => { setAdding(false); reset(); } });
+        const options = { onSuccess: () => { setAdding(false); setEditing(null); reset(); } };
+        if (editing) put(`/maintenance/${editing.id}`, options);
+        else post('/maintenance', options);
     }
 
     const open = tasks.filter((t) => t.status !== 'complete');
@@ -42,7 +58,7 @@ export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]
             <ModuleHero eyebrow="Site operations" title="Maintenance" description="Log faults, assign work and keep the environment safe and welcoming." icon="🔧" tone="amber" />
 
             {canManage && (
-                <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
+                <button onClick={openNew} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
                     + New task
                 </button>
             )}
@@ -61,11 +77,10 @@ export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]
                                 </div>
                                 {t.description && <p className="text-sm text-slate-500 mt-1">{t.description}</p>}
                             </div>
-                            {canManage && (
-                                <button onClick={() => router.post(`/maintenance/${t.id}/complete`)} className="shrink-0 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-2">
-                                    ✓ Complete
-                                </button>
-                            )}
+                            {canManage && <div className="flex shrink-0 gap-2">
+                                <button onClick={() => openEdit(t)} className="rounded-full bg-slate-100 text-slate-700 text-xs font-bold px-3 py-2">Edit</button>
+                                <button onClick={() => router.post(`/maintenance/${t.id}/complete`)} className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-2">✓ Complete</button>
+                            </div>}
                         </div>
                     </Card>
                 ))}
@@ -80,7 +95,7 @@ export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]
                 </Card>
             )}
 
-            <Modal open={adding} title="New maintenance task" onClose={() => setAdding(false)}>
+            <Modal open={adding} title={editing ? 'Edit maintenance task' : 'New maintenance task'} onClose={() => { setAdding(false); setEditing(null); }}>
                 <form onSubmit={submit} className="space-y-3">
                     <label className="block text-sm font-medium">
                         Title
@@ -112,7 +127,7 @@ export default function Maintenance({ tasks, staff, canManage }: { tasks: Task[]
                         </select>
                     </label>
                     <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
-                        Add task
+                        {editing ? 'Save task' : 'Add task'}
                     </button>
                 </form>
             </Modal>
