@@ -118,4 +118,26 @@ class AuthTest extends TestCase
         Setting::set('ms_client_secret', encrypt('a-realistic-client-secret-value'));
         $this->assertTrue(MicrosoftAuthController::configured());
     }
+
+    public function test_sso_only_password_confirmation_uses_microsoft_reverification(): void
+    {
+        Config::set('security.require_microsoft_sso', true);
+        Config::set('services.microsoft.client_id', '11111111-1111-4111-8111-111111111111');
+        Config::set('services.microsoft.tenant_id', '22222222-2222-4222-8222-222222222222');
+        Config::set('services.microsoft.client_secret', 'a-realistic-client-secret-value');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get('/confirm-password')
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('ConfirmPassword')
+                ->where('microsoftSsoRequired', true));
+
+        $response = $this->actingAs($user)->get('/auth/microsoft?confirm=1');
+
+        $this->assertStringContainsString('prompt=login', $response->headers->get('Location'));
+        $response->assertSessionHas('ms_password_confirmation', true);
+    }
 }

@@ -108,7 +108,10 @@ class AuthController extends Controller
 
     public function confirmShow()
     {
-        return Inertia::render('ConfirmPassword');
+        return Inertia::render('ConfirmPassword', [
+            'microsoftSsoRequired' => config('security.require_microsoft_sso')
+                && MicrosoftAuthController::configured(),
+        ]);
     }
 
     public function confirm(Request $request)

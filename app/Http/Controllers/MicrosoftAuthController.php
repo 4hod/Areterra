@@ -44,6 +44,8 @@ class MicrosoftAuthController extends Controller
 
         $state = Str::random(40);
         $request->session()->put('ms_oauth_state', $state);
+        $confirmingPassword = $request->boolean('confirm');
+        $request->session()->put('ms_password_confirmation', $confirmingPassword);
 
         $params = http_build_query([
             'client_id' => $this->clientId(),
@@ -51,6 +53,7 @@ class MicrosoftAuthController extends Controller
             'redirect_uri' => route('microsoft.callback'),
             'scope' => 'openid profile email User.Read',
             'state' => $state,
+            ...($confirmingPassword ? ['prompt' => 'login'] : []),
         ]);
 
         return redirect("https://login.microsoftonline.com/{$this->tenant()}/oauth2/v2.0/authorize?{$params}");
@@ -100,6 +103,11 @@ class MicrosoftAuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        // A successful tenant-restricted Microsoft sign-in is a fresh
+        // credential check. This keeps password.confirm compatible with the
+        // SSO-only rollout, where staff do not have a local Hub password.
+        $request->session()->passwordConfirmed();
+        $request->session()->forget('ms_password_confirmation');
 
         return redirect()->intended('/');
     }
