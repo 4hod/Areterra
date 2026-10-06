@@ -6,6 +6,7 @@ use App\Http\Controllers\MicrosoftAuthController;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
