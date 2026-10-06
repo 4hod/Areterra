@@ -4,6 +4,11 @@ import { createRoot } from 'react-dom/client';
 const pages = import.meta.glob('./Pages/**/*.tsx', { eager: true });
 
 createInertiaApp({
+    defaults: {
+        future: {
+            useScriptElementForInitialPage: true,
+        },
+    },
     title: (title) => (title ? `${title} — Areterra Hub` : 'Areterra Hub'),
     resolve: (name) => pages[`./Pages/${name}.tsx`] as never,
     setup({ el, App, props }) {
