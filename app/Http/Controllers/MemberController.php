@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\Activity;
+use App\Models\Animal;
 use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -162,6 +164,33 @@ class MemberController extends Controller
                     'goal' => $o->goal?->title,
                     'user' => $o->user->name,
                 ]),
+            'impactEntries' => $member->impactEntries()
+                ->with(['goal:id,title', 'activity:id,title,activity_date', 'animal:id,name,species', 'recorder:id,name'])
+                ->orderByDesc('observed_at')->limit(30)->get()
+                ->map(fn ($entry) => [
+                    'id' => $entry->id,
+                    'observed_at' => $entry->observed_at->toIso8601String(),
+                    'goal' => $entry->goal?->title,
+                    'activity' => $entry->activity?->title,
+                    'animal' => $entry->animal ? ['name' => $entry->animal->name, 'species' => $entry->animal->species] : null,
+                    'mood_before' => $entry->mood_before,
+                    'mood_after' => $entry->mood_after,
+                    'engagement_rating' => $entry->engagement_rating,
+                    'independence_rating' => $entry->independence_rating,
+                    'outcome_note' => $entry->outcome_note,
+                    'evidence_tags' => $entry->evidence_tags ?? [],
+                    'recorder' => $entry->recorder->name,
+                ]),
+            'impactOptions' => [
+                'animals' => Animal::active()->orderBy('species')->orderBy('name')->get(['id', 'name', 'species']),
+                'activities' => Activity::whereBetween('activity_date', [today()->subDays(30), today()->addDays(14)])
+                    ->orderByDesc('activity_date')->get(['id', 'title', 'activity_date'])
+                    ->map(fn ($activity) => [
+                        'id' => $activity->id,
+                        'title' => $activity->title,
+                        'date' => $activity->activity_date->toDateString(),
+                    ]),
+            ],
             'alerts' => $detailed
                 ? $member->alerts()->get()->map(fn ($a) => [
                     'id' => $a->id, 'type' => $a->type, 'text' => $a->text, 'severity' => $a->severity,
@@ -178,6 +207,7 @@ class MemberController extends Controller
                 ])
                 : [],
             'canEdit' => Gate::allows('edit_members') && $member->status !== 'archived',
+            'canRecordImpact' => Gate::allows('log_sessions') && $member->status !== 'archived',
         ]);
     }
 

@@ -118,6 +118,11 @@ class Member extends Model
         return $this->hasMany(MemberOutcome::class);
     }
 
+    public function impactEntries()
+    {
+        return $this->hasMany(ImpactEntry::class);
+    }
+
     public function alerts()
     {
         return $this->hasMany(MemberAlert::class);

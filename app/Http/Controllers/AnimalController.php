@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Animal;
+use App\Support\AnimalWelfareBaseline;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -46,6 +47,7 @@ class AnimalController extends Controller
             'monitoring' => $animal->dailyMonitoring()->orderByDesc('monitor_date')->limit(20)->get(),
             'vetRecords' => $animal->vetRecords()->orderByDesc('visit_date')->limit(20)->get(),
             'todayMonitoring' => $animal->dailyMonitoring()->whereDate('monitor_date', today())->first(),
+            'welfareBaseline' => AnimalWelfareBaseline::for($animal),
             'canEdit' => Gate::allows('edit_animals'),
         ]);
     }

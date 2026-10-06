@@ -30,4 +30,9 @@ class MemberGoal extends Model
     {
         return $this->hasMany(MemberOutcome::class);
     }
+
+    public function impactEntries()
+    {
+        return $this->hasMany(ImpactEntry::class);
+    }
 }

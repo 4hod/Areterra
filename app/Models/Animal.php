@@ -46,6 +46,11 @@ class Animal extends Model
         return $this->hasMany(VetRecord::class);
     }
 
+    public function impactEntries()
+    {
+        return $this->hasMany(ImpactEntry::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');

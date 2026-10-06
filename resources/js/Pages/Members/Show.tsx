@@ -27,6 +27,12 @@ interface OutcomeRow { id: number; date: string; outcome: string; goal: string |
 interface AlertRow { id: number; type: string; text: string; severity: string }
 interface ConsentRow { consent_type: string; granted: boolean; recorded_on: string; expires_at: string | null; is_expired: boolean; notes: string | null }
 interface MemberNoteRow { id: number; note_type: string; note: string; author_name: string | null; noted_at: string | null; source: string }
+interface ImpactRow {
+    id: number; observed_at: string; goal: string | null; activity: string | null;
+    animal: { name: string; species: string } | null; mood_before: Mood | null; mood_after: Mood | null;
+    engagement_rating: number | null; independence_rating: number | null; outcome_note: string;
+    evidence_tags: string[]; recorder: string;
+}
 
 interface Props {
     member: {
@@ -67,12 +73,18 @@ interface Props {
     contacts: ContactRow[];
     goals: GoalRow[];
     outcomes: OutcomeRow[];
+    impactEntries: ImpactRow[];
+    impactOptions: {
+        animals: { id: number; name: string; species: string }[];
+        activities: { id: number; title: string; date: string }[];
+    };
     alerts: AlertRow[];
     consents: ConsentRow[];
     canEdit: boolean;
+    canRecordImpact: boolean;
 }
 
-const TABS = ['Profile', 'Sessions', '📞 Comms', 'Goals', 'Outcomes', '⚠ Alerts', 'Circle of Care', 'Consents', 'Body Map', 'ABC Obs', 'GP Info', 'Settings'] as const;
+const TABS = ['Profile', 'Day Passport', 'Sessions', 'Impact', '📞 Comms', 'Goals', 'Outcomes', '⚠ Alerts', 'Circle of Care', 'Consents', 'Body Map', 'ABC Obs', 'GP Info', 'Settings'] as const;
 
 const COMMS_ICONS: Record<string, string> = { email: '✉️', phone: '📞', letter: '📮', meeting: '🤝', text: '💬', other: '📝' };
 const NOTE_TYPE_LABELS: Record<string, string> = {
@@ -102,7 +114,7 @@ function ageFromDob(dob: string | null) {
 }
 
 export default function Show(props: Props) {
-    const { member, memberNotes, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, alerts, consents, canEdit } = props;
+    const { member, memberNotes, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, impactEntries, impactOptions, alerts, consents, canEdit, canRecordImpact } = props;
     const [tab, setTab] = useState<(typeof TABS)[number]>('Profile');
     const photoInput = useRef<HTMLInputElement>(null);
     const staffNotes = memberNotes.filter((note) => note.note_type !== 'end_of_day');
@@ -149,6 +161,11 @@ export default function Show(props: Props) {
     const [goal, setGoal] = useState({ title: '', description: '', target_date: '' });
     const [addingOutcome, setAddingOutcome] = useState(false);
     const [outcome, setOutcome] = useState({ date: new Date().toISOString().slice(0, 10), outcome: '', member_goal_id: '' as string | number });
+    const [addingImpact, setAddingImpact] = useState(false);
+    const [impact, setImpact] = useState({
+        observed_at: new Date().toISOString().slice(0, 16), member_goal_id: '', activity_id: '', animal_id: '',
+        mood_before: '', mood_after: '', engagement_rating: '', independence_rating: '', outcome_note: '', evidence_tags: [] as string[],
+    });
     const [addingAlert, setAddingAlert] = useState(false);
     const [alert, setAlert] = useState({ type: 'medical', text: '', severity: 'amber' });
     const [addingAbc, setAddingAbc] = useState(false);
@@ -255,6 +272,9 @@ export default function Show(props: Props) {
                     </div>
                 </div>
                 <div className="ml-auto flex max-w-full flex-wrap justify-end gap-1.5">
+                    <Link href={`/members/${member.id}/passport`} className="rounded-full bg-sky-50 text-brand text-xs font-bold px-3 py-2">
+                        ✦ Day Passport
+                    </Link>
                     <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
                         🖨 Print
                     </button>
@@ -420,6 +440,16 @@ export default function Show(props: Props) {
             )}
 
             {/* ── Sessions ── */}
+            {tab === 'Day Passport' && (
+                <Card title="A quick working view for today">
+                    <p className="text-sm text-slate-500 mb-3">Support cues, current alerts, health essentials, goals and the latest handover in one phone-friendly view.</p>
+                    <Link href={`/members/${member.id}/passport`} className="inline-flex min-h-12 items-center rounded-xl bg-brand px-5 font-bold text-white">
+                        Open {member.preferred_name || member.first_name}’s Day Passport →
+                    </Link>
+                </Card>
+            )}
+
+            {/* ── Sessions ── */}
             {tab === 'Sessions' && (
                 <div className="space-y-3">
                     <Link
@@ -467,6 +497,36 @@ export default function Show(props: Props) {
                             ))}
                         </ul>
                     </Card>
+                </div>
+            )}
+
+            {/* ── Impact Thread ── */}
+            {tab === 'Impact' && (
+                <div>
+                    {canRecordImpact && <button onClick={() => setAddingImpact(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-4 py-2.5 mb-3">
+                        + Record impact evidence
+                    </button>}
+                    {impactEntries.length === 0 && <Card><p className="text-sm text-slate-400">No connected impact evidence yet.</p></Card>}
+                    <div className="space-y-2">
+                        {impactEntries.map((entry) => <Card key={entry.id} className="impact-card">
+                            <div className="flex flex-wrap justify-between gap-2">
+                                <b className="text-brand-dark">{new Date(entry.observed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</b>
+                                <span className="text-xs text-slate-400">{entry.recorder}</span>
+                            </div>
+                            <div className="impact-link-row">
+                                {entry.goal && <span className="impact-chip">🎯 {entry.goal}</span>}
+                                {entry.activity && <span className="impact-chip">🗓 {entry.activity}</span>}
+                                {entry.animal && <span className="impact-chip">🐾 {entry.animal.name} · {entry.animal.species}</span>}
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap">{entry.outcome_note}</p>
+                            <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                                {(entry.mood_before || entry.mood_after) && <span>Mood {entry.mood_before ? MOOD_EMOJI[entry.mood_before] : '—'} → {entry.mood_after ? MOOD_EMOJI[entry.mood_after] : '—'}</span>}
+                                {entry.engagement_rating && <span>Engagement {entry.engagement_rating}/5</span>}
+                                {entry.independence_rating && <span>Independence {entry.independence_rating}/5</span>}
+                                {entry.evidence_tags.map((tag) => <span key={tag}>#{tag}</span>)}
+                            </div>
+                        </Card>)}
+                    </div>
                 </div>
             )}
 
@@ -810,6 +870,54 @@ export default function Show(props: Props) {
             )}
 
             {/* ══ Modals ══ */}
+
+            <Modal open={addingImpact} title="Record connected impact" onClose={() => setAddingImpact(false)}>
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium">Observed at
+                        <input type="datetime-local" value={impact.observed_at} onChange={(e) => setImpact({ ...impact, observed_at: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label className="block text-sm font-medium">Goal
+                            <select value={impact.member_goal_id} onChange={(e) => setImpact({ ...impact, member_goal_id: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3">
+                                <option value="">Not linked</option>{goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                            </select>
+                        </label>
+                        <label className="block text-sm font-medium">Activity
+                            <select value={impact.activity_id} onChange={(e) => setImpact({ ...impact, activity_id: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3">
+                                <option value="">Not linked</option>{impactOptions.activities.map((a) => <option key={a.id} value={a.id}>{a.title} · {fmt(a.date)}</option>)}
+                            </select>
+                        </label>
+                        <label className="block text-sm font-medium">Animal
+                            <select value={impact.animal_id} onChange={(e) => setImpact({ ...impact, animal_id: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3">
+                                <option value="">Not linked</option>{impactOptions.animals.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.species}</option>)}
+                            </select>
+                        </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {(['mood_before', 'mood_after'] as const).map((field) => <label key={field} className="block text-sm font-medium">{field === 'mood_before' ? 'Mood before' : 'Mood after'}
+                            <select value={impact[field]} onChange={(e) => setImpact({ ...impact, [field]: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3">
+                                <option value="">Not recorded</option>{Object.entries(MOOD_EMOJI).map(([value, emoji]) => <option key={value} value={value}>{emoji} {value}</option>)}
+                            </select>
+                        </label>)}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">Engagement (1–5)<input type="number" min={1} max={5} value={impact.engagement_rating} onChange={(e) => setImpact({ ...impact, engagement_rating: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" /></label>
+                        <label className="block text-sm font-medium">Independence (1–5)<input type="number" min={1} max={5} value={impact.independence_rating} onChange={(e) => setImpact({ ...impact, independence_rating: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" /></label>
+                    </div>
+                    <label className="block text-sm font-medium">What changed or was achieved?
+                        <textarea value={impact.outcome_note} onChange={(e) => setImpact({ ...impact, outcome_note: e.target.value })} rows={4} className="mt-1 w-full rounded-lg border border-slate-300 p-3" placeholder="Use observable, specific language…" />
+                    </label>
+                    <fieldset><legend className="text-sm font-medium mb-2">Evidence tags</legend><div className="flex flex-wrap gap-2">
+                        {['communication', 'confidence', 'independence', 'wellbeing', 'social', 'practical-skills'].map((tag) => <label key={tag} className="rounded-full bg-slate-100 px-3 py-2 text-xs font-bold"><input type="checkbox" className="mr-1" checked={impact.evidence_tags.includes(tag)} onChange={(e) => setImpact({ ...impact, evidence_tags: e.target.checked ? [...impact.evidence_tags, tag] : impact.evidence_tags.filter((x) => x !== tag) })} />{tag}</label>)}
+                    </div></fieldset>
+                    <button disabled={!impact.outcome_note.trim()} onClick={() => post(`/members/${member.id}/impact`, {
+                        ...impact,
+                        member_goal_id: impact.member_goal_id || null, activity_id: impact.activity_id || null, animal_id: impact.animal_id || null,
+                        mood_before: impact.mood_before || null, mood_after: impact.mood_after || null,
+                        engagement_rating: impact.engagement_rating || null, independence_rating: impact.independence_rating || null,
+                    }, () => setAddingImpact(false))} className="w-full rounded-lg bg-brand py-3 font-bold text-white disabled:opacity-50">Save impact evidence</button>
+                </div>
+            </Modal>
 
             <Modal open={editing} title={`Edit — ${member.name}`} onClose={() => setEditing(false)}>
                 <div className="grid grid-cols-2 gap-3">

@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Modal from '../components/Modal';
@@ -80,6 +80,7 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
                             <h2>{row.name}</h2>
                             <div className="register-status-4a">{row.checked_in ? <><strong>Present</strong><span>Checked in at {row.checked_in_at}{row.arrival_mood ? ` ${MOOD_EMOJI[row.arrival_mood]}` : ''}</span></> : row.status === 'absent' ? <><strong>Absent</strong><span>{row.absence_reason ?? 'No reason recorded'}</span></> : <><strong>Awaiting arrival</strong><span>No check-in recorded yet</span></>}</div>
                             {row.notes && <p className="register-note-4a">“{row.notes}”</p>}
+                            <Link href={`/members/${row.id}/passport`} className="mb-2 flex min-h-11 w-full items-center justify-center rounded-full bg-sky-50 px-3 text-xs font-bold text-brand">✦ Day Passport</Link>
                             <button onClick={() => openCheckIn(row)} className={row.checked_in ? 'is-edit' : ''}>{row.checked_in ? '✓ Edit arrival' : 'Check in member →'}</button>
                             {!row.checked_in && row.status !== 'absent' && !cancellation && (
                                 <button onClick={() => markAbsent(row)} className="mt-2 w-full rounded-full bg-slate-100 text-slate-600 font-semibold text-xs px-3 py-2">

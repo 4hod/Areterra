@@ -62,6 +62,11 @@ interface Props {
     }[];
     monitoring: Monitoring[];
     todayMonitoring: Monitoring | null;
+    welfareBaseline: {
+        level: 'green' | 'amber' | 'red' | 'insufficient'; observations: number; latest_date: string | null;
+        signals: { level: 'green' | 'amber' | 'red'; label: string; explanation: string }[];
+        disclaimer: string;
+    };
     canEdit: boolean;
 }
 
@@ -79,7 +84,7 @@ const emptyMonitoring = (): Monitoring => ({
     concern: false,
 });
 
-export default function Show({ animal, welfareChecks, monitoring, todayMonitoring, vetRecords, canEdit }: Props) {
+export default function Show({ animal, welfareChecks, monitoring, todayMonitoring, vetRecords, welfareBaseline, canEdit }: Props) {
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [details, setDetails] = useState({
         name: animal.name,
@@ -196,6 +201,25 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                     🩺 Vet visit
                 </button>
             </div>
+
+            <section className={`baseline-panel ${welfareBaseline.level}`}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                        <h2>✦ Welfare baseline</h2>
+                        <p className="text-sm text-slate-500 mt-1">
+                            {welfareBaseline.level === 'insufficient'
+                                ? `Building a baseline — ${welfareBaseline.observations} previous monitoring entries available; 3 are needed.`
+                                : `Compared with ${welfareBaseline.observations} recent monitoring entries.`}
+                        </p>
+                    </div>
+                    <StatusPill status={welfareBaseline.level === 'insufficient' ? 'pending' : welfareBaseline.level} label={welfareBaseline.level === 'insufficient' ? 'Learning' : welfareBaseline.level} />
+                </div>
+                {welfareBaseline.signals.map((signal) => <div key={signal.label} className="baseline-signal">
+                    <span className={`baseline-dot ${signal.level}`} />
+                    <div><b>{signal.label}</b><p>{signal.explanation}</p></div>
+                </div>)}
+                <p className="baseline-disclaimer">{welfareBaseline.disclaimer}</p>
+            </section>
 
             <div className="animal-overview-grid-4a grid md:grid-cols-2 gap-3">
                 <Card title="Recent welfare checks" className="animal-panel-4a is-welfare">

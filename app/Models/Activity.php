@@ -39,6 +39,11 @@ class Activity extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function impactEntries()
+    {
+        return $this->hasMany(ImpactEntry::class);
+    }
+
     protected function casts(): array
     {
         return [

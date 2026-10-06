@@ -59,6 +59,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware(['can:view_members', 'can:view_member_details'])->name('members.show');
     Route::get('/members/{member}/history', [App\Http\Controllers\MemberHistoryController::class, 'show'])
         ->middleware(['can:view_members', 'can:view_member_details'])->name('members.history');
+    Route::get('/members/{member}/passport', [App\Http\Controllers\MemberPassportController::class, 'show'])
+        ->middleware(['can:view_members', 'can:view_member_details'])->name('members.passport');
     Route::post('/members', [MemberController::class, 'store'])
         ->middleware('can:create_members')->name('members.store');
     Route::put('/members/{member}', [MemberController::class, 'update'])
@@ -256,6 +258,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::post('/members/{member}/abc', [App\Http\Controllers\CareController::class, 'storeAbc'])
         ->middleware(['can:view_member_details', 'can:log_sessions'])->name('abc.store');
+    Route::post('/members/{member}/impact', [App\Http\Controllers\ImpactEntryController::class, 'store'])
+        ->middleware(['can:view_member_details', 'can:log_sessions'])->name('impact.store');
     Route::post('/members/{member}/body-maps', [App\Http\Controllers\CareController::class, 'storeBodyMap'])
         ->middleware(['can:view_member_details', 'can:log_sessions'])->name('body-maps.store');
     Route::get('/members/{member}/sar', [App\Http\Controllers\SarController::class, 'show'])
