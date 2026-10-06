@@ -15,9 +15,15 @@ class MicrosoftAuthController extends Controller
 {
     public static function configured(): bool
     {
-        $clientId = Setting::get('ms_client_id') ?? config('services.microsoft.client_id');
-        $tenant = Setting::get('ms_tenant_id') ?? config('services.microsoft.tenant_id');
-        $secret = Setting::get('ms_client_secret') ?? config('services.microsoft.client_secret');
+        $clientId = config('services.microsoft.client_id') ?? Setting::get('ms_client_id');
+        $tenant = config('services.microsoft.tenant_id') ?? Setting::get('ms_tenant_id');
+        $storedSecret = Setting::get('ms_client_secret');
+
+        try {
+            $secret = config('services.microsoft.client_secret') ?? ($storedSecret ? decrypt($storedSecret) : null);
+        } catch (\Throwable) {
+            $secret = null;
+        }
 
         // Require an explicit tenant — accepting sign-ins via the 'common'
         // endpoint would let any Microsoft/Entra tenant (or personal account)
@@ -26,7 +32,8 @@ class MicrosoftAuthController extends Controller
         return self::validClientId($clientId)
             && self::validTenant($tenant)
             && is_string($secret)
-            && $secret !== '';
+            && strlen($secret) >= 20
+            && ! preg_match('/^[*\x{2022}]+$/u', $secret);
     }
 
     public function redirect(Request $request)
@@ -99,21 +106,25 @@ class MicrosoftAuthController extends Controller
 
     private function clientId(): ?string
     {
-        return Setting::get('ms_client_id') ?? config('services.microsoft.client_id');
+        return config('services.microsoft.client_id') ?? Setting::get('ms_client_id');
     }
 
     private function clientSecret(): ?string
     {
+        if ($configured = config('services.microsoft.client_secret')) {
+            return $configured;
+        }
+
         $stored = Setting::get('ms_client_secret');
 
-        return $stored ? decrypt($stored) : config('services.microsoft.client_secret');
+        return $stored ? decrypt($stored) : null;
     }
 
     private function tenant(): string
     {
         // configured() guarantees one of these is set before redirect()/callback()
         // are ever reached, so no 'common' fallback here.
-        return Setting::get('ms_tenant_id') ?? config('services.microsoft.tenant_id');
+        return config('services.microsoft.tenant_id') ?? Setting::get('ms_tenant_id');
     }
 
     public static function validClientId(mixed $clientId): bool

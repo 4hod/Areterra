@@ -112,7 +112,10 @@ class AuthTest extends TestCase
         Setting::set('ms_tenant_id', 'example.onmicrosoft.com');
         $this->assertFalse(MicrosoftAuthController::configured());
 
-        Setting::set('ms_client_secret', encrypt('test-secret'));
+        Setting::set('ms_client_secret', encrypt('********'));
+        $this->assertFalse(MicrosoftAuthController::configured());
+
+        Setting::set('ms_client_secret', encrypt('a-realistic-client-secret-value'));
         $this->assertTrue(MicrosoftAuthController::configured());
     }
 }

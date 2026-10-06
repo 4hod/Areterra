@@ -1,6 +1,7 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppIcon from '../components/AppIcon';
+import { SharedProps } from '../types';
 
 const FEATURES = [
     { icon: 'paw', label: 'Animal welfare and care records' },
@@ -12,6 +13,7 @@ const FEATURES = [
 interface Props { ssoConfigured: boolean; localPasswordEnabled: boolean; loginPhotoUrl: string | null; logoUrl: string | null }
 
 export default function Login({ ssoConfigured, localPasswordEnabled, loginPhotoUrl, logoUrl }: Props) {
+    const { flash } = usePage<SharedProps>().props;
     const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors } = useForm({ email: '', password: '' });
     function submit(event: FormEvent) { event.preventDefault(); post('/login'); }
@@ -29,6 +31,8 @@ export default function Login({ ssoConfigured, localPasswordEnabled, loginPhotoU
                 <form onSubmit={submit}>
                     <span className="login-v2-badge"><AppIcon name="lock"/> AUTHORISED ACCESS</span>
                     <h2>Welcome back</h2><p>Sign in to continue to the Areterra Hub.</p>
+
+                    {flash.error && <div className="login-v2-error" role="alert"><AppIcon name="alert"/><span>{flash.error}</span></div>}
 
                     {ssoConfigured && <button type="button" className="login-v2-microsoft" onClick={() => window.location.href = '/auth/microsoft'}>
                         <svg viewBox="0 0 21 21" aria-hidden><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
