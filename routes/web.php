@@ -61,6 +61,14 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware(['can:view_members', 'can:view_member_details'])->name('members.history');
     Route::get('/members/{member}/passport', [App\Http\Controllers\MemberPassportController::class, 'show'])
         ->middleware(['can:view_members', 'can:view_member_details'])->name('members.passport');
+    Route::get('/members/{member}/portfolio', [App\Http\Controllers\MemberPortfolioController::class, 'show'])
+        ->middleware(['can:view_members', 'can:view_member_details'])->name('members.portfolio');
+    Route::post('/members/{member}/portfolio-items', [App\Http\Controllers\MemberPortfolioController::class, 'storeItem'])
+        ->middleware('can:edit_members')->name('members.portfolio-items.store');
+    Route::post('/members/{member}/certificates', [App\Http\Controllers\MemberPortfolioController::class, 'issueCertificate'])
+        ->middleware('can:edit_members')->name('members.certificates.store');
+    Route::get('/certificates/{certificate}', [App\Http\Controllers\MemberPortfolioController::class, 'certificate'])
+        ->middleware(['can:view_members', 'can:view_member_details'])->name('certificates.show');
     Route::post('/members', [MemberController::class, 'store'])
         ->middleware('can:create_members')->name('members.store');
     Route::put('/members/{member}', [MemberController::class, 'update'])
@@ -199,6 +207,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_compliance')->name('risks.update');
     Route::post('/risk-assessments/{riskAssessment}/sign-off', [RiskAssessmentController::class, 'signOff'])
         ->middleware('can:manage_compliance')->name('risks.sign-off');
+    Route::post('/risk-assessments/{riskAssessment}/new-version', [RiskAssessmentController::class, 'newVersion'])
+        ->middleware('can:manage_compliance')->name('risks.new-version');
 
     Route::get('/reviews', [MemberReviewController::class, 'index'])
         ->middleware('can:view_member_details')->name('reviews');
@@ -281,12 +291,16 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_vehicles')->name('vehicles.update');
     Route::post('/vehicles/{vehicle}/defects', [App\Http\Controllers\VehicleController::class, 'storeDefect'])
         ->middleware('can:view_vehicles')->name('defects.store');
+    Route::post('/vehicles/{vehicle}/checks', [App\Http\Controllers\VehicleController::class, 'storeCheck'])
+        ->middleware('can:view_vehicles')->name('vehicle-checks.store');
     Route::post('/defects/{defect}/resolve', [App\Http\Controllers\VehicleController::class, 'resolveDefect'])
         ->middleware('can:manage_vehicles')->name('defects.resolve');
 
     Route::redirect('/activities', '/calendar')->name('activities');
     Route::post('/activities', [App\Http\Controllers\ActivityController::class, 'store'])
         ->middleware('can:log_sessions')->name('activities.store');
+    Route::post('/activities/{activity}/cancel', [App\Http\Controllers\ActivityController::class, 'cancel'])
+        ->middleware('can:manage_operations')->name('activities.cancel');
 
     Route::redirect('/weekly-planner', '/calendar')->name('weekly-planner');
     Route::get('/weekly-planner/print', [App\Http\Controllers\WeeklyPlannerController::class, 'print'])->name('weekly-planner.print');
@@ -299,6 +313,14 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:create_members')->name('referrals');
     Route::put('/referrals/{referral}/review', [App\Http\Controllers\ReferralController::class, 'review'])
         ->middleware('can:create_members')->name('referrals.review');
+    Route::post('/referrals/{referral}/complete-trial', [App\Http\Controllers\ReferralController::class, 'completeTrial'])
+        ->middleware('can:create_members')->name('referrals.complete-trial');
+
+    Route::middleware('can:manage_operations')->group(function () {
+        Route::get('/automations', [App\Http\Controllers\AutomationController::class, 'index'])->name('automations');
+        Route::put('/automations/{automationRule}', [App\Http\Controllers\AutomationController::class, 'toggle'])->name('automations.toggle');
+        Route::post('/automations/run', [App\Http\Controllers\AutomationController::class, 'run'])->name('automations.run');
+    });
 
     Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'edit'])
         ->middleware('can:manage_settings')->name('settings');

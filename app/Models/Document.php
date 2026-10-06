@@ -16,6 +16,7 @@ class Document extends Model
     {
         return [
             'requires_read' => 'boolean',
+            'expires_at' => 'date',
         ];
     }
 

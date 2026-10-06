@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\Referral;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\AutomationEngine;
 
 class ReferralController extends Controller
 {
@@ -51,6 +52,8 @@ class ReferralController extends Controller
                     'reviewer' => $r->reviewer?->name,
                     'created_at' => $r->created_at->toDateString(),
                     'pending_days' => $r->status === 'pending' ? (int) $r->created_at->diffInDays(now()) : null,
+                    'trial_completed_at' => $r->trial_completed_at?->toIso8601String(),
+                    'trial_review_opened_at' => $r->trial_review_opened_at?->toIso8601String(),
                 ]),
         ]);
     }
@@ -81,5 +84,14 @@ class ReferralController extends Controller
         }
 
         return back()->with('success', 'Referral declined.');
+    }
+
+    public function completeTrial(Referral $referral, AutomationEngine $engine)
+    {
+        abort_unless($referral->status === 'accepted', 422, 'Only accepted referrals can complete a trial day.');
+        $referral->update(['trial_completed_at' => now()]);
+        $engine->run('trial_completed', $referral, ['occurrence' => $referral->trial_completed_at->toIso8601String()]);
+
+        return back()->with('success', 'Trial completed and the review workflow has been opened.');
     }
 }

@@ -15,6 +15,8 @@ interface Row {
     reviewer: string | null;
     created_at: string;
     pending_days: number | null;
+    trial_completed_at: string | null;
+    trial_review_opened_at: string | null;
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -74,6 +76,12 @@ export default function Referrals({ referrals }: { referrals: Row[] }) {
                                         </button>
                                     </div>
                                 )}
+                                {r.status === 'accepted' && !r.trial_completed_at && (
+                                    <button onClick={() => router.post(`/referrals/${r.id}/complete-trial`)} className="rounded-full bg-brand text-white text-xs font-bold px-3 py-1.5">
+                                        Complete trial day
+                                    </button>
+                                )}
+                                {r.trial_review_opened_at && <span className="text-xs font-bold text-emerald-700">✓ Review workflow open</span>}
                             </div>
                         </div>
                     </Card>

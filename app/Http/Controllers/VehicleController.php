@@ -13,7 +13,10 @@ class VehicleController extends Controller
     public function index()
     {
         return Inertia::render('Vehicles', [
-            'vehicles' => Vehicle::with(['defects' => fn ($q) => $q->with('reporter:id,name')->orderByDesc('date')])
+            'vehicles' => Vehicle::with([
+                'defects' => fn ($q) => $q->with('reporter:id,name')->orderByDesc('date'),
+                'checks' => fn ($q) => $q->with('checker:id,name')->limit(20),
+            ])
                 ->orderBy('registration')
                 ->get()
                 ->map(fn ($v) => [
@@ -32,6 +35,26 @@ class VehicleController extends Controller
                         'severity' => $d->severity,
                         'reporter' => $d->reporter->name,
                         'resolved_at' => $d->resolved_at?->toDateString(),
+                    ])->values(),
+                    'last_mileage' => $v->checks->first()?->odometer_miles !== null
+                        ? (float) $v->checks->first()->odometer_miles : null,
+                    'last_check' => $v->checks->first() ? [
+                        'checked_at' => $v->checks->first()->checked_at->toIso8601String(),
+                        'checker' => $v->checks->first()->checker->name,
+                        'safe_to_drive' => $v->checks->first()->safe_to_drive,
+                    ] : null,
+                    'checks' => $v->checks->map(fn ($check) => [
+                        'id' => $check->id,
+                        'checked_at' => $check->checked_at->toIso8601String(),
+                        'checker' => $check->checker->name,
+                        'odometer_miles' => (float) $check->odometer_miles,
+                        'fuel_level' => $check->fuel_level,
+                        'tyres_ok' => $check->tyres_ok,
+                        'lights_ok' => $check->lights_ok,
+                        'warning_lights_ok' => $check->warning_lights_ok,
+                        'damage_ok' => $check->damage_ok,
+                        'safe_to_drive' => $check->safe_to_drive,
+                        'notes' => $check->notes,
                     ])->values(),
                 ]),
             'canManage' => Gate::allows('manage_vehicles'),
@@ -75,6 +98,51 @@ class VehicleController extends Controller
         ]);
 
         return back()->with('success', 'Defect reported.');
+    }
+
+    public function storeCheck(Request $request, Vehicle $vehicle)
+    {
+        $data = $request->validate([
+            'odometer_miles' => ['required', 'numeric', 'min:0'],
+            'fuel_level' => ['required', 'in:empty,quarter,half,three_quarters,full'],
+            'tyres_ok' => ['required', 'boolean'],
+            'lights_ok' => ['required', 'boolean'],
+            'warning_lights_ok' => ['required', 'boolean'],
+            'damage_ok' => ['required', 'boolean'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $lastMileage = $vehicle->checks()->value('odometer_miles');
+        if ($lastMileage !== null && (float) $data['odometer_miles'] < (float) $lastMileage) {
+            return back()->withErrors(['odometer_miles' => 'Mileage cannot be lower than the previous vehicle check.']);
+        }
+
+        $safe = collect(['tyres_ok', 'lights_ok', 'warning_lights_ok', 'damage_ok'])
+            ->every(fn ($field) => (bool) $data[$field]);
+
+        $check = $vehicle->checks()->create([
+            ...$data,
+            'safe_to_drive' => $safe,
+            'checked_at' => now(),
+            'checked_by' => $request->user()->id,
+        ]);
+
+        if (! $safe) {
+            $failed = collect([
+                'tyres_ok' => 'tyres', 'lights_ok' => 'lights',
+                'warning_lights_ok' => 'dashboard warning lights', 'damage_ok' => 'damage/bodywork',
+            ])->filter(fn ($label, $field) => ! $data[$field])->values()->join(', ');
+            $vehicle->defects()->create([
+                'reported_by' => $request->user()->id,
+                'date' => today(),
+                'description' => 'Pre-drive check failed: '.$failed.($data['notes'] ? ' — '.$data['notes'] : ''),
+                'severity' => 'vehicle_off_road',
+            ]);
+        }
+
+        return back()->with('success', $check->safe_to_drive
+            ? 'Pre-drive check saved. Vehicle is recorded as safe to drive.'
+            : 'Pre-drive check saved. Vehicle marked off road and a defect was opened.');
     }
 
     public function resolveDefect(VehicleDefect $defect)

@@ -123,6 +123,16 @@ class Member extends Model
         return $this->hasMany(ImpactEntry::class);
     }
 
+    public function portfolioItems()
+    {
+        return $this->hasMany(PortfolioItem::class);
+    }
+
+    public function certificates()
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
     public function alerts()
     {
         return $this->hasMany(MemberAlert::class);

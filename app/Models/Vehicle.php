@@ -48,6 +48,11 @@ class Vehicle extends Model
         return $this->hasMany(VehicleDefect::class);
     }
 
+    public function checks()
+    {
+        return $this->hasMany(VehicleCheck::class)->latest('checked_at');
+    }
+
     public function openDefects()
     {
         return $this->defects()->whereNull('resolved_at');
