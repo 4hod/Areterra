@@ -149,6 +149,24 @@ class PortalQaFixesTest extends TestCase
             ->assertJsonPath('results.Members.0.url', "/members/{$member->id}");
     }
 
+    public function test_global_search_matches_member_last_and_preferred_names(): void
+    {
+        Member::create([
+            'first_name' => 'Elizabeth',
+            'last_name' => 'Buckle',
+            'preferred_name' => 'Liz',
+        ]);
+
+        $this->actingAs($this->manager())
+            ->getJson('/search?q=Buckle')
+            ->assertOk()
+            ->assertJsonPath('results.Members.0.title', 'Liz Buckle');
+
+        $this->getJson('/search?q=Liz')
+            ->assertOk()
+            ->assertJsonPath('results.Members.0.title', 'Liz Buckle');
+    }
+
     public function test_dashboard_and_checklist_agree_when_an_animal_was_checked_but_not_fed(): void
     {
         $animal = Animal::create(['name' => 'Rico', 'species' => 'Macaw']);

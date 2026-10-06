@@ -114,6 +114,25 @@ class PermissionsSweepTest extends SweepTestCase
         );
     }
 
+    public function test_legacy_unknown_grants_are_not_shown_as_current_permissions(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        DB::table('user_capabilities')->insert([
+            'user_id' => $staff->id,
+            'capability' => 'retired_capability',
+            'granted_by' => $this->admin->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->get('/settings/permissions')->assertOk();
+        $users = collect($response->viewData('page')['props']['users']);
+        $row = $users->firstWhere('id', $staff->id);
+
+        $this->assertNotContains('retired_capability', $row['capabilities']);
+        $this->assertCount(count(User::preset('staff')), $row['capabilities']);
+    }
+
     public function test_applying_a_preset_replaces_the_whole_set(): void
     {
         $staff = User::factory()->create(['role' => 'staff']);

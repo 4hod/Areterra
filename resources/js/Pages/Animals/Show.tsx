@@ -82,6 +82,9 @@ const emptyMonitoring = (): Monitoring => ({
 export default function Show({ animal, welfareChecks, monitoring, todayMonitoring, vetRecords, canEdit }: Props) {
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [details, setDetails] = useState({
+        name: animal.name,
+        species: animal.species,
+        status: animal.status,
         dob: animal.dob ?? '',
         microchip: animal.microchip ?? '',
         sex: animal.sex ?? '',
@@ -442,6 +445,29 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
 
             <Modal open={detailsOpen} title={`Edit — ${animal.name}`} onClose={() => setDetailsOpen(false)}>
                 <div className="space-y-3">
+                    <label className="block text-sm font-medium">
+                        Name
+                        <input
+                            value={details.name}
+                            onChange={(e) => setDetails({ ...details, name: e.target.value })}
+                            className="mt-1 w-full rounded-lg border border-slate-300 px-3"
+                        />
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Species
+                            <input value={details.species} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-slate-500" />
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Status
+                            <select value={details.status} onChange={(e) => setDetails({ ...details, status: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="rehomed">Rehomed</option>
+                                <option value="deceased">Deceased</option>
+                            </select>
+                        </label>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                         <label className="block text-sm font-medium">
                             Date of birth

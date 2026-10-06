@@ -15,6 +15,8 @@ class PermissionsController extends Controller
 {
     public function index()
     {
+        $knownCapabilities = config('capabilities.all');
+
         return Inertia::render('Permissions', [
             'catalogue' => config('capabilities.catalogue'),
             'presets' => collect(config('capabilities.roles'))
@@ -30,7 +32,11 @@ class PermissionsController extends Controller
                     'email' => $u->email,
                     'job_title' => $u->job_title,
                     'role' => $u->role,
-                    'capabilities' => $u->capabilityGrants->pluck('capability')->values(),
+                    // Old deployments may have grants for capabilities that no
+                    // longer exist. They must not inflate the visible count or
+                    // be submitted back through the current permissions form.
+                    'capabilities' => $u->capabilityGrants->pluck('capability')
+                        ->intersect($knownCapabilities)->values(),
                 ]),
         ]);
     }

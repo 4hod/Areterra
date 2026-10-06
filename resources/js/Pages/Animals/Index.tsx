@@ -38,10 +38,21 @@ function blankCheck(animal_id: number): AnimalCheck {
     return { animal_id, concern: false, status: 'amber', notes: '', fed: true, treats_given: false, treats_notes: '' };
 }
 
-export default function Index({ bySpecies }: { species: string[]; bySpecies: Record<string, AnimalRow[]> }) {
+export default function Index({ species, bySpecies, canEdit }: { species: string[]; bySpecies: Record<string, AnimalRow[]>; canEdit: boolean }) {
     const [checking, setChecking] = useState<string | null>(null);
     const [checks, setChecks] = useState<Record<number, AnimalCheck>>({});
     const [verificationConfirmed, setVerificationConfirmed] = useState(false);
+    const [adding, setAdding] = useState(false);
+    const [newAnimal, setNewAnimal] = useState({ name: '', species: species[0] ?? '', sex: 'unknown', joined_date: '', care_requirements: '', feeding_notes: '' });
+
+    function addAnimal() {
+        router.post('/animals', { ...newAnimal, status: 'active' }, {
+            onSuccess: () => {
+                setAdding(false);
+                setNewAnimal({ name: '', species: species[0] ?? '', sex: 'unknown', joined_date: '', care_requirements: '', feeding_notes: '' });
+            },
+        });
+    }
 
     function getCheck(id: number): AnimalCheck {
         return checks[id] ?? blankCheck(id);
@@ -102,6 +113,14 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
             <Head title="Animals" />
             <ModuleHero eyebrow="Animal care" title="Animals" description="See every animal, their care status and what needs attention today." icon="🦜" tone="green" />
 
+            {canEdit && (
+                <div className="mb-4 flex justify-end">
+                    <button onClick={() => setAdding(true)} className="rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white">
+                        + Add animal
+                    </button>
+                </div>
+            )}
+
             <div className="space-y-4">
                 {Object.entries(bySpecies).map(([species, animals]) => {
                     const allChecked = animals.every((a) => a.checked_today);
@@ -149,6 +168,46 @@ export default function Index({ bySpecies }: { species: string[]; bySpecies: Rec
                     );
                 })}
             </div>
+
+            <Modal open={adding} title="Add animal" onClose={() => setAdding(false)}>
+                <div className="space-y-3">
+                    <label className="block text-sm font-medium">
+                        Name
+                        <input value={newAnimal.name} onChange={(e) => setNewAnimal({ ...newAnimal, name: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">
+                            Species
+                            <select value={newAnimal.species} onChange={(e) => setNewAnimal({ ...newAnimal, species: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3">
+                                {species.map((item) => <option key={item} value={item}>{item}</option>)}
+                            </select>
+                        </label>
+                        <label className="block text-sm font-medium">
+                            Sex
+                            <select value={newAnimal.sex} onChange={(e) => setNewAnimal({ ...newAnimal, sex: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3">
+                                <option value="unknown">Unknown</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label className="block text-sm font-medium">
+                        Joined Areterra
+                        <input type="date" value={newAnimal.joined_date} onChange={(e) => setNewAnimal({ ...newAnimal, joined_date: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Care requirements
+                        <textarea value={newAnimal.care_requirements} onChange={(e) => setNewAnimal({ ...newAnimal, care_requirements: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Feeding
+                        <textarea value={newAnimal.feeding_notes} onChange={(e) => setNewAnimal({ ...newAnimal, feeding_notes: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />
+                    </label>
+                    <button disabled={!newAnimal.name.trim() || !newAnimal.species} onClick={addAnimal} className="w-full rounded-lg bg-brand py-3 font-bold text-white disabled:opacity-50">
+                        Add animal
+                    </button>
+                </div>
+            </Modal>
 
             <Modal open={checking !== null} title={`${checking} daily check`} onClose={() => setChecking(null)}>
                 <p className="text-sm text-slate-500 mb-4">

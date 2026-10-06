@@ -59,16 +59,18 @@ class AnimalController extends Controller
 
     public function update(Request $request, Animal $animal)
     {
-        $animal->update($this->validated($request));
+        $animal->update($this->validated($request, partial: true));
 
         return back()->with('success', 'Animal updated.');
     }
 
-    private function validated(Request $request): array
+    private function validated(Request $request, bool $partial = false): array
     {
+        $required = $partial ? 'sometimes' : 'required';
+
         return $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'species' => ['required', 'in:'.implode(',', Animal::SPECIES)],
+            'name' => [$required, 'string', 'max:100'],
+            'species' => [$required, 'in:'.implode(',', Animal::SPECIES)],
             'dob' => ['nullable', 'date'],
             'microchip' => ['nullable', 'string', 'max:50'],
             'sex' => ['nullable', 'in:male,female,unknown'],

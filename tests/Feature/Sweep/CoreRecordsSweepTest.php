@@ -149,6 +149,13 @@ class CoreRecordsSweepTest extends SweepTestCase
         ]), 'animals.update');
         $this->assertSame('Dust bath twice weekly', $a->fresh()->care_requirements);
 
+        // The profile editor saves only the fields it displays; partial edits
+        // must not require name and species to be resubmitted.
+        $this->assertWriteOk($this->put("/animals/{$a->id}", [
+            'feeding_notes' => 'QA partial update',
+        ]), 'animals.update.partial');
+        $this->assertSame('QA partial update', $a->fresh()->feeding_notes);
+
         // Welfare check
         $r = $this->post("/animals/{$a->id}/welfare-checks", [
             'status' => 'green', 'notes' => 'Bright and active', 'fed' => true, 'treats_given' => false,
