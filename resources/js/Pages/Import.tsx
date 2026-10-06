@@ -33,11 +33,6 @@ export default function Import() {
     const [archive, setArchive] = useState<File | null>(null);
     const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
-    function upload() {
-        if (!file) return;
-        router.post('/import/preview', { kind, file }, { forceFormData: true });
-    }
-
     function commit() {
         if (!preview) return;
         router.post('/import/commit', { kind: preview.kind, csv: preview.csv });
@@ -88,22 +83,23 @@ export default function Import() {
             )}
 
             <Card title="CSV upload" className="mb-4">
-                <div className="flex flex-wrap items-end gap-3">
+                <form action="/import/preview" method="post" encType="multipart/form-data" className="flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="_token" value={csrfToken} />
                     <label className="block text-sm font-medium">
                         What are you importing?
-                        <select value={kind} onChange={(e) => setKind(e.target.value)} className="mt-1 rounded-lg border border-slate-300 px-3 bg-white block">
+                        <select name="kind" value={kind} onChange={(e) => setKind(e.target.value)} className="mt-1 rounded-lg border border-slate-300 px-3 bg-white block">
                             <option value="members">Members</option>
                             <option value="animals">Animals</option>
                         </select>
                     </label>
                     <label className="block text-sm font-medium flex-1 min-w-48">
                         CSV file
-                        <input type="file" accept=".csv,.txt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 block" />
+                        <input type="file" name="file" accept=".csv,.txt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 block" />
                     </label>
-                    <button onClick={upload} disabled={!file} className="rounded-full bg-brand text-white font-bold text-sm px-5 py-3 disabled:opacity-60">
+                    <button type="submit" disabled={!file} className="rounded-full bg-brand text-white font-bold text-sm px-5 py-3 disabled:opacity-60">
                         Preview →
                     </button>
-                </div>
+                </form>
                 <p className="text-xs text-slate-400 mt-2">
                     Members: <code className="bg-slate-100 px-1 rounded">first_name,last_name,preferred_name,status,dob,phone,postcode</code> ·
                     Animals: <code className="bg-slate-100 px-1 rounded">name,species,breed,sex,status</code>.
