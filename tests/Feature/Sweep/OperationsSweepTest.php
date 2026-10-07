@@ -4,6 +4,7 @@ namespace Tests\Feature\Sweep;
 
 use App\Models\Task;
 use App\Models\Vehicle;
+use App\Models\VehicleCheck;
 use Illuminate\Support\Facades\DB;
 
 class OperationsSweepTest extends SweepTestCase
@@ -40,6 +41,15 @@ class OperationsSweepTest extends SweepTestCase
     public function test_transport_complete_outcome_undo_and_payments(): void
     {
         $m = $this->scheduledMember();
+        $vehicle = Vehicle::create(['registration' => 'SW26 EEP']);
+        foreach (['morning', 'afternoon'] as $phase) {
+            VehicleCheck::create([
+                'vehicle_id' => $vehicle->id, 'checked_by' => $this->admin->id,
+                'checked_at' => now(), 'phase' => $phase, 'odometer_miles' => 5000,
+                'fuel_level' => 'full', 'tyres_ok' => true, 'lights_ok' => true,
+                'warning_lights_ok' => true, 'damage_ok' => true, 'safe_to_drive' => true,
+            ]);
+        }
         $this->get('/transport')->assertOk();
 
         $this->assertWriteOk($this->post("/transport/{$m->id}/complete", ['phase' => 'morning']), 'transport.complete');

@@ -15,6 +15,7 @@ class VehicleCheck extends Model
     {
         return [
             'checked_at' => 'datetime',
+            'phase' => 'string',
             'odometer_miles' => 'decimal:1',
             'tyres_ok' => 'boolean',
             'lights_ok' => 'boolean',

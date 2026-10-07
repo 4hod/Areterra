@@ -8,6 +8,8 @@ use App\Models\EndOfDayRecord;
 use App\Models\Member;
 use App\Models\TransportRun;
 use App\Models\User;
+use App\Models\Vehicle;
+use App\Models\VehicleCheck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -124,6 +126,14 @@ class DailyWorkflowOrderTest extends TestCase
             'member_id' => $this->member->id,
             'date' => today(),
             'user_id' => $this->staff->id,
+        ]);
+
+        $vehicle = Vehicle::create(['registration' => 'DW26 FLOW']);
+        VehicleCheck::create([
+            'vehicle_id' => $vehicle->id, 'checked_by' => $this->staff->id,
+            'checked_at' => now(), 'phase' => 'afternoon', 'odometer_miles' => 100,
+            'fuel_level' => 'half', 'tyres_ok' => true, 'lights_ok' => true,
+            'warning_lights_ok' => true, 'damage_ok' => true, 'safe_to_drive' => true,
         ]);
 
         $this->actingAs($this->staff)->post("/transport/{$this->member->id}/complete", [

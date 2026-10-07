@@ -119,6 +119,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::middleware(['can:view_member_details', 'can:log_sessions'])->group(function () {
         Route::get('/transport', [TransportController::class, 'index'])->name('transport');
+        Route::post('/transport/pre-drive-check', [TransportController::class, 'storePreDriveCheck'])->name('transport.pre-drive-check');
         Route::post('/transport/{member}/complete', [TransportController::class, 'complete'])->name('transport.complete');
         Route::post('/transport/{member}/outcome', [TransportController::class, 'outcome'])->name('transport.outcome');
         Route::post('/transport/{member}/undo', [TransportController::class, 'undo'])->name('transport.undo');

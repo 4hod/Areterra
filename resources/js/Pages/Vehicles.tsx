@@ -28,7 +28,7 @@ interface VehicleRow {
     last_mileage: number | null;
     last_check: { checked_at: string; checker: string; safe_to_drive: boolean } | null;
     checks: Array<{
-        id: number; checked_at: string; checker: string; odometer_miles: number; fuel_level: string;
+        id: number; checked_at: string; checker: string; phase: 'morning' | 'afternoon' | null; odometer_miles: number; fuel_level: string;
         tyres_ok: boolean; lights_ok: boolean; warning_lights_ok: boolean; damage_ok: boolean;
         safe_to_drive: boolean; notes: string | null;
     }>;
@@ -45,7 +45,7 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
     const { data, setData, post, processing, reset } = useForm({ description: '', severity: 'minor' });
     const [checking, setChecking] = useState<VehicleRow | null>(null);
     const checkForm = useForm({
-        odometer_miles: '', fuel_level: 'half', tyres_ok: true, lights_ok: true,
+        phase: 'morning', odometer_miles: '', fuel_level: 'half', tyres_ok: true, lights_ok: true,
         warning_lights_ok: true, damage_ok: true, notes: '',
     });
 
@@ -58,7 +58,7 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
     function openCheck(vehicle: VehicleRow) {
         setChecking(vehicle);
         checkForm.setData({
-            odometer_miles: vehicle.last_mileage?.toString() ?? '', fuel_level: 'half',
+            phase: 'morning', odometer_miles: vehicle.last_mileage?.toString() ?? '', fuel_level: 'half',
             tyres_ok: true, lights_ok: true, warning_lights_ok: true, damage_ok: true, notes: '',
         });
     }
@@ -166,9 +166,9 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
                                 <summary className="text-xs font-bold text-brand cursor-pointer">Vehicle history ({v.checks.length})</summary>
                                 <div className="mt-2 overflow-x-auto">
                                     <table className="w-full text-xs">
-                                        <thead><tr className="text-left text-slate-400"><th className="py-2">Date</th><th>Mileage</th><th>Fuel</th><th>Result</th><th>Checked by</th></tr></thead>
+                                        <thead><tr className="text-left text-slate-400"><th className="py-2">Date / run</th><th>Mileage</th><th>Fuel</th><th>Result</th><th>Checked by</th></tr></thead>
                                         <tbody>{v.checks.map((c) => <tr key={c.id} className="border-t border-slate-100">
-                                            <td className="py-2">{new Date(c.checked_at).toLocaleString('en-GB')}</td>
+                                            <td className="py-2">{new Date(c.checked_at).toLocaleString('en-GB')}{c.phase && <span className="block capitalize text-slate-400">{c.phase}</span>}</td>
                                             <td>{c.odometer_miles.toLocaleString()}</td><td>{c.fuel_level.replace('_', ' ')}</td>
                                             <td className={c.safe_to_drive ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}>{c.safe_to_drive ? 'Safe' : 'Off road'}</td>
                                             <td>{c.checker}</td>
@@ -183,6 +183,12 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
 
             <Modal open={checking !== null} title={`Pre-drive check — ${checking?.registration ?? ''}`} onClose={() => setChecking(null)}>
                 <form onSubmit={submitCheck} className="space-y-4">
+                    <label className="block text-sm font-medium">Transport run
+                        <select value={checkForm.data.phase} onChange={(e) => checkForm.setData('phase', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white">
+                            <option value="morning">Morning collection</option>
+                            <option value="afternoon">Afternoon return</option>
+                        </select>
+                    </label>
                     <label className="block text-sm font-medium">Current mileage
                         <input type="number" min={checking?.last_mileage ?? 0} step="0.1" value={checkForm.data.odometer_miles} onChange={(e) => checkForm.setData('odometer_miles', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
                         {checkForm.errors.odometer_miles && <span className="text-xs text-red-600">{checkForm.errors.odometer_miles}</span>}

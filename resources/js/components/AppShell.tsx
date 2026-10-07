@@ -32,6 +32,7 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/incidents', label: 'Incidents', icon: 'alert', cap: 'report_incidents' },
         { href: '/compliance', label: 'Compliance', icon: 'shield', cap: 'view_all_compliance' },
         { href: '/documents', label: 'Documents', icon: 'folder' },
+        { href: '/risk-assessments', label: 'Risk assessments', icon: 'shield' },
         { href: '/sar-requests', label: 'SAR requests', icon: 'lock', cap: 'edit_members' },
     ] },
     { title: 'Team', items: [
@@ -78,6 +79,7 @@ const PRIMARY_NAV: NavItem[] = [
     { href: '/tasks', label: 'Activities', icon: 'tasks' },
     { href: '/referrals', label: 'Referrals', icon: 'mail', cap: 'create_members' },
     { href: '/forms', label: 'Forms', icon: 'file' },
+    { href: '/risk-assessments', label: 'Risk assessments', icon: 'shield' },
     { href: '/incidents', label: 'Safeguarding', icon: 'shield', cap: 'report_incidents' },
     { href: '/reports', label: 'Reports', icon: 'chart', cap: 'view_reports' },
     { href: '/more', label: 'More tools', icon: 'grid' },

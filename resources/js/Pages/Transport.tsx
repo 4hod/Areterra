@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
@@ -58,6 +58,10 @@ interface Props {
     outcomes: Outcome[];
     suggestedAmounts: number[];
     monthly: { charged: number; collected: number };
+    preDrive: {
+        vehicles: Array<{ id: number; registration: string; make_model: string | null; last_mileage: number | null; off_road: boolean }>;
+        phases: Record<'morning' | 'afternoon', { ready: boolean; vehicle?: string; checked_at?: string; checker?: string }>;
+    };
 }
 
 const gbp = (n: number) => `£${Math.abs(n).toFixed(2)}`;
@@ -84,12 +88,24 @@ const OUTCOME_LABEL: Record<Outcome, string> = {
     absent: 'Absent all day',
 };
 
-export default function Transport({ date, isToday, afternoonAvailable, rows, dailyRate, legRate, suggestedAmounts, monthly }: Props) {
+export default function Transport({ date, isToday, afternoonAvailable, rows, dailyRate, legRate, suggestedAmounts, monthly, preDrive }: Props) {
     const [paying, setPaying] = useState<Row | null>(null);
     const [statement, setStatement] = useState<{ member: string; balance: number; returns_remaining: number; entries: StatementRow[] } | null>(null);
     const [amount, setAmount] = useState<number>(dailyRate);
     const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
     const [payNotes, setPayNotes] = useState('');
+    const [checking, setChecking] = useState(false);
+    const checkForm = useForm({
+        vehicle_id: preDrive.vehicles.find((vehicle) => !vehicle.off_road)?.id ?? 0,
+        phase: 'morning' as 'morning' | 'afternoon',
+        odometer_miles: '',
+        fuel_level: 'half',
+        tyres_ok: true,
+        lights_ok: true,
+        warning_lights_ok: true,
+        damage_ok: true,
+        notes: '',
+    });
 
 
     const morningQueue = rows.filter((r) => !r.morning_outcome);
@@ -101,6 +117,33 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
 
     const afternoonLocked = phase === 2 && !afternoonAvailable;
     const next = phase === 1 ? morningQueue[0] : phase === 2 && afternoonAvailable ? afternoonQueue[0] : null;
+    const activePhase: 'morning' | 'afternoon' = phase === 2 ? 'afternoon' : 'morning';
+    const preDriveStatus = preDrive.phases[activePhase];
+    const transportUnlocked = !isToday || preDriveStatus.ready;
+
+    function openPreDrive() {
+        const vehicle = preDrive.vehicles.find((item) => !item.off_road);
+        checkForm.setData({
+            vehicle_id: vehicle?.id ?? 0,
+            phase: activePhase,
+            odometer_miles: vehicle?.last_mileage?.toString() ?? '',
+            fuel_level: 'half',
+            tyres_ok: true,
+            lights_ok: true,
+            warning_lights_ok: true,
+            damage_ok: true,
+            notes: '',
+        });
+        setChecking(true);
+    }
+
+    function submitPreDrive(event: React.FormEvent) {
+        event.preventDefault();
+        checkForm.post('/transport/pre-drive-check', {
+            preserveScroll: true,
+            onSuccess: () => setChecking(false),
+        });
+    }
 
     function openStatement(row: Row) {
         fetch(`/transport/${row.id}/statement`, { headers: { Accept: 'application/json' } })
@@ -183,6 +226,27 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                 ))}
             </div>
 
+            {isToday && phase < 3 && !afternoonLocked && (
+                <Card className={`mb-4 border-l-4 ${transportUnlocked ? 'border-l-emerald-500 bg-emerald-50/60' : 'border-l-amber-400 bg-amber-50/70'}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div className="text-xs font-extrabold uppercase tracking-wide text-slate-500">{activePhase} transport safety gate</div>
+                            <div className="font-extrabold text-brand-dark mt-1">
+                                {transportUnlocked ? `✓ Pre-drive check complete — ${preDriveStatus.vehicle}` : 'Pre-drive check required before transport'}
+                            </div>
+                            <p className="text-sm text-slate-600 mt-1">
+                                {transportUnlocked
+                                    ? `Checked by ${preDriveStatus.checker ?? 'staff'} at ${preDriveStatus.checked_at ? new Date(preDriveStatus.checked_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''}.`
+                                    : `Staff must check the vehicle again before the ${activePhase === 'morning' ? 'morning collection' : 'afternoon return'} run.`}
+                            </p>
+                        </div>
+                        <button onClick={openPreDrive} className="w-full sm:w-auto rounded-xl bg-yellow-400 px-5 py-3 font-extrabold text-brand-dark shadow-sm">
+                            {transportUnlocked ? 'Redo check' : 'Start pre-drive check'}
+                        </button>
+                    </div>
+                </Card>
+            )}
+
             {rows.length > 0 && (
                 <Card title="🗺️ Today's stops" className="mb-4">
                     <TransportMap stops={rows.map((r) => ({ id: r.id, name: r.name, address: r.address, lat: r.lat, lng: r.lng }))} />
@@ -229,9 +293,10 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                     <div className="flex flex-wrap gap-2 mt-4">
                         <button
                             onClick={() => complete(next, phase === 2 ? 'afternoon' : 'morning')}
-                            className="rounded-full bg-white text-brand-dark font-bold px-5 py-2.5"
+                            disabled={!transportUnlocked}
+                            className="rounded-full bg-white text-brand-dark font-bold px-5 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {phase === 2 ? 'Dropped off ✓' : 'Collected ✓'}
+                            {!transportUnlocked ? 'Pre-drive check first' : phase === 2 ? 'Dropped off ✓' : 'Collected ✓'}
                         </button>
                         <button
                             onClick={() => askReason(next, phase === 2 ? 'afternoon' : 'morning', 'not_collected')}
@@ -257,7 +322,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                         >
                             Statement
                         </button>
-                        {next.address && (
+                        {next.address && transportUnlocked && (
                             <a
                                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(next.address)}`}
                                 target="_blank"
@@ -297,7 +362,8 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                                 <div className="flex gap-1 shrink-0">
                                     <button
                                         onClick={() => complete(r, 'morning')}
-                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
+                                        disabled={!transportUnlocked}
+                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2 disabled:opacity-40"
                                     >
                                         Collected ✓
                                     </button>
@@ -328,7 +394,8 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                                 <div className="flex gap-1 shrink-0">
                                     <button
                                         onClick={() => complete(r, 'afternoon')}
-                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2"
+                                        disabled={!transportUnlocked}
+                                        className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2 disabled:opacity-40"
                                     >
                                         Dropped ✓
                                     </button>
@@ -419,6 +486,53 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
             )}
 
             {/* Payment modal */}
+            <Modal open={checking} title={`${activePhase === 'morning' ? 'Morning' : 'Afternoon'} pre-drive check`} onClose={() => setChecking(false)}>
+                <form onSubmit={submitPreDrive} className="space-y-4">
+                    <p className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
+                        Complete this immediately before the {activePhase === 'morning' ? 'collection' : 'return'} run. A failed item keeps transport locked and marks the vehicle off road.
+                    </p>
+                    <label className="block text-sm font-semibold">Vehicle
+                        <select
+                            value={checkForm.data.vehicle_id}
+                            onChange={(event) => {
+                                const id = Number(event.target.value);
+                                const vehicle = preDrive.vehicles.find((item) => item.id === id);
+                                checkForm.setData((data) => ({ ...data, vehicle_id: id, odometer_miles: vehicle?.last_mileage?.toString() ?? '' }));
+                            }}
+                            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-3"
+                            required
+                        >
+                            <option value={0}>Choose a vehicle</option>
+                            {preDrive.vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id} disabled={vehicle.off_road}>
+                                {vehicle.registration}{vehicle.make_model ? ` — ${vehicle.make_model}` : ''}{vehicle.off_road ? ' (off road)' : ''}
+                            </option>)}
+                        </select>
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-semibold">Current mileage
+                            <input type="number" min="0" step="0.1" value={checkForm.data.odometer_miles} onChange={(event) => checkForm.setData('odometer_miles', event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-3" required />
+                            {checkForm.errors.odometer_miles && <span className="text-xs text-red-600">{checkForm.errors.odometer_miles}</span>}
+                        </label>
+                        <label className="block text-sm font-semibold">Fuel level
+                            <select value={checkForm.data.fuel_level} onChange={(event) => checkForm.setData('fuel_level', event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-3">
+                                {['empty', 'quarter', 'half', 'three_quarters', 'full'].map((level) => <option key={level} value={level}>{level.replace(/_/g, ' ')}</option>)}
+                            </select>
+                        </label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {([
+                            ['tyres_ok', 'Tyres visually okay'], ['lights_ok', 'Lights working'],
+                            ['warning_lights_ok', 'No warning lights'], ['damage_ok', 'No new damage'],
+                        ] as const).map(([field, label]) => <label key={field} className={`flex min-h-14 items-center justify-between gap-3 rounded-xl border p-3 font-semibold ${checkForm.data[field] ? 'border-emerald-200 bg-emerald-50' : 'border-red-300 bg-red-50'}`}>
+                            <span>{label}</span><input type="checkbox" checked={checkForm.data[field]} onChange={(event) => checkForm.setData(field, event.target.checked)} className="h-6 w-6" />
+                        </label>)}
+                    </div>
+                    <label className="block text-sm font-semibold">Notes or damage details
+                        <textarea value={checkForm.data.notes} onChange={(event) => checkForm.setData('notes', event.target.value)} rows={3} className="mt-1 w-full rounded-xl border border-slate-300 p-3" />
+                    </label>
+                    <button disabled={checkForm.processing || !checkForm.data.vehicle_id} className="w-full rounded-xl bg-yellow-400 py-3.5 font-extrabold text-brand-dark disabled:opacity-50">Save and unlock {activePhase} transport</button>
+                </form>
+            </Modal>
             <Modal open={paying !== null} title={`Payment — ${paying?.name ?? ''}`} onClose={() => setPaying(null)}>
                 <div className="space-y-4">
                     <p className="text-sm text-slate-500">
