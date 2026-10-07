@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Animal;
 use App\Models\Certificate;
 use App\Models\Document;
+use App\Models\Incident;
 use App\Models\Member;
 use App\Models\PortfolioItem;
 use App\Models\RiskAssessment;
@@ -117,7 +118,13 @@ class ConnectedRecordsAndDeletionTest extends TestCase
         $this->assertDatabaseHas('incidents', [
             'subject_type' => $animal->getMorphClass(), 'subject_id' => $animal->id,
         ]);
-        $this->assertTrue(Task::where('taskable_type', $animal->getMorphClass())->firstOrFail()->taskable->is($animal));
+        $incidentTask = Task::where('taskable_type', $animal->getMorphClass())->firstOrFail();
+        $this->assertTrue($incidentTask->taskable->is($animal));
+        $this->assertSame('incident_closed:'.Incident::firstOrFail()->id, $incidentTask->completes_on_event);
+
+        $this->delete("/tasks/{$incidentTask->id}")->assertStatus(422);
+        $this->put('/incidents/'.Incident::firstOrFail()->id, ['status' => 'closed'])->assertSessionHas('success');
+        $this->assertNotNull($incidentTask->fresh()->completed_at);
 
         $this->get("/tasks?about=member&id={$member->id}")->assertOk();
         $this->get("/incidents?about=animal&id={$animal->id}")->assertOk();

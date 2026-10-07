@@ -79,11 +79,25 @@ class IncidentController extends Controller
 
     public function update(Request $request, Incident $incident)
     {
+        $wasClosed = $incident->status === 'closed';
         $incident->update($request->validate([
             'status' => ['sometimes', 'in:'.implode(',', Incident::STATUSES)],
             'actions_taken' => ['nullable', 'string'],
             'follow_up_required' => ['boolean'],
         ]));
+
+        if (! $wasClosed && $incident->status === 'closed') {
+            $subject = $incident->subject ?? $incident->vehicle;
+            if ($subject && method_exists($subject, 'tasks')) {
+                $subject->tasks()
+                    ->open()
+                    ->where('completes_on_event', "incident_closed:{$incident->id}")
+                    ->update([
+                        'completed_at' => now(),
+                        'completed_by' => $request->user()->id,
+                    ]);
+            }
+        }
 
         return back()->with('success', 'Incident updated.');
     }
