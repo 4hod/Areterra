@@ -27,6 +27,8 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
     const [search, setSearch] = useState(filters.search ?? '');
     const status = filters.status ?? 'all';
     const [adding, setAdding] = useState(false);
+    const [showTools, setShowTools] = useState((filters.status ?? 'all') !== 'all');
+    const [selectionMode, setSelectionMode] = useState(false);
     const [selected, setSelected] = useState<number[]>([]);
     const canCreate = auth.user?.capabilities.includes('create_members') || auth.user?.role === 'administrator';
     const canEdit = auth.user?.capabilities.includes('edit_members') || auth.user?.role === 'administrator';
@@ -73,25 +75,31 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
                     <div>
                         <span className="module-kicker-4a">People and support</span>
                         <h1>Members</h1>
-                        <p>One clear place for every member, their weekly attendance and current service status.</p>
+                        <p>Find a member and open the information you need.</p>
                     </div>
-                    {canCreate && <button onClick={() => setAdding(true)} className="module-primary-btn-4a">+ Add new member</button>}
-                </section>
-
-                <section className="members-metrics-4a">
-                    <article><span>Active members</span><strong>{activeCount}</strong><small>currently receiving the service</small></article>
-                    <article><span>Attending today</span><strong>{attendingToday}</strong><small>based on planned weekly days</small></article>
-                    <article><span>Weekly sessions</span><strong>{weeklySessions}</strong><small>planned member attendances</small></article>
+                    <div className="members-header-actions-4a">
+                        {canEdit && <button onClick={() => { setSelectionMode((value) => !value); setSelected([]); }} className="module-quiet-btn-4a">{selectionMode ? 'Done selecting' : 'Select'}</button>}
+                        {canCreate && <button onClick={() => setAdding(true)} className="module-secondary-btn-4a">+ Add</button>}
+                    </div>
                 </section>
 
                 <section className="members-toolbar-4a">
                     <div className="members-search-4a"><span>⌕</span><input type="search" value={search} onChange={(e) => submitSearch(e.target.value)} placeholder="Search by member name..." /></div>
+                    <button className="members-tools-toggle-4a" onClick={() => setShowTools((value) => !value)} aria-expanded={showTools}>Filters & summary <span>{showTools ? '−' : '+'}</span></button>
+                </section>
+
+                {showTools && <section className="members-tools-4a">
                     <div className="members-filters-4a">
                         {STATUS_TABS.map((tab) => <button key={tab.value} onClick={() => setStatusFilter(tab.value)} className={status === tab.value ? 'is-active' : ''}>{tab.label}</button>)}
                     </div>
-                </section>
+                    <div className="members-metrics-4a">
+                        <article><span>Active members</span><strong>{activeCount}</strong><small>currently receiving the service</small></article>
+                        <article><span>Attending today</span><strong>{attendingToday}</strong><small>planned to attend today</small></article>
+                        <article><span>Planned days each week</span><strong>{weeklySessions}</strong><small>total booked attendance days</small></article>
+                    </div>
+                </section>}
 
-                {canEdit && members.length > 0 && (
+                {selectionMode && canEdit && members.length > 0 && (
                     <section className="members-bulkbar-4a">
                         <label><input type="checkbox" checked={selected.length === members.length} onChange={toggleSelectAll} /> Select all</label>
                         <span>{selected.length ? `${selected.length} selected` : 'Choose members to make a bulk update'}</span>
@@ -102,7 +110,7 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
                 <section className="members-grid-4a">
                     {members.map((member) => (
                         <article key={member.id} className="member-profile-card-4a">
-                            {canEdit && <input className="member-select-4a" type="checkbox" checked={selected.includes(member.id)} onChange={() => toggleSelected(member.id)} aria-label={`Select ${member.name}`} />}
+                            {selectionMode && canEdit && <input className="member-select-4a" type="checkbox" checked={selected.includes(member.id)} onChange={() => toggleSelected(member.id)} aria-label={`Select ${member.name}`} />}
                             <Link href={`/members/${member.id}`} className="member-card-link-4a">
                                 <div className="member-card-top-4a">
                                     <div className="member-avatar-4a">{member.name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2)}</div>

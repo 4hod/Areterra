@@ -85,7 +85,7 @@ interface Props {
     canRecordImpact: boolean;
 }
 
-const TABS = ['Profile', 'Day Passport', 'Sessions', 'Impact', '📞 Comms', 'Goals', 'Outcomes', '⚠ Alerts', 'Circle of Care', 'Consents', 'Body Map', 'ABC Obs', 'GP Info', 'Settings'] as const;
+const TABS = ['Profile', 'Sessions', 'Impact', '📞 Comms', 'Goals', 'Outcomes', '⚠ Alerts', 'Circle of Care', 'Consents', 'Body Map', 'ABC Obs', 'GP Info', 'Settings'] as const;
 
 const COMMS_ICONS: Record<string, string> = { email: '✉️', phone: '📞', letter: '📮', meeting: '🤝', text: '💬', other: '📝' };
 const NOTE_TYPE_LABELS: Record<string, string> = {
@@ -237,26 +237,17 @@ export default function Show(props: Props) {
                         <img src={member.photo_path} alt={member.name} className="h-16 w-16 rounded-full object-cover" />
                     ) : (
                         <div className="h-16 w-16 rounded-full bg-brand/10 text-brand font-extrabold text-2xl flex items-center justify-center">
-                            {member.name.charAt(0)}
+                            {member.name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2)}
                         </div>
                     )}
                     {canEdit && (
-                        <>
-                            <button
-                                onClick={() => photoInput.current?.click()}
-                                aria-label="Change photo"
-                                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-brand text-white text-xs flex items-center justify-center ring-2 ring-white"
-                            >
-                                📷
-                            </button>
-                            <input
-                                ref={photoInput}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
-                            />
-                        </>
+                        <input
+                            ref={photoInput}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
+                        />
                     )}
                 </div>
                 <div className="member-record-identity-4a">
@@ -272,32 +263,25 @@ export default function Show(props: Props) {
                         {(member.town || member.postcode) && <span>● {[member.town, member.postcode].filter(Boolean).join(', ')}</span>}
                     </div>
                 </div>
-                <div className="ml-auto flex max-w-full flex-wrap justify-end gap-1.5">
+                <div className="member-record-actions-4a ml-auto flex max-w-full flex-wrap justify-end gap-1.5">
+                    {canRecordImpact && <button onClick={() => setTab('Impact')} className="member-frontline-action-4a">+ Record progress</button>}
                     <Link href={`/members/${member.id}/passport`} className="rounded-full bg-sky-50 text-brand text-xs font-bold px-3 py-2">
-                        ✦ Day Passport
+                        Day Passport
                     </Link>
                     <Link href={`/members/${member.id}/portfolio`} className="rounded-full bg-amber-100 text-amber-900 text-xs font-bold px-3 py-2">
-                        🏆 My Areterra
+                        My Areterra
                     </Link>
-                    <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                        🖨 Print
-                    </button>
-                    <Link href={`/members/${member.id}/history`} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                        📜 Full History
-                    </Link>
-                    <a href={`/members/${member.id}/care-plan`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                        🗓️ Care Plan
-                    </a>
-                    <a href={`/members/${member.id}/sar`} target="_blank" className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
-                        📄 SAR
-                    </a>
-                    {canEdit && (
-                        <>
-                            <button onClick={() => setEditing(true)} className="rounded-full bg-brand text-white text-xs font-bold px-3 py-2">
-                                ✏️ Edit Profile
-                            </button>
-                        </>
-                    )}
+                    <details className="member-more-actions-4a">
+                        <summary>More actions</summary>
+                        <div>
+                            <a href={`/members/${member.id}/care-plan`} target="_blank">Care plan</a>
+                            <Link href={`/members/${member.id}/history`}>Full history</Link>
+                            <button onClick={() => window.print()}>Print profile</button>
+                            <a href={`/members/${member.id}/sar`} target="_blank">SAR tools</a>
+                            {canEdit && <button onClick={() => setEditing(true)}>Edit profile</button>}
+                            {canEdit && <button onClick={() => photoInput.current?.click()}>Change photo</button>}
+                        </div>
+                    </details>
                 </div>
             </div>
 
@@ -317,7 +301,10 @@ export default function Show(props: Props) {
                 </div>
             )}
 
-            <ConnectedRecordLinks type="member" id={member.id} />
+            <details className="member-connected-records-4a">
+                <summary>Related records <span>Tasks, forms, documents and incidents</span></summary>
+                <ConnectedRecordLinks type="member" id={member.id} />
+            </details>
 
             {/* Tabs */}
             <TabBar tabs={TABS} active={tab} onChange={setTab} />
@@ -443,16 +430,6 @@ export default function Show(props: Props) {
                         )}
                     </Card>
                 </div>
-            )}
-
-            {/* ── Sessions ── */}
-            {tab === 'Day Passport' && (
-                <Card title="A quick working view for today">
-                    <p className="text-sm text-slate-500 mb-3">Support cues, current alerts, health essentials, goals and the latest handover in one phone-friendly view.</p>
-                    <Link href={`/members/${member.id}/passport`} className="inline-flex min-h-12 items-center rounded-xl bg-brand px-5 font-bold text-white">
-                        Open {member.preferred_name || member.first_name}’s Day Passport →
-                    </Link>
-                </Card>
             )}
 
             {/* ── Sessions ── */}

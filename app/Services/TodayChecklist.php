@@ -15,6 +15,7 @@ class TodayChecklist
     public function build(CarbonInterface $date): array
     {
         $attendees = Attendance::whereDate('date', $date)->where('checked_in', true)->get();
+        $memberWorkExpected = Member::scheduledFor($date)->exists() || $attendees->isNotEmpty();
 
         $transportMemberIds = Member::scheduledFor($date)
             ->whereHas('settings', fn ($q) => $q->where('transport_required', true))
@@ -47,12 +48,14 @@ class TodayChecklist
             [
                 'key' => 'welfare',
                 'label' => 'Animal Welfare & Feeding',
+                'applicable' => true,
                 'done' => $activeAnimals === 0 || $checkedAnimals >= $activeAnimals,
                 'detail' => $checkedAnimals.' of '.$activeAnimals.' animals checked and fed',
             ],
             [
                 'key' => 'transport',
                 'label' => 'Morning Transport',
+                'applicable' => $transportExpected,
                 'done' => $morningComplete,
                 'detail' => $transportExpected
                     ? $morningRuns->count().' of '.$transportMemberIds->count().' collections recorded'
@@ -61,24 +64,28 @@ class TodayChecklist
             [
                 'key' => 'register',
                 'label' => 'Morning Register',
+                'applicable' => $memberWorkExpected,
                 'done' => $attendees->isNotEmpty(),
-                'detail' => $attendees->count().' checked in',
+                'detail' => $memberWorkExpected ? $attendees->count().' checked in' : 'No members are scheduled today',
             ],
             [
                 'key' => 'moods',
                 'label' => 'Arrival Moods',
+                'applicable' => $memberWorkExpected,
                 'done' => $attendees->isNotEmpty() && $attendees->every(fn ($a) => $a->arrival_mood !== null),
-                'detail' => $attendees->whereNotNull('arrival_mood')->count().' of '.$attendees->count().' recorded',
+                'detail' => $memberWorkExpected ? $attendees->whereNotNull('arrival_mood')->count().' of '.$attendees->count().' recorded' : 'No member arrivals are expected',
             ],
             [
                 'key' => 'end_of_day',
                 'label' => 'End of Day Records',
+                'applicable' => $memberWorkExpected,
                 'done' => $attendees->isNotEmpty() && $eodCount >= $attendees->count(),
-                'detail' => $eodCount.' of '.$attendees->count().' completed',
+                'detail' => $memberWorkExpected ? $eodCount.' of '.$attendees->count().' completed' : 'No member records are due today',
             ],
             [
                 'key' => 'return_transport',
                 'label' => 'Return Transport',
+                'applicable' => $transportExpected,
                 'done' => $returnComplete,
                 'detail' => $transportExpected
                     ? $returnRuns->count().' of '.$transportMemberIds->count().' returns recorded'
@@ -98,7 +105,7 @@ class TodayChecklist
             }
 
             $item['available'] = $previousStepsDone;
-            $previousStepsDone = $previousStepsDone && $item['done'];
+            $previousStepsDone = $previousStepsDone && (! $item['applicable'] || $item['done']);
 
             return $item;
         })->all();

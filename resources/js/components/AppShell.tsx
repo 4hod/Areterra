@@ -12,8 +12,8 @@ interface NavSection { title: string; items: NavItem[] }
 
 export const NAV_SECTIONS: NavSection[] = [
     { title: 'Workspace', items: [
-        { href: '/', label: 'Overview', icon: 'grid' },
-        { href: '/today', label: 'Today', icon: 'today' },
+        { href: '/', label: 'Management overview', icon: 'grid' },
+        { href: '/today', label: 'Daily work', icon: 'today' },
         { href: '/tasks', label: 'Tasks', icon: 'tasks' },
         { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
         { href: '/animals', label: 'Animals & welfare', icon: 'paw', cap: 'view_animals' },
@@ -21,7 +21,7 @@ export const NAV_SECTIONS: NavSection[] = [
     ] },
     { title: 'Daily operations', items: [
         { href: '/transport', label: 'Transport', icon: 'truck', cap: 'log_sessions' },
-        { href: '/register', label: 'Morning register', icon: 'register', cap: 'log_sessions' },
+        { href: '/register', label: 'Morning register & fire list', icon: 'register', cap: 'log_sessions' },
         { href: '/end-of-day', label: 'End of day', icon: 'moon', cap: 'log_sessions' },
         { href: '/monitoring', label: 'Daily monitoring', icon: 'monitor', cap: 'log_welfare' },
     ] },
@@ -185,7 +185,7 @@ export default function AppShell({ title, children }: { title: string; children:
         </div>
 
         <nav className="portal-mobile-nav md:hidden">
-            {MOBILE_NAV.filter((item) => allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} className={isActive(item.href, url) ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
+            {MOBILE_NAV.filter((item) => allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} className={isActive(item.href, url) || (item.href === '/today' && url === '/') ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
         </nav>
 
         {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>

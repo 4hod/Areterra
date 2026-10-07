@@ -111,15 +111,15 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
     return (
         <AppShell title="Animals">
             <Head title="Animals" />
-            <ModuleHero eyebrow="Animal care" title="Animals" description="See every animal, their care status and what needs attention today." icon="🦜" tone="green" />
+            <div className="animals-heading-actions-4a">
+                <ModuleHero eyebrow="Animal care" title="Animals" description="Open today's checks or review an animal's care record." icon="🦜" tone="green" />
 
-            {canEdit && (
-                <div className="mb-4 flex justify-end">
-                    <button onClick={() => setAdding(true)} className="rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white">
-                        + Add animal
+                {canEdit && (
+                    <button onClick={() => setAdding(true)} className="animals-add-quiet-4a">
+                        + Add animal record
                     </button>
-                </div>
-            )}
+                )}
+            </div>
 
             <div className="space-y-4">
                 {Object.entries(bySpecies).map(([species, animals]) => {
@@ -139,7 +139,7 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                                         allChecked ? 'bg-emerald-100 text-emerald-800' : 'bg-brand text-white'
                                     }`}
                                 >
-                                    {allChecked ? '✓ Checked today' : 'Daily check'}
+                                    {allChecked ? '✓ Review today\'s checks' : 'Open today\'s checks'}
                                 </button>
                             }
                         >
@@ -148,19 +148,10 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                                     <Link
                                         key={a.id}
                                         href={`/animals/${a.id}`}
-                                        className="flex items-center gap-2 rounded-full border border-slate-200 pl-3 pr-2 py-1.5 hover:bg-slate-50"
+                                        className="animal-list-link-4a"
                                     >
-                                        <span className="font-semibold text-sm text-brand-dark">{a.name}</span>
-                                        <span
-                                            className={`h-2.5 w-2.5 rounded-full ${
-                                                a.welfare_status === 'green'
-                                                    ? 'bg-status-green'
-                                                    : a.welfare_status === 'amber'
-                                                      ? 'bg-status-amber'
-                                                      : 'bg-status-red'
-                                            }`}
-                                            title={`Welfare: ${a.welfare_status}`}
-                                        />
+                                        <span><strong>{a.name}</strong><small>{a.checked_today ? 'Today\'s care check recorded' : 'Today\'s care check not recorded'}</small></span>
+                                        <em className={`is-${a.welfare_status}`}>Welfare: {a.welfare_status}</em>
                                     </Link>
                                 ))}
                             </div>
