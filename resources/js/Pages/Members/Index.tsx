@@ -22,6 +22,12 @@ const STATUS_TABS = [
     { value: 'archived', label: 'Archived' },
 ];
 
+function attendanceSummary(member: MemberRow) {
+    const days = member.attendance_days.map((day) => DAY_LABELS[day]).join('/');
+    const status = member.status.replace('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+    return days ? `${status} · attends ${days}` : `${status} · no regular days`;
+}
+
 export default function Index({ members, filters }: { members: MemberRow[]; filters: { search?: string; status?: string } }) {
     const { auth } = usePage<SharedProps>().props;
     const [search, setSearch] = useState(filters.search ?? '');
@@ -117,11 +123,12 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
                                     <StatusPill status={member.status} />
                                 </div>
                                 <div className="member-card-name-4a">{member.name}</div>
-                                <div className="member-card-label-4a">Planned attendance</div>
+                                <div className="member-card-summary-4a">{attendanceSummary(member)}</div>
+                                <div className="member-card-label-4a">Regular week</div>
                                 <div className="member-days-4a">
                                     {[1, 2, 3, 4, 5, 6, 7].map((day) => <span key={day} className={member.attendance_days.includes(day) ? 'is-planned' : ''}>{DAY_LABELS[day]}</span>)}
                                 </div>
-                                <div className="member-card-footer-4a"><span>{member.attendance_days.length} days each week</span><b>Open profile →</b></div>
+                                <div className="member-card-footer-4a"><span>{member.attendance_days.length ? `${member.attendance_days.length} planned day${member.attendance_days.length === 1 ? '' : 's'}` : 'Attendance not set'}</span><b>Open profile →</b></div>
                             </Link>
                         </article>
                     ))}

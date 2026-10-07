@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -39,7 +39,8 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Calendar({ month, prevMonth, nextMonth, events, canManageLeave, pendingLeave }: Props) {
     const canManageOperations = (usePage<SharedProps>().props.auth.user?.capabilities ?? []).includes('manage_operations');
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const [selectedDate, setSelectedDate] = useState<string | null>(todayStr.startsWith(month) ? todayStr : null);
     const [reviewing, setReviewing] = useState(false);
     const [adding, setAdding] = useState(false);
     const { data, setData, post, processing, reset } = useForm({
@@ -64,9 +65,12 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
     ];
     while (cells.length % 7 !== 0) cells.push(null);
 
-    const todayStr = new Date().toISOString().slice(0, 10);
     const monthLabel = firstOfMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     const selectedEvents = selectedDate ? byDate[selectedDate] ?? [] : [];
+    const upcoming = useMemo(() => events
+        .filter((event) => event.type === 'activity' && event.date >= todayStr && event.status !== 'cancelled')
+        .sort((a, b) => `${a.date}${a.start_time ?? ''}`.localeCompare(`${b.date}${b.start_time ?? ''}`))
+        .slice(0, 4), [events, todayStr]);
 
     function review(id: number, status: 'approved' | 'declined') {
         router.put(`/leave/${id}/review`, { status }, { preserveScroll: true });
@@ -102,6 +106,11 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
                     ⏳ {pendingLeave.length} pending leave request{pendingLeave.length !== 1 && 's'} →
                 </button>
             )}
+
+            <section className="calendar-agenda-4a">
+                <header><div><span>Next up</span><h2>{upcoming[0]?.title ?? 'No upcoming activities'}</h2></div>{upcoming[0] && <time>{new Date(upcoming[0].date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}{upcoming[0].start_time ? ` · ${upcoming[0].start_time}` : ''}</time>}</header>
+                {upcoming.length > 0 ? <div>{upcoming.map((event) => <button key={`${event.date}-${event.id}`} type="button" onClick={() => setSelectedDate(event.date)}><span>{new Date(event.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span><b>{event.title}</b><small>{event.start_time || 'All day'} · {event.status || 'planned'}</small></button>)}</div> : <p>Add the next session so staff can see what is coming without opening the month view.</p>}
+            </section>
 
             <Card>
                 <div className="flex items-center justify-between mb-3">
@@ -148,15 +157,13 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
             </Card>
 
             {selectedDate && (
-                <Card title={new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} className="mt-4">
-                    {selectedEvents.length === 0 && <p className="text-sm text-slate-400">Nothing on this day.</p>}
-                    <ul className="space-y-1">
+                <Card title={new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} className="mt-4 calendar-selected-day-4a">
+                    {selectedEvents.length === 0 && <div className="calendar-day-empty-4a"><b>Nothing planned</b><span>This day is clear.</span>{canManageOperations && <button onClick={() => openAdd(selectedDate)}>+ Add an activity</button>}</div>}
+                    <ul className="calendar-day-list-4a">
                         {selectedEvents.map((e, i) => (
-                            <li key={i} className="text-sm flex items-center gap-2">
+                            <li key={i}>
                                 <span>{e.type === 'activity' ? '📅' : '🏖️'}</span>
-                                <span className="text-brand-dark font-medium">{e.start_time && `${e.start_time} · `}{e.title}</span>
-                                {e.status && <span className="text-xs text-slate-400">({e.status})</span>}
-                                {e.description && <span className="text-xs text-slate-500">{e.description}</span>}
+                                <div><strong>{e.title}</strong><small>{e.start_time || 'All day'} · {e.status || (e.type === 'activity' ? 'planned activity' : 'leave')}</small>{e.description && <p>{e.description}</p>}</div>
                                 {e.type === 'activity' && e.status !== 'cancelled' && canManageOperations && <button onClick={() => cancelActivity(e)} className="ml-auto rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">Cancel</button>}
                             </li>
                         ))}

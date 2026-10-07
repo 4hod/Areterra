@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Animal;
 use App\Models\Attendance;
 use App\Models\EndOfDayRecord;
+use App\Models\ImpactEntry;
 use App\Models\Member;
 use App\Models\WelfareCheck;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ class ReportsController extends Controller
     {
         $from = $request->date('from') ?? today()->startOfMonth();
         $to = $request->date('to') ?? today();
+        $evidence = ImpactEntry::whereBetween('observed_at', [$from, $to->copy()->endOfDay()])->get();
+        $tagSummary = $evidence->flatMap(fn ($entry) => $entry->evidence_tags ?? [])->countBy()->sortDesc()->take(6);
 
         return Inertia::render('Reports', [
             'from' => $from->toDateString(),
@@ -28,7 +31,12 @@ class ReportsController extends Controller
                 'sessionsRecorded' => EndOfDayRecord::whereBetween('date', [$from, $to])->count(),
                 'welfareChecks' => WelfareCheck::whereBetween('created_at', [$from, $to->copy()->endOfDay()])->count(),
                 'activities' => Activity::whereBetween('activity_date', [$from, $to])->count(),
+                'impactEvidence' => $evidence->count(),
+                'membersWithEvidence' => $evidence->unique('member_id')->count(),
+                'averageEngagement' => round((float) ($evidence->whereNotNull('engagement_rating')->avg('engagement_rating') ?? 0), 1),
+                'averageIndependence' => round((float) ($evidence->whereNotNull('independence_rating')->avg('independence_rating') ?? 0), 1),
             ],
+            'tagSummary' => $tagSummary,
         ]);
     }
 

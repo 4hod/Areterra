@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import ModuleHero from '../components/ModuleHero';
@@ -19,7 +20,8 @@ interface Props {
         links: { url: string | null; label: string; active: boolean }[];
     };
     subjects: string[];
-    filter: string | null;
+    actors: { id: number; name: string }[];
+    filters: { search?: string; subject?: string; actor?: string; action?: string; from?: string; to?: string };
 }
 
 const ACTION_STYLE: Record<string, string> = {
@@ -28,22 +30,30 @@ const ACTION_STYLE: Record<string, string> = {
     deleted: 'bg-red-100 text-red-800',
 };
 
-export default function AuditLog({ entries, subjects, filter }: Props) {
+export default function AuditLog({ entries, subjects, actors, filters }: Props) {
+    const [query, setQuery] = useState({ search: filters.search ?? '', subject: filters.subject ?? '', actor: filters.actor ?? '', action: filters.action ?? '', from: filters.from ?? '', to: filters.to ?? '' });
+    function search(e: FormEvent) {
+        e.preventDefault();
+        router.get('/audit-log', Object.fromEntries(Object.entries(query).filter(([, value]) => value)), { preserveState: true, replace: true });
+    }
+    function clear() {
+        setQuery({ search: '', subject: '', actor: '', action: '', from: '', to: '' });
+        router.get('/audit-log');
+    }
     return (
         <AppShell title="Audit Log">
             <Head title="Audit Log" />
             <ModuleHero eyebrow="System oversight" title="Audit log" description="A clear, searchable record of important activity across the Hub." icon="🧾" tone="slate" />
 
-            <select
-                value={filter ?? ''}
-                onChange={(e) => router.get('/audit-log', e.target.value ? { subject: e.target.value } : {})}
-                className="rounded-lg border border-slate-300 px-3 bg-white mb-4"
-            >
-                <option value="">All record types</option>
-                {subjects.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                ))}
-            </select>
+            <form onSubmit={search} className="audit-log-filters-4a">
+                <label className="audit-log-search-4a"><span>Search the audit trail</span><input type="search" value={query.search} onChange={(e) => setQuery({ ...query, search: e.target.value })} placeholder="Person, record, change or ID…" /></label>
+                <label><span>Actor</span><select value={query.actor} onChange={(e) => setQuery({ ...query, actor: e.target.value })}><option value="">Anyone</option>{actors.map((actor) => <option key={actor.id} value={actor.id}>{actor.name}</option>)}</select></label>
+                <label><span>Module</span><select value={query.subject} onChange={(e) => setQuery({ ...query, subject: e.target.value })}><option value="">All modules</option>{subjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>
+                <label><span>Action</span><select value={query.action} onChange={(e) => setQuery({ ...query, action: e.target.value })}><option value="">Any action</option><option value="created">Created</option><option value="updated">Updated</option><option value="deleted">Deleted</option></select></label>
+                <label><span>From</span><input type="date" value={query.from} onChange={(e) => setQuery({ ...query, from: e.target.value })} /></label>
+                <label><span>To</span><input type="date" value={query.to} onChange={(e) => setQuery({ ...query, to: e.target.value })} /></label>
+                <div><button type="submit">Search records</button><button type="button" onClick={clear}>Clear</button></div>
+            </form>
 
             <Card>
                 <ul className="divide-y divide-slate-100 text-sm">
@@ -70,6 +80,7 @@ export default function AuditLog({ entries, subjects, filter }: Props) {
                             )}
                         </li>
                     ))}
+                    {entries.data.length === 0 && <li className="audit-log-empty-4a"><b>No matching audit records</b><span>Try a wider date range or clear one of the filters.</span></li>}
                 </ul>
                 <div className="flex flex-wrap gap-1 mt-3">
                     {entries.links.map((l, i) =>

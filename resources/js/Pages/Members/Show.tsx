@@ -274,12 +274,12 @@ export default function Show(props: Props) {
                     <details className="member-more-actions-4a">
                         <summary>More actions</summary>
                         <div>
-                            <a href={`/members/${member.id}/care-plan`} target="_blank">Care plan</a>
-                            <Link href={`/members/${member.id}/history`}>Full history</Link>
-                            <button onClick={() => window.print()}>Print profile</button>
-                            <a href={`/members/${member.id}/sar`} target="_blank">SAR tools</a>
-                            {canEdit && <button onClick={() => setEditing(true)}>Edit profile</button>}
-                            {canEdit && <button onClick={() => photoInput.current?.click()}>Change photo</button>}
+                            <a href={`/members/${member.id}/care-plan`} target="_blank" aria-label={`Open ${member.name}'s care plan`}>Care plan</a>
+                            <Link href={`/members/${member.id}/history`} aria-label={`Open ${member.name}'s full history`}>Full history</Link>
+                            <button onClick={() => window.print()} aria-label={`Print ${member.name}'s profile`}>Print profile</button>
+                            <a href={`/members/${member.id}/sar`} target="_blank" aria-label={`Open SAR tools for ${member.name}`}>SAR tools</a>
+                            {canEdit && <button onClick={() => setEditing(true)} aria-label={`Edit ${member.name}'s profile`}>Edit profile</button>}
+                            {canEdit && <button onClick={() => photoInput.current?.click()} aria-label={`Change ${member.name}'s photo`}>Change photo</button>}
                         </div>
                     </details>
                 </div>
