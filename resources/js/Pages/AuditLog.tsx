@@ -32,8 +32,10 @@ const ACTION_STYLE: Record<string, string> = {
 
 export default function AuditLog({ entries, subjects, actors, filters }: Props) {
     const [query, setQuery] = useState({ search: filters.search ?? '', subject: filters.subject ?? '', actor: filters.actor ?? '', action: filters.action ?? '', from: filters.from ?? '', to: filters.to ?? '' });
+    const [filtersOpen, setFiltersOpen] = useState(false);
     function search(e: FormEvent) {
         e.preventDefault();
+        setFiltersOpen(false);
         router.get('/audit-log', Object.fromEntries(Object.entries(query).filter(([, value]) => value)), { preserveState: true, replace: true });
     }
     function clear() {
@@ -45,7 +47,8 @@ export default function AuditLog({ entries, subjects, actors, filters }: Props) 
             <Head title="Audit Log" />
             <ModuleHero eyebrow="System oversight" title="Audit log" description="A clear, searchable record of important activity across the Hub." icon="🧾" tone="slate" />
 
-            <form onSubmit={search} className="audit-log-filters-4a">
+            <button type="button" className="audit-log-filter-toggle-4a" onClick={() => setFiltersOpen((open) => !open)} aria-expanded={filtersOpen}>Filters {Object.values(query).some(Boolean) ? '• Active' : ''}<span>{filtersOpen ? '−' : '+'}</span></button>
+            <form onSubmit={search} className={`audit-log-filters-4a ${filtersOpen ? 'is-open' : ''}`}>
                 <label className="audit-log-search-4a"><span>Search the audit trail</span><input type="search" value={query.search} onChange={(e) => setQuery({ ...query, search: e.target.value })} placeholder="Person, record, change or ID…" /></label>
                 <label><span>Actor</span><select value={query.actor} onChange={(e) => setQuery({ ...query, actor: e.target.value })}><option value="">Anyone</option>{actors.map((actor) => <option key={actor.id} value={actor.id}>{actor.name}</option>)}</select></label>
                 <label><span>Module</span><select value={query.subject} onChange={(e) => setQuery({ ...query, subject: e.target.value })}><option value="">All modules</option>{subjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>

@@ -4,6 +4,7 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
+import { welfareStatusLabel } from '../../utils/welfare';
 import { WelfareStatus } from '../../types';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
 import Sparkline from '../../components/Sparkline';
@@ -152,7 +153,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                     </div>
                 </div>
                 <div className="animal-record-status-4a ml-auto flex items-center gap-2">
-                    <StatusPill status={animal.welfare_status} label={`Welfare: ${animal.welfare_status}`} />
+                    <StatusPill status={animal.welfare_status} label={welfareStatusLabel(animal.welfare_status)} />
                     {canEdit && (
                         <button onClick={() => setDetailsOpen(true)} className="rounded-full bg-ink/[0.06] text-ink/70 text-xs font-bold px-3 py-2">
                             ✏️ Edit details
@@ -235,7 +236,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                                         {new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                                         <span className="text-slate-400"> · {c.user.name}</span>
                                     </span>
-                                    <StatusPill status={c.status} />
+                                    <StatusPill status={c.status} label={welfareStatusLabel(c.status)} />
                                 </div>
                                 {c.notes && <div className="text-slate-500 mt-1">{c.notes}</div>}
                                 <div className="flex gap-2 mt-1 text-xs">

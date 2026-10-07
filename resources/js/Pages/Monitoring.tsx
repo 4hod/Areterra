@@ -93,20 +93,21 @@ export default function Monitoring({ date, bySpecies, done, total }: Props) {
                                 </span>
                             }
                         >
-                            <div className="flex flex-wrap gap-2">
+                            <div className="monitoring-animal-list-4a">
                                 {animals.map((a) => (
                                     <button
                                         key={a.id}
                                         onClick={() => open(a)}
-                                        className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                                        className={`monitoring-animal-row-4a ${
                                             a.monitoring
                                                 ? a.monitoring.concern
-                                                    ? 'bg-amber-100 text-amber-800'
-                                                    : 'bg-emerald-100 text-emerald-800'
-                                                : 'bg-slate-100 text-slate-600'
+                                                    ? 'is-concern'
+                                                    : 'is-recorded'
+                                                : 'is-outstanding'
                                         }`}
                                     >
-                                        {a.monitoring ? (a.monitoring.concern ? '⚠ ' : '✓ ') : ''}{a.name}
+                                        <span>{a.monitoring ? (a.monitoring.concern ? '⚠ ' : '✓ ') : ''}{a.name}</span>
+                                        <small>{a.monitoring ? (a.monitoring.concern ? 'Concern flagged' : 'Recorded') : 'Not recorded'}</small>
                                     </button>
                                 ))}
                             </div>

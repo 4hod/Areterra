@@ -93,7 +93,7 @@ function isActive(href: string, url: string) {
 export function allowed(item: NavItem, caps: string[]) { return !item.cap || caps.includes(item.cap); }
 
 export default function AppShell({ title, children }: { title: string; children: ReactNode }) {
-    const { auth, flash, branding, unreadNotifications, pushConfigured } = usePage<SharedProps>().props;
+    const { auth, flash, unreadNotifications, pushConfigured } = usePage<SharedProps>().props;
     const url = usePage().url;
     const caps = auth.user?.capabilities ?? [];
     const [drawer, setDrawer] = useState(false);
@@ -168,7 +168,7 @@ export default function AppShell({ title, children }: { title: string; children:
         return <section className="portal-nav-section" key={section.title}>
             <p>{section.title}</p>
             {items.map((item) => <div className="portal-nav-row" key={item.href}>
-                <Link href={item.href} onClick={() => close && setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}>
+                <Link href={item.href} onClick={() => close && setDrawer(false)} className={!pinnable && isActive(item.href, url) ? 'is-active' : ''} aria-current={!pinnable && isActive(item.href, url) ? 'page' : undefined}>
                     <AppIcon name={item.icon}/><span>{item.label}</span>
                 </Link>
                 {pinnable && <button type="button" onClick={() => toggleFavourite(item.href)} aria-label={`${favourites.includes(item.href) ? 'Unpin' : 'Pin'} ${item.label}`} aria-pressed={favourites.includes(item.href)}>★</button>}
@@ -179,7 +179,7 @@ export default function AppShell({ title, children }: { title: string; children:
     const drawerLinks = (title: string, hrefs: string[]) => {
         const items = hrefs.map((href) => availableItems.find((item) => item.href === href)).filter(Boolean) as NavItem[];
         if (!items.length) return null;
-        return <section className="portal-nav-section portal-drawer-shortcuts"><p>{title}</p>{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}</section>;
+        return <section className="portal-nav-section portal-drawer-shortcuts"><p>{title}</p>{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className="is-shortcut"><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}</section>;
     };
 
     const primaryNav = (close = false) => <section className="portal-nav-section portal-primary-nav">
@@ -227,13 +227,13 @@ export default function AppShell({ title, children }: { title: string; children:
         </nav>
 
         {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>
-            <div className="portal-drawer-head">{branding.logoUrl ? <img src={branding.logoUrl} alt={branding.orgName}/> : <strong>{branding.orgName}</strong>}<button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
+            <div className="portal-drawer-head"><Link href="/today" className="portal-drawer-product-brand" aria-label="Areterra Hub — Today" onClick={() => setDrawer(false)}><span className="portal-mobile-brand-mark" aria-hidden="true"><i/><i/><i/></span><strong>Areterra <em>Hub</em></strong></Link><button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
             <nav>
                 {drawerLinks('Favourites', favourites)}
-                {drawerLinks('Recent', recentModules)}
+                {drawerLinks('Recent', recentModules.filter((href) => !isActive(href, url)))}
                 <section className="portal-nav-section portal-drawer-core">
                     <p>Everyday</p>
-                    {MOBILE_NAV.filter((item) => item.href !== '/more' && allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
+                    {MOBILE_NAV.filter((item) => item.href !== '/more' && allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''} aria-current={isActive(item.href, url) ? 'page' : undefined}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
                     <Link href="/tasks" onClick={() => setDrawer(false)}><AppIcon name="tasks"/><span>Tasks</span></Link>
                     <Link href="/more" onClick={() => setDrawer(false)}><AppIcon name="grid"/><span>All modules</span></Link>
                 </section>
