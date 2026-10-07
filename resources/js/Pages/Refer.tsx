@@ -27,11 +27,7 @@ export default function Refer() {
             <div className="refer-public-4a">
                 <header className="refer-public-head-4a">
                     <div>
-                        {branding.logoUrl ? (
-                            <img src={branding.logoUrl} alt={branding.orgName} />
-                        ) : (
-                            <strong>{branding.orgName}</strong>
-                        )}
+                        <img src={branding.logoUrl || '/areterra-logo.png'} alt={branding.orgName} />
                         <span>People · Animals · Brighter Futures</span>
                     </div>
                     <a href="https://areterra.co.uk">Visit Areterra</a>
