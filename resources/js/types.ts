@@ -29,6 +29,7 @@ export type WelfareStatus = 'green' | 'amber' | 'red';
 export interface ChecklistItem {
     key: string;
     label: string;
+    applicable: boolean;
     done: boolean;
     detail: string;
     available: boolean;

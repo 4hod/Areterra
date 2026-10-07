@@ -37,6 +37,18 @@ class TodayChecklistTest extends TestCase
         $this->assertFalse($done['end_of_day']);
     }
 
+    public function test_unscheduled_transport_is_explicitly_not_applicable(): void
+    {
+        $items = collect(app(TodayChecklist::class)->build(today()))->keyBy('key');
+
+        $this->assertFalse($items['transport']['applicable']);
+        $this->assertFalse($items['return_transport']['applicable']);
+        $this->assertFalse($items['register']['applicable']);
+        $this->assertFalse($items['moods']['applicable']);
+        $this->assertFalse($items['end_of_day']['applicable']);
+        $this->assertTrue($items['register']['available']);
+    }
+
     public function test_register_requires_checked_in_not_just_scheduled(): void
     {
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);

@@ -7,13 +7,18 @@ const LINKS: Record<string, string> = { transport: '/transport', register: '/reg
 const ICONS: Record<string, string> = { transport: '🚌', register: '✓', moods: '🙂', welfare: '🌿', end_of_day: '🌙', return_transport: '🏠' };
 
 export default function Today({ checklist, date }: { checklist: ChecklistItem[]; date: string }) {
-    const done = checklist.filter((item) => item.done).length;
-    const percent = checklist.length ? Math.round((done / checklist.length) * 100) : 100;
+    const applicableItems = checklist.filter((item) => item.applicable);
+    const doneItems = applicableItems.filter((item) => item.done);
+    const done = doneItems.length;
+    const percent = applicableItems.length ? Math.round((done / applicableItems.length) * 100) : 100;
     const welfareItem = checklist.find((item) => item.key === 'welfare');
-    const orderedItems = checklist.filter((item) => item.key !== 'welfare');
+    const orderedItems = checklist.filter((item) => item.key !== 'welfare' && item.applicable);
+    const notScheduledItems = checklist.filter((item) => !item.applicable);
+    const openItems = orderedItems.filter((item) => !item.done);
+    const completedItems = orderedItems.filter((item) => item.done);
     const nextItem = welfareItem && !welfareItem.done
         ? welfareItem
-        : orderedItems.find((item) => !item.done);
+        : openItems[0];
 
     return (
         <AppShell title="Today">
@@ -26,7 +31,7 @@ export default function Today({ checklist, date }: { checklist: ChecklistItem[];
                         <p>{new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                     </div>
                     <div className="today-progress-4a" style={{ '--today-progress': `${percent}%` } as CSSProperties}>
-                        <div><strong>{percent}%</strong><span>{done} of {checklist.length} complete</span></div>
+                        <div><strong>{percent}%</strong><span>{done} of {applicableItems.length} applicable tasks</span></div>
                     </div>
                 </section>
 
@@ -35,26 +40,29 @@ export default function Today({ checklist, date }: { checklist: ChecklistItem[];
                     {nextItem && <Link href={LINKS[nextItem.key]} className="module-primary-btn-4a">Open task →</Link>}
                 </section>
 
-                {welfareItem && (
-                    <section className={`today-always-available-4a ${welfareItem.done ? 'is-done' : ''}`}>
-                        <div className="today-step-icon-4a">{ICONS.welfare}</div>
-                        <div className="today-step-copy-4a"><span>Always available</span><h3>{welfareItem.label}</h3><p>{welfareItem.detail}</p></div>
-                        <Link href={LINKS.welfare} className="today-step-action-4a">{welfareItem.done ? 'Review' : 'Open'}</Link>
-                    </section>
-                )}
-
                 <section className="today-flow-4a">
-                    {orderedItems.map((item, index) => (
+                    {openItems.map((item, index) => (
                         <article key={item.key} className={`today-step-4a ${item.done ? 'is-done' : ''} ${!item.available ? 'is-locked' : ''}`}>
-                            <div className="today-step-line-4a"><span>{item.done ? '✓' : index + 1}</span></div>
+                            <div className="today-step-line-4a"><span>{index + 1}</span></div>
                             <div className="today-step-icon-4a">{ICONS[item.key] ?? '•'}</div>
                             <div className="today-step-copy-4a"><span>{item.done ? 'Completed' : item.available ? 'Action required' : 'Locked'}</span><h3>{item.label}</h3><p>{!item.available ? 'Complete the previous job first' : item.detail}</p></div>
-                            {!item.done && item.available ? <Link href={LINKS[item.key]} className="today-step-action-4a">Continue</Link> : item.done && item.key === 'welfare' ? <Link href={LINKS[item.key]} className="today-step-action-4a">Review</Link> : item.done ? <div className="today-step-complete-4a">Done</div> : <div className="today-step-locked-4a" aria-label="Locked">🔒</div>}
+                            {item.available ? <Link href={LINKS[item.key]} className="today-step-action-4a">Continue</Link> : <div className="today-step-locked-4a" aria-label="Locked">🔒</div>}
                         </article>
                     ))}
                 </section>
 
-                {done === checklist.length && <section className="today-finished-4a"><span>✓</span><div><h2>All done for today</h2><p>Every item in the daily workflow has been completed.</p></div></section>}
+                {(completedItems.length > 0 || notScheduledItems.length > 0 || welfareItem?.done) && (
+                    <details className="today-summary-4a">
+                        <summary>Completed and not scheduled <span>{completedItems.length + notScheduledItems.length + (welfareItem?.done ? 1 : 0)}</span></summary>
+                        <div>
+                            {welfareItem?.done && <Link href={LINKS.welfare}><b>✓</b><span><strong>{welfareItem.label}</strong><small>{welfareItem.detail}</small></span><em>Completed</em></Link>}
+                            {completedItems.map((item) => <Link key={item.key} href={LINKS[item.key]}><b>✓</b><span><strong>{item.label}</strong><small>{item.detail}</small></span><em>Completed</em></Link>)}
+                            {notScheduledItems.map((item) => <div key={item.key}><b>—</b><span><strong>{item.label}</strong><small>{item.detail}</small></span><em>Not scheduled</em></div>)}
+                        </div>
+                    </details>
+                )}
+
+                {done === applicableItems.length && <section className="today-finished-4a"><span>✓</span><div><h2>All applicable work is recorded</h2><p>Tasks that were not scheduled have not been counted as completed.</p></div></section>}
             </div>
         </AppShell>
     );
