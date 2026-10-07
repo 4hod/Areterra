@@ -1,9 +1,10 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { confirmDialog } from '../utils/dialogs';
 
 interface Doc {
     id: number;
@@ -17,9 +18,17 @@ interface Doc {
     read_by_me: boolean;
     read_count: number;
     staff_count: number;
+    about: { id: number; type: string; name: string; url: string | null } | null;
 }
 
-export default function Documents({ documents, canUpload }: { documents: Doc[]; canUpload: boolean }) {
+interface Props {
+    documents: Doc[];
+    canUpload: boolean;
+    relatedOptions: Record<string, { id: number; name: string }[]>;
+    context: { id: number; type: string; name: string; url: string | null } | null;
+}
+
+export default function Documents({ documents, canUpload, relatedOptions, context }: Props) {
     const [uploading, setUploading] = useState(false);
     const { data, setData, post, processing, reset } = useForm<{
         title: string;
@@ -27,7 +36,9 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
         file: File | null;
         requires_read: boolean;
         expires_at: string;
-    }>({ title: '', category: '', file: null, requires_read: false, expires_at: '' });
+        related_type: string;
+        related_id: string;
+    }>({ title: '', category: '', file: null, requires_read: false, expires_at: '', related_type: context?.type ?? '', related_id: context ? String(context.id) : '' });
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -44,6 +55,8 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
         <AppShell title="Documents">
             <Head title="Documents" />
             <ModuleHero eyebrow="Knowledge centre" title="Documents" description="Store, find and organise the files your service relies on." icon="📁" tone="slate" />
+
+            {context && <div className="mb-4 flex items-center justify-between rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm"><span>Showing documents linked to <b>{context.name}</b></span><Link href="/documents" className="font-bold text-brand">Show all</Link></div>}
 
             {canUpload && (
                 <button onClick={() => setUploading(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
@@ -67,6 +80,7 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
                                     {d.requires_read && ` · read by ${d.read_count}/${d.staff_count}`}
                                     {d.expires_at && ` · expires ${new Date(d.expires_at).toLocaleDateString('en-GB')}`}
                                 </div>
+                                {d.about && <div className="mt-1 text-xs">Linked to: {d.about.url ? <Link href={d.about.url} className="font-bold text-brand">{d.about.name}</Link> : d.about.name}</div>}
                             </div>
                             <div className="flex gap-1 shrink-0">
                                 <a
@@ -83,6 +97,14 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
                                         ✓ Mark read
                                     </button>
                                 )}
+                                {canUpload && (
+                                    <button
+                                        onClick={async () => (await confirmDialog(`Remove “${d.title}”? The file will be retained for recovery.`)) && router.delete(`/documents/${d.id}`)}
+                                        className="rounded-full bg-red-50 text-red-700 text-xs font-bold px-3 py-2"
+                                    >
+                                        Delete
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </Card>
@@ -95,6 +117,20 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
                         Title
                         <input value={data.title} onChange={(e) => setData('title', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
                     </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">Link to
+                            <select value={data.related_type} onChange={(e) => setData((current) => ({ ...current, related_type: e.target.value, related_id: '' }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3">
+                                <option value="">General document</option>
+                                {Object.keys(relatedOptions).map((type) => <option key={type} value={type}>{type[0].toUpperCase() + type.slice(1)}</option>)}
+                            </select>
+                        </label>
+                        <label className="block text-sm font-medium">Record
+                            <select value={data.related_id} onChange={(e) => setData('related_id', e.target.value)} disabled={!data.related_type} className="mt-1 w-full rounded-lg border border-slate-300 px-3 disabled:bg-slate-100">
+                                <option value="">{data.related_type ? 'Choose record' : 'Not linked'}</option>
+                                {(relatedOptions[data.related_type] ?? []).map((record) => <option key={record.id} value={record.id}>{record.name}</option>)}
+                            </select>
+                        </label>
+                    </div>
                     <label className="block text-sm font-medium">
                         Category
                         <input value={data.category} onChange={(e) => setData('category', e.target.value)} placeholder="e.g. HR, Training, H&S" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />

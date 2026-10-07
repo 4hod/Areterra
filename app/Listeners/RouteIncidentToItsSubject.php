@@ -22,9 +22,15 @@ class RouteIncidentToItsSubject
         $incident = $event->incident;
         $subject = $incident->subject ?? $incident->vehicle;
 
+        // A linked incident has always raised a task on its subject. Keep that
+        // safety behaviour even when the optional follow-up checkbox is not
+        // ticked: the checkbox records the reporter's assessment, while the
+        // automatic task makes sure the linked module cannot silently miss it.
         if (! $subject || ! method_exists($subject, 'addTask')) {
             return;
         }
+
+        $urgent = in_array($incident->severity, ['serious', 'critical'], true);
 
         [$title, $priority] = match (true) {
             $subject instanceof Member => ["Follow up incident: {$incident->title}", 'high'],
@@ -36,8 +42,8 @@ class RouteIncidentToItsSubject
         $subject->addTask([
             'title' => $title,
             'description' => "Raised automatically from incident #{$incident->id}.",
-            'priority' => $incident->severity === 'high' ? 'high' : $priority,
-            'due_date' => today()->addDays($incident->severity === 'high' ? 1 : 7),
+            'priority' => $urgent ? 'high' : $priority,
+            'due_date' => today()->addDays($urgent ? 1 : 7),
             'created_by' => $incident->reported_by,
         ]);
     }

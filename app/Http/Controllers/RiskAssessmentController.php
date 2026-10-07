@@ -110,6 +110,26 @@ class RiskAssessmentController extends Controller
         return back()->with('success', 'Signed off.');
     }
 
+    public function destroy(RiskAssessment $riskAssessment)
+    {
+        abort_if($riskAssessment->signed_off_at !== null || $riskAssessment->status !== 'draft', 422, 'Only unsigned draft risk assessments can be deleted.');
+        abort_if($riskAssessment->versions()->exists(), 422, 'This assessment has version history and must be retained.');
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($riskAssessment) {
+            $previous = $riskAssessment->supersedes;
+            $riskAssessment->delete();
+
+            if ($previous) {
+                $previous->update([
+                    'is_current' => true,
+                    'status' => $previous->signed_off_at ? 'active' : 'draft',
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Draft risk assessment deleted.');
+    }
+
     private function validated(Request $request): array
     {
         return $request->validate([

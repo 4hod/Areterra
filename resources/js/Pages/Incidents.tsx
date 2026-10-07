@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
@@ -18,6 +18,7 @@ interface IncidentRow {
     follow_up_required: boolean;
     status: 'open' | 'under-review' | 'closed';
     reported_by: string;
+    about: { id: number; type: string; name: string; url: string | null } | null;
 }
 
 const SEVERITY_STYLE: Record<string, string> = {
@@ -33,7 +34,14 @@ const STATUS_STYLE: Record<string, string> = {
     closed: 'bg-emerald-100 text-emerald-800',
 };
 
-export default function Incidents({ incidents, canManage }: { incidents: IncidentRow[]; canManage: boolean }) {
+interface Props {
+    incidents: IncidentRow[];
+    canManage: boolean;
+    relatedOptions: Record<string, { id: number; name: string }[]>;
+    context: { id: number; type: string; name: string; url: string | null } | null;
+}
+
+export default function Incidents({ incidents, canManage, relatedOptions, context }: Props) {
     const [adding, setAdding] = useState(false);
     const { data, setData, post, processing, reset } = useForm({
         title: '',
@@ -45,6 +53,8 @@ export default function Incidents({ incidents, canManage }: { incidents: Inciden
         severity: 'minor',
         actions_taken: '',
         follow_up_required: false,
+        related_type: context?.type ?? '',
+        related_id: context ? String(context.id) : '',
     });
 
     function submit(e: FormEvent) {
@@ -60,6 +70,8 @@ export default function Incidents({ incidents, canManage }: { incidents: Inciden
         <AppShell title="Incidents">
             <Head title="Incidents" />
             <ModuleHero eyebrow="Safety management" title="Incidents" description="Record events properly, coordinate follow-up and learn from patterns." icon="🚨" tone="rose" />
+
+            {context && <div className="mb-4 flex items-center justify-between rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm"><span>Showing incidents linked to <b>{context.name}</b></span><Link href="/incidents" className="font-bold text-brand">Show all</Link></div>}
 
             <button onClick={() => setAdding(true)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4">
                 + Report incident
@@ -81,6 +93,7 @@ export default function Incidents({ incidents, canManage }: { incidents: Inciden
                                 {i.injury_details && <p className="text-xs text-red-600 mt-1">Injury: {i.injury_details}</p>}
                                 {i.actions_taken && <p className="text-xs text-slate-500 mt-1">Actions: {i.actions_taken}</p>}
                                 {i.follow_up_required && <p className="text-xs text-amber-700 font-semibold mt-1">⚠ Follow-up required</p>}
+                                {i.about && <p className="mt-1 text-xs">Linked to: {i.about.url ? <Link href={i.about.url} className="font-bold text-brand">{i.about.name}</Link> : i.about.name}</p>}
                             </div>
                             <div className="shrink-0 flex flex-col items-end gap-1">
                                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${SEVERITY_STYLE[i.severity]}`}>{i.severity}</span>
@@ -128,6 +141,20 @@ export default function Incidents({ incidents, canManage }: { incidents: Inciden
                         Persons involved
                         <input value={data.persons_involved} onChange={(e) => setData('persons_involved', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
                     </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">Link to record
+                            <select value={data.related_type} onChange={(e) => setData((current) => ({ ...current, related_type: e.target.value, related_id: '' }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3">
+                                <option value="">No linked record</option>
+                                {Object.keys(relatedOptions).map((type) => <option key={type} value={type}>{type[0].toUpperCase() + type.slice(1)}</option>)}
+                            </select>
+                        </label>
+                        <label className="block text-sm font-medium">Record
+                            <select value={data.related_id} onChange={(e) => setData('related_id', e.target.value)} disabled={!data.related_type} className="mt-1 w-full rounded-lg border border-slate-300 px-3 disabled:bg-slate-100">
+                                <option value="">{data.related_type ? 'Choose record' : 'Not linked'}</option>
+                                {(relatedOptions[data.related_type] ?? []).map((record) => <option key={record.id} value={record.id}>{record.name}</option>)}
+                            </select>
+                        </label>
+                    </div>
                     <label className="block text-sm font-medium">
                         Injury details (if any)
                         <textarea value={data.injury_details} onChange={(e) => setData('injury_details', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-3" rows={2} />

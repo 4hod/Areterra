@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import StatusPill from '../components/StatusPill';
 import ModuleHero from '../components/ModuleHero';
+import { confirmDialog } from '../utils/dialogs';
 
 interface Assessment {
     id: number;
@@ -151,6 +152,14 @@ export default function RiskAssessments({ assessments, canManage, filters, categ
                                     )}
                                     {a.is_current && (
                                         <button onClick={() => router.post(`/risk-assessments/${a.id}/new-version`)} className="rounded-full bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5">New version</button>
+                                    )}
+                                    {a.status === 'draft' && !a.signed_off_by && (
+                                        <button
+                                            onClick={async () => (await confirmDialog(`Delete the draft risk assessment “${a.title}”?`)) && router.delete(`/risk-assessments/${a.id}`)}
+                                            className="rounded-full bg-red-50 text-red-700 text-xs font-bold px-3 py-1.5"
+                                        >
+                                            Delete draft
+                                        </button>
                                     )}
                                 </div>
                             )}

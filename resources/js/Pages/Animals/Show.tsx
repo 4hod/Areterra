@@ -7,6 +7,7 @@ import StatusPill from '../../components/StatusPill';
 import { WelfareStatus } from '../../types';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
 import Sparkline from '../../components/Sparkline';
+import ConnectedRecordLinks from '../../components/ConnectedRecordLinks';
 
 interface Monitoring {
     id?: number;
@@ -160,6 +161,8 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                 </div>
                 <p>Care notes, routines, health information and history all in one place.</p>
             </div>
+
+            <ConnectedRecordLinks type="animal" id={animal.id} />
 
             {(animal.joined_date || animal.care_requirements || animal.feeding_notes) && (
                 <div className="animal-key-grid-4a grid md:grid-cols-3 gap-3 mb-4">

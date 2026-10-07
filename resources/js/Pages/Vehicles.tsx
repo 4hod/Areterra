@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { promptDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
+import ConnectedRecordLinks from '../components/ConnectedRecordLinks';
 
 interface Defect {
     id: number;
@@ -79,7 +80,8 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
 
             <div className="space-y-3">
                 {vehicles.map((v) => (
-                    <Card key={v.id} className={v.open_defects > 0 ? 'border-l-4 border-l-status-amber' : ''}>
+                    <div key={v.id} id={`vehicle-${v.id}`}>
+                    <Card className={v.open_defects > 0 ? 'border-l-4 border-l-status-amber' : ''}>
                         <div className="flex items-center justify-between gap-2">
                             <div>
                                 <div className="font-extrabold text-lg text-brand-dark tracking-wide">
@@ -177,7 +179,9 @@ export default function Vehicles({ vehicles, canManage }: { vehicles: VehicleRow
                                 </div>
                             </details>
                         )}
+                        <ConnectedRecordLinks type="vehicle" id={v.id} compact />
                     </Card>
+                    </div>
                 ))}
             </div>
 

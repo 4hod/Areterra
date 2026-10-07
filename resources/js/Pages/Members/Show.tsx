@@ -9,6 +9,7 @@ import TabBar from '../../components/TabBar';
 import { MOOD_EMOJI, Mood } from '../../types';
 import { confirmDialog, promptDialog } from '../../utils/dialogs';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
+import ConnectedRecordLinks from '../../components/ConnectedRecordLinks';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
 const CONSENT_LABELS: Record<string, string> = {
@@ -315,6 +316,8 @@ export default function Show(props: Props) {
                     ))}
                 </div>
             )}
+
+            <ConnectedRecordLinks type="member" id={member.id} />
 
             {/* Tabs */}
             <TabBar tabs={TABS} active={tab} onChange={setTab} />
