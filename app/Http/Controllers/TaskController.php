@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\User;
+use App\Support\RecordLinks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -12,7 +13,9 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
+        $context = RecordLinks::resolve($request->query('about'), $request->query('id'));
         $visible = Task::query()
+            ->when($context, fn ($query) => $query->whereMorphedTo('taskable', $context))
             ->when(! Gate::allows('manage_operations'), fn ($q) => $q->where(function ($owned) use ($request) {
                 $owned->where('assigned_to', $request->user()->id)
                     ->orWhere('created_by', $request->user()->id);
@@ -36,13 +39,7 @@ class TaskController extends Controller
                 'completed_at' => $t->completed_at?->toDateString(),
                 'assignee' => $t->assignee?->name,
                 // Which record this is about — the whole point of a shared task list.
-                'about' => $t->taskable && (! ($t->taskable instanceof \App\Models\Member) || Gate::allows('view_member_details')) ? [
-                    'type' => class_basename($t->taskable_type),
-                    'name' => $t->taskable->name
-                        ?? (method_exists($t->taskable, 'displayName') ? $t->taskable->displayName() : null)
-                        ?? $t->taskable->title
-                        ?? '#'.$t->taskable_id,
-                ] : null,
+                'about' => $t->taskable ? RecordLinks::metadataIfVisible($t->taskable) : null,
                 'automatic' => $t->completes_on_event !== null,
                 'notes' => $t->notes,
             ]);
@@ -53,6 +50,8 @@ class TaskController extends Controller
             'mine' => (bool) $request->query('mine'),
             'staff' => User::orderBy('name')->get(['id', 'name']),
             'canManage' => Gate::allows('manage_operations'),
+            'relatedOptions' => RecordLinks::options(['member', 'animal', 'vehicle', 'activity', 'grant']),
+            'context' => $context ? RecordLinks::metadata($context) : null,
             'counts' => [
                 'open' => (clone $visible)->open()->count(),
                 'overdue' => (clone $visible)->overdue()->count(),
@@ -68,14 +67,23 @@ class TaskController extends Controller
             'priority' => ['required', 'in:low,medium,high'],
             'due_date' => ['nullable', 'date'],
             'assigned_to' => ['nullable', 'exists:users,id'],
+            'related_type' => ['nullable', 'required_with:related_id', 'in:member,animal,vehicle,activity,grant'],
+            'related_id' => ['nullable', 'required_with:related_type', 'integer'],
         ]);
+
+        $related = RecordLinks::resolve($data['related_type'] ?? null, $data['related_id'] ?? null);
+        unset($data['related_type'], $data['related_id']);
 
         if (! Gate::allows('manage_operations')) {
             abort_if(isset($data['assigned_to']) && (int) $data['assigned_to'] !== $request->user()->id, 403);
             $data['assigned_to'] = $request->user()->id;
         }
 
-        Task::create([...$data, 'created_by' => $request->user()->id]);
+        $task = new Task([...$data, 'created_by' => $request->user()->id]);
+        if ($related) {
+            $task->taskable()->associate($related);
+        }
+        $task->save();
 
         return back()->with('success', 'Task added.');
     }
@@ -113,6 +121,17 @@ class TaskController extends Controller
         $task->update($data);
 
         return back()->with('success', 'Task updated.');
+    }
+
+    public function destroy(Request $request, Task $task)
+    {
+        $this->authorizeTask($request, $task);
+        abort_if($task->completes_on_event !== null, 422, 'Automatic tasks are closed by completing their linked workflow.');
+        abort_if($task->completed_at !== null, 422, 'Completed task history is retained.');
+
+        $task->delete();
+
+        return back()->with('success', 'Task deleted.');
     }
 
     private function authorizeTask(Request $request, Task $task): void

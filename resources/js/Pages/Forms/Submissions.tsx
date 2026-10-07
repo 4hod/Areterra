@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import AppShell from '../../components/AppShell';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import Card from '../../components/Card';
@@ -10,6 +10,7 @@ interface Submission {
     submitted_by: string;
     submitted_at: string;
     answers: Record<number, string>;
+    about: { id: number; type: string; name: string; url: string | null } | null;
 }
 
 interface Props {
@@ -34,6 +35,7 @@ export default function Submissions({ form, submissions }: Props) {
                     <Card key={s.id}>
                         <div className="text-xs text-slate-400 mb-2">
                             {s.submitted_by} · {new Date(s.submitted_at).toLocaleString('en-GB')}
+                            {s.about && <> · Linked to {s.about.url ? <Link href={s.about.url} className="font-bold text-brand">{s.about.name}</Link> : s.about.name}</>}
                         </div>
                         <dl className="space-y-1">
                             {form.fields.map((f) => (

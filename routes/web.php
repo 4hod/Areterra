@@ -65,8 +65,12 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware(['can:view_members', 'can:view_member_details'])->name('members.portfolio');
     Route::post('/members/{member}/portfolio-items', [App\Http\Controllers\MemberPortfolioController::class, 'storeItem'])
         ->middleware('can:edit_members')->name('members.portfolio-items.store');
+    Route::delete('/members/{member}/portfolio-items/{portfolioItem}', [App\Http\Controllers\MemberPortfolioController::class, 'destroyItem'])
+        ->middleware('can:edit_members')->name('members.portfolio-items.destroy');
     Route::post('/members/{member}/certificates', [App\Http\Controllers\MemberPortfolioController::class, 'issueCertificate'])
         ->middleware('can:edit_members')->name('members.certificates.store');
+    Route::delete('/members/{member}/certificates/{certificate}', [App\Http\Controllers\MemberPortfolioController::class, 'destroyCertificate'])
+        ->middleware('can:edit_members')->name('members.certificates.destroy');
     Route::get('/certificates/{certificate}', [App\Http\Controllers\MemberPortfolioController::class, 'certificate'])
         ->middleware(['can:view_members', 'can:view_member_details'])->name('certificates.show');
     Route::post('/members', [MemberController::class, 'store'])
@@ -184,6 +188,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/tasks/{task}/complete', [App\Http\Controllers\TaskController::class, 'complete'])->name('tasks.complete');
     Route::post('/tasks/{task}/reopen', [App\Http\Controllers\TaskController::class, 'reopen'])->name('tasks.reopen');
     Route::put('/tasks/{task}', [App\Http\Controllers\TaskController::class, 'update'])->name('tasks.update');
+    Route::delete('/tasks/{task}', [App\Http\Controllers\TaskController::class, 'destroy'])->name('tasks.destroy');
 
     Route::get('/policies', [PolicyController::class, 'index'])->name('policies.index');
     Route::get('/policies/{policy}', [PolicyController::class, 'show'])->name('policies.show');
@@ -200,6 +205,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:view_documents')->name('documents.download');
     Route::post('/documents/{document}/read', [DocumentController::class, 'markRead'])
         ->middleware('can:view_documents')->name('documents.read');
+    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])
+        ->middleware('can:upload_documents')->name('documents.destroy');
 
     Route::get('/risk-assessments', [RiskAssessmentController::class, 'index'])->name('risks');
     Route::post('/risk-assessments', [RiskAssessmentController::class, 'store'])
@@ -210,6 +217,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
         ->middleware('can:manage_compliance')->name('risks.sign-off');
     Route::post('/risk-assessments/{riskAssessment}/new-version', [RiskAssessmentController::class, 'newVersion'])
         ->middleware('can:manage_compliance')->name('risks.new-version');
+    Route::delete('/risk-assessments/{riskAssessment}', [RiskAssessmentController::class, 'destroy'])
+        ->middleware('can:manage_compliance')->name('risks.destroy');
 
     Route::get('/reviews', [MemberReviewController::class, 'index'])
         ->middleware('can:view_member_details')->name('reviews');

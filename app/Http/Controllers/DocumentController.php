@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\User;
+use App\Support\RecordLinks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -15,9 +16,11 @@ class DocumentController extends Controller
     {
         $user = $request->user();
         $staffCount = User::count();
+        $context = RecordLinks::resolve($request->query('about'), $request->query('id'));
 
         return Inertia::render('Documents', [
-            'documents' => Document::with(['uploader:id,name', 'reads'])
+            'documents' => Document::with(['uploader:id,name', 'reads', 'attachable'])
+                ->when($context, fn ($query) => $query->whereMorphedTo('attachable', $context))
                 ->orderByDesc('created_at')
                 ->get()
                 ->map(fn ($d) => [
@@ -32,8 +35,11 @@ class DocumentController extends Controller
                     'read_by_me' => $d->reads->contains('user_id', $user->id),
                     'read_count' => $d->reads->count(),
                     'staff_count' => $staffCount,
+                    'about' => $d->attachable ? RecordLinks::metadataIfVisible($d->attachable) : null,
                 ]),
             'canUpload' => Gate::allows('upload_documents'),
+            'relatedOptions' => RecordLinks::options(['member', 'animal', 'vehicle', 'activity', 'grant', 'incident']),
+            'context' => $context ? RecordLinks::metadata($context) : null,
         ]);
     }
 
@@ -45,11 +51,15 @@ class DocumentController extends Controller
             'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,txt'], // 20 MB
             'requires_read' => ['boolean'],
             'expires_at' => ['nullable', 'date'],
+            'related_type' => ['nullable', 'required_with:related_id', 'in:member,animal,vehicle,activity,grant,incident'],
+            'related_id' => ['nullable', 'required_with:related_type', 'integer'],
         ]);
+
+        $related = RecordLinks::resolve($data['related_type'] ?? null, $data['related_id'] ?? null);
 
         $path = $request->file('file')->store('documents');
 
-        Document::create([
+        $document = new Document([
             'title' => $data['title'],
             'category' => $data['category'] ?? null,
             'file_path' => $path,
@@ -58,6 +68,10 @@ class DocumentController extends Controller
             'expires_at' => $data['expires_at'] ?? null,
             'uploaded_by' => $request->user()->id,
         ]);
+        if ($related) {
+            $document->attachable()->associate($related);
+        }
+        $document->save();
 
         return back()->with('success', 'Document uploaded.');
     }
@@ -75,5 +89,12 @@ class DocumentController extends Controller
         );
 
         return back()->with('success', 'Marked as read.');
+    }
+
+    public function destroy(Document $document)
+    {
+        $document->delete();
+
+        return back()->with('success', 'Document removed. The stored file is retained for recovery and audit purposes.');
     }
 }

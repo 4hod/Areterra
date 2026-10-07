@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Certificate;
 use App\Models\Member;
+use App\Models\PortfolioItem;
 use App\Support\OutcomeEvidenceSummary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -118,7 +120,34 @@ class MemberPortfolioController extends Controller
                 'member' => $certificate->member->displayName(),
                 'issuer' => $certificate->issuer->name,
                 'member_id' => $certificate->member_id,
+                'id' => $certificate->id,
             ],
+            'canEdit' => Gate::allows('edit_members') && $certificate->member->status !== 'archived',
         ]);
+    }
+
+    public function destroyItem(Member $member, PortfolioItem $portfolioItem)
+    {
+        abort_if($member->status === 'archived', 422, 'Archived member records are read-only.');
+        abort_unless($portfolioItem->member_id === $member->id, 404);
+        abort_if($portfolioItem->certificate()->exists(), 422, 'Delete the linked certificate instead.');
+
+        $portfolioItem->delete();
+
+        return back()->with('success', 'Portfolio item removed.');
+    }
+
+    public function destroyCertificate(Member $member, Certificate $certificate)
+    {
+        abort_if($member->status === 'archived', 422, 'Archived member records are read-only.');
+        abort_unless($certificate->member_id === $member->id, 404);
+
+        DB::transaction(function () use ($certificate) {
+            $item = $certificate->portfolioItem;
+            $certificate->delete();
+            $item?->delete();
+        });
+
+        return redirect()->route('members.portfolio', $member)->with('success', 'Certificate removed.');
     }
 }

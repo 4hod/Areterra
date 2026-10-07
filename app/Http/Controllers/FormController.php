@@ -7,6 +7,7 @@ use App\Models\FormSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use App\Support\RecordLinks;
 use Inertia\Inertia;
 
 class FormController extends Controller
@@ -14,6 +15,7 @@ class FormController extends Controller
     public function index(Request $request)
     {
         $canBuild = Gate::allows('build_forms');
+        $context = RecordLinks::resolve($request->query('about'), $request->query('id'));
 
         return Inertia::render('Forms/Index', [
             'forms' => FormDefinition::withCount('submissions')
@@ -28,6 +30,17 @@ class FormController extends Controller
                     'submissions_count' => $f->submissions_count,
                 ]),
             'canBuild' => $canBuild,
+            'context' => $context ? RecordLinks::metadata($context) : null,
+            'linkedSubmissions' => $context ? FormSubmission::query()
+                ->whereMorphedTo('subject', $context)
+                ->with(['form:id,title', 'submittedBy:id,name'])
+                ->latest('submitted_at')->limit(30)->get()
+                ->map(fn ($submission) => [
+                    'id' => $submission->id,
+                    'form' => $submission->form->title,
+                    'submitted_by' => $submission->submittedBy->name,
+                    'submitted_at' => $submission->submitted_at->toIso8601String(),
+                ]) : [],
         ]);
     }
 
@@ -179,12 +192,13 @@ class FormController extends Controller
 
         $form = FormDefinition::where('slug', $slug)->with('fields')->firstOrFail();
 
-        $submissions = $form->submissions()->with(['submittedBy:id,name', 'data'])->orderByDesc('submitted_at')->get()
+        $submissions = $form->submissions()->with(['submittedBy:id,name', 'data', 'subject'])->orderByDesc('submitted_at')->get()
             ->map(fn ($s) => [
                 'id' => $s->id,
                 'submitted_by' => $s->submittedBy->name,
                 'submitted_at' => $s->submitted_at->toDateTimeString(),
                 'answers' => $s->data->mapWithKeys(fn ($d) => [$d->field_id => $d->value]),
+                'about' => $s->subject ? RecordLinks::metadataIfVisible($s->subject) : null,
             ]);
 
         return Inertia::render('Forms/Submissions', [

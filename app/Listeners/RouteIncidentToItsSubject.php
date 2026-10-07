@@ -22,9 +22,11 @@ class RouteIncidentToItsSubject
         $incident = $event->incident;
         $subject = $incident->subject ?? $incident->vehicle;
 
-        if (! $subject || ! method_exists($subject, 'addTask')) {
+        if (! $incident->follow_up_required || ! $subject || ! method_exists($subject, 'addTask')) {
             return;
         }
+
+        $urgent = in_array($incident->severity, ['serious', 'critical'], true);
 
         [$title, $priority] = match (true) {
             $subject instanceof Member => ["Follow up incident: {$incident->title}", 'high'],
@@ -36,8 +38,8 @@ class RouteIncidentToItsSubject
         $subject->addTask([
             'title' => $title,
             'description' => "Raised automatically from incident #{$incident->id}.",
-            'priority' => $incident->severity === 'high' ? 'high' : $priority,
-            'due_date' => today()->addDays($incident->severity === 'high' ? 1 : 7),
+            'priority' => $urgent ? 'high' : $priority,
+            'due_date' => today()->addDays($urgent ? 1 : 7),
             'created_by' => $incident->reported_by,
         ]);
     }

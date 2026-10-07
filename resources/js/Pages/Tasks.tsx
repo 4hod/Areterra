@@ -1,9 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { confirmDialog } from '../utils/dialogs';
 
 type Priority = 'low' | 'medium' | 'high';
 
@@ -16,7 +17,7 @@ interface Task {
     overdue: boolean;
     completed_at: string | null;
     assignee: string | null;
-    about: { type: string; name: string } | null;
+    about: { type: string; name: string; url: string | null } | null;
     automatic: boolean;
     notes: string | null;
 }
@@ -28,6 +29,8 @@ interface Props {
     staff: { id: number; name: string }[];
     counts: { open: number; overdue: number };
     canManage: boolean;
+    relatedOptions: Record<string, { id: number; name: string }[]>;
+    context: { id: number; type: string; name: string; url: string | null } | null;
 }
 
 const PRIORITY_STYLE: Record<Priority, string> = {
@@ -37,13 +40,7 @@ const PRIORITY_STYLE: Record<Priority, string> = {
 };
 
 const ABOUT_ICON: Record<string, string> = {
-    Member: '🧑',
-    Animal: '🦜',
-    Vehicle: '🚐',
-    Grant: '🎁',
-    Incident: '⚠️',
-    ComplianceItem: '📋',
-    MemberInvoice: '💷',
+    member: '🧑', animal: '🦜', vehicle: '🚐', activity: '📅', grant: '🎁', incident: '⚠️',
 };
 
 function dueLabel(task: Task) {
@@ -55,13 +52,15 @@ function dueLabel(task: Task) {
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-export default function Tasks({ tasks, show, mine, staff, counts, canManage }: Props) {
+export default function Tasks({ tasks, show, mine, staff, counts, canManage, relatedOptions, context }: Props) {
     const [adding, setAdding] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<Priority>('medium');
     const [dueDate, setDueDate] = useState('');
     const [assignedTo, setAssignedTo] = useState<string>('');
+    const [relatedType, setRelatedType] = useState(context?.type ?? '');
+    const [relatedId, setRelatedId] = useState(context ? String(context.id) : '');
     const dueThisWeek = tasks.filter((task) => {
         if (!task.due_date || task.completed_at) return false;
         const due = new Date(task.due_date);
@@ -85,6 +84,8 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                 priority,
                 due_date: dueDate || null,
                 ...(canManage ? { assigned_to: assignedTo || null } : {}),
+                related_type: relatedType || null,
+                related_id: relatedId || null,
             },
             {
                 onSuccess: () => {
@@ -93,6 +94,7 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                     setDescription('');
                     setDueDate('');
                     setAssignedTo('');
+                    if (!context) { setRelatedType(''); setRelatedId(''); }
                 },
             },
         );
@@ -108,6 +110,8 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                 icon="☑️"
                 tone="blue"
             />
+
+            {context && <div className="mb-4 flex items-center justify-between rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm"><span>Showing tasks linked to <b>{context.name}</b></span><Link href="/tasks" className="font-bold text-brand">Show all</Link></div>}
 
             <div className="tasks-page-4a">
             <section className="tasks-metrics-4a">
@@ -184,7 +188,7 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
 
                                 {task.about && (
                                     <div className="text-xs text-slate-500 mt-1">
-                                        {ABOUT_ICON[task.about.type] ?? '📎'} {task.about.name}
+                                        {ABOUT_ICON[task.about.type] ?? '📎'} {task.about.url ? <Link href={task.about.url} className="font-bold text-brand hover:underline">{task.about.name}</Link> : task.about.name}
                                     </div>
                                 )}
                                 {task.description && <p className="text-sm text-slate-600 mt-1">{task.description}</p>}
@@ -208,16 +212,15 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() =>
-                                    router.post(`/tasks/${task.id}/${task.completed_at ? 'reopen' : 'complete'}`)
-                                }
-                                className={`shrink-0 rounded-full font-semibold text-xs px-3 py-2 ${
-                                    task.completed_at ? 'bg-slate-100 text-slate-600' : 'bg-status-green text-white'
-                                }`}
-                            >
-                                {task.completed_at ? 'Reopen' : 'Done ✓'}
-                            </button>
+                            <div className="flex shrink-0 flex-col gap-1.5">
+                                <button
+                                    onClick={() => router.post(`/tasks/${task.id}/${task.completed_at ? 'reopen' : 'complete'}`)}
+                                    className={`rounded-full font-semibold text-xs px-3 py-2 ${task.completed_at ? 'bg-slate-100 text-slate-600' : 'bg-status-green text-white'}`}
+                                >
+                                    {task.completed_at ? 'Reopen' : 'Done ✓'}
+                                </button>
+                                {!task.completed_at && !task.automatic && <button onClick={async () => (await confirmDialog(`Delete “${task.title}”?`)) && router.delete(`/tasks/${task.id}`)} className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">Delete</button>}
+                            </div>
                         </div>
                     </Card>
                 ))}
@@ -226,14 +229,14 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
 
             <Modal open={adding} title="Add a task" onClose={() => setAdding(false)}>
                 <div className="space-y-4">
-                    {canManage && <label className="block text-sm font-medium">
+                    <label className="block text-sm font-medium">
                         What needs doing
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         />
-                    </label>}
+                    </label>
                     <label className="block text-sm font-medium">
                         Detail
                         <textarea
@@ -243,6 +246,20 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage }: P
                             className="mt-1 w-full rounded-lg border border-slate-300 p-3"
                         />
                     </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-sm font-medium">Linked record
+                            <select value={relatedType} onChange={(e) => { setRelatedType(e.target.value); setRelatedId(''); }} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
+                                <option value="">General task</option>
+                                {Object.keys(relatedOptions).map((type) => <option key={type} value={type}>{type[0].toUpperCase() + type.slice(1)}</option>)}
+                            </select>
+                        </label>
+                        <label className="block text-sm font-medium">Record
+                            <select value={relatedId} onChange={(e) => setRelatedId(e.target.value)} disabled={!relatedType} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 disabled:bg-slate-100">
+                                <option value="">{relatedType ? 'Choose record' : 'Not linked'}</option>
+                                {(relatedOptions[relatedType] ?? []).map((record) => <option key={record.id} value={record.id}>{record.name}</option>)}
+                            </select>
+                        </label>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                         <label className="block text-sm font-medium">
                             Priority
