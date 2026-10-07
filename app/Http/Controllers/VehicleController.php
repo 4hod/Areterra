@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use App\Models\VehicleDefect;
+use App\Services\VehicleCheckRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -46,6 +47,7 @@ class VehicleController extends Controller
                     'checks' => $v->checks->map(fn ($check) => [
                         'id' => $check->id,
                         'checked_at' => $check->checked_at->toIso8601String(),
+                        'phase' => $check->phase,
                         'checker' => $check->checker->name,
                         'odometer_miles' => (float) $check->odometer_miles,
                         'fuel_level' => $check->fuel_level,
@@ -100,10 +102,11 @@ class VehicleController extends Controller
         return back()->with('success', 'Defect reported.');
     }
 
-    public function storeCheck(Request $request, Vehicle $vehicle)
+    public function storeCheck(Request $request, Vehicle $vehicle, VehicleCheckRecorder $recorder)
     {
         $data = $request->validate([
             'odometer_miles' => ['required', 'numeric', 'min:0'],
+            'phase' => ['required', 'in:morning,afternoon'],
             'fuel_level' => ['required', 'in:empty,quarter,half,three_quarters,full'],
             'tyres_ok' => ['required', 'boolean'],
             'lights_ok' => ['required', 'boolean'],
@@ -112,33 +115,7 @@ class VehicleController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $lastMileage = $vehicle->checks()->value('odometer_miles');
-        if ($lastMileage !== null && (float) $data['odometer_miles'] < (float) $lastMileage) {
-            return back()->withErrors(['odometer_miles' => 'Mileage cannot be lower than the previous vehicle check.']);
-        }
-
-        $safe = collect(['tyres_ok', 'lights_ok', 'warning_lights_ok', 'damage_ok'])
-            ->every(fn ($field) => (bool) $data[$field]);
-
-        $check = $vehicle->checks()->create([
-            ...$data,
-            'safe_to_drive' => $safe,
-            'checked_at' => now(),
-            'checked_by' => $request->user()->id,
-        ]);
-
-        if (! $safe) {
-            $failed = collect([
-                'tyres_ok' => 'tyres', 'lights_ok' => 'lights',
-                'warning_lights_ok' => 'dashboard warning lights', 'damage_ok' => 'damage/bodywork',
-            ])->filter(fn ($label, $field) => ! $data[$field])->values()->join(', ');
-            $vehicle->defects()->create([
-                'reported_by' => $request->user()->id,
-                'date' => today(),
-                'description' => 'Pre-drive check failed: '.$failed.($data['notes'] ? ' — '.$data['notes'] : ''),
-                'severity' => 'vehicle_off_road',
-            ]);
-        }
+        $check = $recorder->record($vehicle, $request->user(), $data);
 
         return back()->with('success', $check->safe_to_drive
             ? 'Pre-drive check saved. Vehicle is recorded as safe to drive.'

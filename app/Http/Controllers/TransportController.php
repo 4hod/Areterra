@@ -7,7 +7,10 @@ use App\Events\TransportRunUndone;
 use App\Models\Member;
 use App\Models\TransportLedgerEntry;
 use App\Models\TransportRun;
+use App\Models\Vehicle;
+use App\Models\VehicleCheck;
 use App\Services\TodayChecklist;
+use App\Services\VehicleCheckRecorder;
 use Illuminate\Http\Request;
 use App\Support\TransportCharges;
 use Inertia\Inertia;
@@ -87,6 +90,7 @@ class TransportController extends Controller
             'date' => $today->toDateString(),
             'isToday' => $today->isToday(),
             'afternoonAvailable' => ! $today->isToday() || $this->todayChecklist->canAccess('return_transport', $today),
+            'preDrive' => $this->preDriveState($today),
             'rows' => $rows,
             'dailyRate' => TransportLedgerEntry::DAILY_RATE,
             'legRate' => TransportLedgerEntry::LEG_RATE,
@@ -129,6 +133,18 @@ class TransportController extends Controller
             );
         }
 
+        $readyCheck = null;
+        if ($data['outcome'] === 'collected') {
+            $readyCheck = $this->readyCheckFor($data['phase'], today());
+
+            if (! $readyCheck) {
+                return back()->with(
+                    'error',
+                    'Complete a safe '.($data['phase'] === 'morning' ? 'morning' : 'afternoon').' pre-drive check before recording transport.',
+                );
+            }
+        }
+
         $run = TransportRun::updateOrCreate(
             ['run_date' => today(), 'member_id' => $member->id, 'phase' => $data['phase']],
             [
@@ -136,6 +152,7 @@ class TransportController extends Controller
                 'outcome_reason' => $data['reason'] ?? null,
                 'completed_at' => $data['outcome'] === 'collected' ? now() : null,
                 'user_id' => $request->user()->id,
+                'vehicle_id' => $readyCheck?->vehicle_id,
             ],
         );
 
@@ -151,6 +168,77 @@ class TransportController extends Controller
             str_replace('_', ' ', $data['outcome']),
             number_format($charge, 2),
         ));
+    }
+
+    public function storePreDriveCheck(Request $request, VehicleCheckRecorder $recorder)
+    {
+        $data = $request->validate([
+            'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
+            'phase' => ['required', 'in:morning,afternoon'],
+            'odometer_miles' => ['required', 'numeric', 'min:0'],
+            'fuel_level' => ['required', 'in:empty,quarter,half,three_quarters,full'],
+            'tyres_ok' => ['required', 'boolean'],
+            'lights_ok' => ['required', 'boolean'],
+            'warning_lights_ok' => ['required', 'boolean'],
+            'damage_ok' => ['required', 'boolean'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $vehicle = Vehicle::whereKey($data['vehicle_id'])->where('active', true)->firstOrFail();
+        unset($data['vehicle_id']);
+
+        $check = $recorder->record($vehicle, $request->user(), $data);
+
+        return back()->with('success', $check->safe_to_drive
+            ? ucfirst($data['phase']).' pre-drive check passed. Transport is now unlocked.'
+            : 'Pre-drive check failed. The vehicle is off road and transport remains locked.');
+    }
+
+    private function readyCheckFor(string $phase, $date): ?VehicleCheck
+    {
+        return VehicleCheck::query()
+            ->with(['vehicle', 'checker'])
+            ->whereDate('checked_at', $date)
+            ->where('phase', $phase)
+            ->where('safe_to_drive', true)
+            ->whereHas('vehicle', fn ($query) => $query->where('active', true))
+            ->whereDoesntHave('vehicle.defects', fn ($query) => $query
+                ->whereNull('resolved_at')
+                ->where('severity', 'vehicle_off_road'))
+            ->latest('checked_at')
+            ->first();
+    }
+
+    private function preDriveState($date): array
+    {
+        $vehicles = Vehicle::query()
+            ->where('active', true)
+            ->with(['checks' => fn ($query) => $query->limit(1), 'defects' => fn ($query) => $query->whereNull('resolved_at')])
+            ->orderBy('registration')
+            ->get();
+
+        $phases = collect(['morning', 'afternoon'])->mapWithKeys(function (string $phase) use ($date) {
+            $check = $this->readyCheckFor($phase, $date);
+
+            return [$phase => $check ? [
+                'ready' => true,
+                'vehicle' => $check->vehicle?->registration,
+                'checked_at' => $check->checked_at->toIso8601String(),
+                'checker' => $check->checker?->name,
+            ] : ['ready' => false]];
+        });
+
+        return [
+            'vehicles' => $vehicles->map(fn (Vehicle $vehicle) => [
+                'id' => $vehicle->id,
+                'registration' => $vehicle->registration,
+                'make_model' => $vehicle->make_model,
+                'last_mileage' => $vehicle->checks->first()?->odometer_miles !== null
+                    ? (float) $vehicle->checks->first()->odometer_miles : null,
+                'off_road' => $vehicle->defects->contains(fn ($defect) => $defect->severity === 'vehicle_off_road'),
+            ])->values(),
+            'phases' => $phases,
+        ];
     }
 
     /** Kept for the existing "mark collected" button. */

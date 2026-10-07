@@ -8,6 +8,8 @@ use App\Models\EndOfDayRecord;
 use App\Models\TransportLedgerEntry;
 use App\Models\TransportRun;
 use App\Models\User;
+use App\Models\Vehicle;
+use App\Models\VehicleCheck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,6 +20,7 @@ class TransportTest extends TestCase
     private User $user;
 
     private Member $member;
+    private Vehicle $vehicle;
 
     protected function setUp(): void
     {
@@ -27,6 +30,54 @@ class TransportTest extends TestCase
         $this->member->// Scheduled for whatever day the suite happens to run on — hardcoding
         // weekdays makes these tests fail every Saturday.
         settings()->create(['transport_required' => true, 'attendance_days' => [today()->isoWeekday()]]);
+        $this->vehicle = Vehicle::create(['registration' => 'AR26 HUB', 'make_model' => 'Test minibus']);
+        $this->safeCheck('morning');
+        $this->safeCheck('afternoon');
+    }
+
+    private function safeCheck(string $phase): VehicleCheck
+    {
+        return VehicleCheck::create([
+            'vehicle_id' => $this->vehicle->id,
+            'checked_by' => $this->user->id,
+            'checked_at' => now(),
+            'phase' => $phase,
+            'odometer_miles' => 12000,
+            'fuel_level' => 'half',
+            'tyres_ok' => true,
+            'lights_ok' => true,
+            'warning_lights_ok' => true,
+            'damage_ok' => true,
+            'safe_to_drive' => true,
+        ]);
+    }
+
+    public function test_collected_transport_is_blocked_until_the_correct_pre_drive_check_is_complete(): void
+    {
+        VehicleCheck::query()->delete();
+
+        $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'morning'])
+            ->assertSessionHas('error');
+        $this->assertDatabaseCount('transport_runs', 0);
+
+        $this->actingAs($this->user)->post('/transport/pre-drive-check', [
+            'vehicle_id' => $this->vehicle->id,
+            'phase' => 'morning',
+            'odometer_miles' => 12001,
+            'fuel_level' => 'half',
+            'tyres_ok' => true,
+            'lights_ok' => true,
+            'warning_lights_ok' => true,
+            'damage_ok' => true,
+        ])->assertSessionHas('success');
+
+        $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'morning'])
+            ->assertSessionHas('success');
+        $this->assertDatabaseHas('transport_runs', [
+            'member_id' => $this->member->id,
+            'phase' => 'morning',
+            'vehicle_id' => $this->vehicle->id,
+        ]);
     }
 
     public function test_morning_collection_charges_one_leg_once(): void
