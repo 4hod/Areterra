@@ -22,7 +22,7 @@ export default function Login({ ssoConfigured, localPasswordEnabled, loginPhotoU
         <Head title="Log in"/>
         <main className="login-v2">
             <section className="login-v2-visual" style={loginPhotoUrl ? { backgroundImage: `linear-gradient(120deg,rgba(0,57,85,.97),rgba(0,69,104,.82)),url(${loginPhotoUrl})` } : undefined}>
-                <div className="login-v2-brand"><img src={logoUrl || '/areterra-logo.png'} alt="Areterra"/></div>
+                <div className="login-v2-brand"><img src={logoUrl || '/areterra-logo-2026.jpg'} alt="Areterra"/></div>
                 <div className="login-v2-copy"><span>SECURE STAFF WORKSPACE</span><h1>People, animals<br/>and priorities.<br/><em>All in one place.</em></h1><p>Supporting safe, consistent care with clear records and simple daily workflows.</p><div>{FEATURES.map((feature) => <article key={feature.label}><i><AppIcon name={feature.icon}/></i><b>{feature.label}</b></article>)}</div></div>
                 <footer><a href="https://areterra.co.uk">Main website</a><a href="mailto:team@areterra.co.uk">Get help</a><span>Registered charity No. 1196211</span></footer>
             </section>

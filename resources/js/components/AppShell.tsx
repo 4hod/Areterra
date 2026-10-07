@@ -198,7 +198,7 @@ export default function AppShell({ title, children }: { title: string; children:
     return <div className="portal-shell hub-app-shell">
         <aside className="portal-sidebar hidden md:flex">
             <div className="portal-brand">
-                <img src="/areterra-logo.png" alt="Areterra" />
+                <img src="/areterra-logo-2026.jpg" alt="Areterra" />
             </div>
             <nav>{primaryNav()}</nav>
             <div className="portal-sidebar-footer">
@@ -212,7 +212,7 @@ export default function AppShell({ title, children }: { title: string; children:
             <header className="portal-topbar hub-topbar">
                 <button className="portal-menu-button md:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation">☰</button>
                 <Link href="/today" className="portal-mobile-brand" aria-label="Areterra — Today">
-                    <img src="/areterra-logo.png" alt="Areterra" />
+                    <img src="/areterra-logo-2026.jpg" alt="Areterra" />
                 </Link>
                 <button className="portal-search" onClick={() => setSearching(true)}><AppIcon name="search"/><span>Search members, animals, records…</span><kbd>Ctrl K</kbd></button>
                 <button className="portal-mobile-search" onClick={() => setSearching(true)} aria-label="Search"><AppIcon name="search"/></button>
@@ -230,7 +230,7 @@ export default function AppShell({ title, children }: { title: string; children:
         </nav>
 
         {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>
-            <div className="portal-drawer-head"><Link href="/today" className="portal-drawer-product-brand" aria-label="Areterra — Today" onClick={() => setDrawer(false)}><img src="/areterra-logo.png" alt="Areterra" /></Link><button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
+            <div className="portal-drawer-head"><Link href="/today" className="portal-drawer-product-brand" aria-label="Areterra — Today" onClick={() => setDrawer(false)}><img src="/areterra-logo-2026.jpg" alt="Areterra" /></Link><button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
             <nav>
                 {drawerLinks('Favourites', shortcutFavourites)}
                 {drawerLinks('Recent', shortcutRecents)}
