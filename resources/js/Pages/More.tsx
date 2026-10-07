@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import AppShell, { NAV_SECTIONS, allowed } from '../components/AppShell';
+import AppShell, { CORE_NAV_HREFS, NAV_SECTIONS, allowed } from '../components/AppShell';
 import Card from '../components/Card';
 import { SharedProps } from '../types';
 import ModuleHero from '../components/ModuleHero';
@@ -15,7 +15,7 @@ export default function More() {
             <ModuleHero eyebrow="More tools" title="Workspace" description="Access the additional tools and settings that support your service." icon="✨" tone="slate" />
             <div className="space-y-4">
                 {NAV_SECTIONS.map((section, i) => {
-                    const items = section.items.filter((item) => allowed(item, caps));
+                    const items = section.items.filter((item) => allowed(item, caps) && !CORE_NAV_HREFS.includes(item.href));
                     if (items.length === 0) return null;
                     return (
                         <Card key={i} title={section.title ?? 'Daily'}>
