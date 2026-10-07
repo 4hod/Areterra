@@ -1,7 +1,8 @@
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
+import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 
-const pages = import.meta.glob('./Pages/**/*.tsx', { eager: true });
+const pages = import.meta.glob('./Pages/**/*.tsx');
 
 createInertiaApp({
     defaults: {
@@ -10,7 +11,7 @@ createInertiaApp({
         },
     },
     title: (title) => (title ? `${title} — Areterra Hub` : 'Areterra Hub'),
-    resolve: (name) => pages[`./Pages/${name}.tsx`] as never,
+    resolve: (name) => resolvePageComponent(`./Pages/${name}.tsx`, pages),
     setup({ el, App, props }) {
         createRoot(el).render(<App {...props} />);
     },
