@@ -30,6 +30,11 @@ class RouteIncidentToItsSubject
             return;
         }
 
+        $completionKey = "incident_closed:{$incident->id}";
+        if ($subject->openTasks()->where('completes_on_event', $completionKey)->exists()) {
+            return;
+        }
+
         $urgent = in_array($incident->severity, ['serious', 'critical'], true);
 
         [$title, $priority] = match (true) {
@@ -45,6 +50,7 @@ class RouteIncidentToItsSubject
             'priority' => $urgent ? 'high' : $priority,
             'due_date' => today()->addDays($urgent ? 1 : 7),
             'created_by' => $incident->reported_by,
+            'completes_on_event' => $completionKey,
         ]);
     }
 }
