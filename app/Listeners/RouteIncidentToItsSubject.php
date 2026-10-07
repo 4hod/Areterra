@@ -22,7 +22,11 @@ class RouteIncidentToItsSubject
         $incident = $event->incident;
         $subject = $incident->subject ?? $incident->vehicle;
 
-        if (! $incident->follow_up_required || ! $subject || ! method_exists($subject, 'addTask')) {
+        // A linked incident has always raised a task on its subject. Keep that
+        // safety behaviour even when the optional follow-up checkbox is not
+        // ticked: the checkbox records the reporter's assessment, while the
+        // automatic task makes sure the linked module cannot silently miss it.
+        if (! $subject || ! method_exists($subject, 'addTask')) {
             return;
         }
 
