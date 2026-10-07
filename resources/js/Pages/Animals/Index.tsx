@@ -4,6 +4,7 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import StatusPill from '../../components/StatusPill';
+import { welfareStatusLabel } from '../../utils/welfare';
 import { WelfareStatus } from '../../types';
 import ModuleHero from '../../components/ModuleHero';
 
@@ -151,7 +152,7 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                                         className="animal-list-link-4a"
                                     >
                                         <span><strong>{a.name}</strong><small>{a.checked_today ? 'Today\'s care check recorded' : 'Today\'s care check not recorded'}</small></span>
-                                        <em className={`is-${a.welfare_status}`}>Welfare: {a.welfare_status}</em>
+                                        <em className={`is-${a.welfare_status}`}>{welfareStatusLabel(a.welfare_status)}</em>
                                     </Link>
                                 ))}
                             </div>

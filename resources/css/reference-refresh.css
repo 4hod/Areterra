@@ -113,7 +113,12 @@
 .portal-nav-row > button[aria-pressed="true"] { color:var(--portal-yellow); opacity:1; }
 .portal-drawer-shortcuts a,.portal-drawer-core a { min-height:48px; display:flex; align-items:center; gap:12px; padding:0 12px; border-radius:10px; color:#d7e8f1; font-size:13px; }
 .portal-drawer-shortcuts a svg,.portal-drawer-core a svg { width:19px; }
-.portal-drawer-shortcuts a.is-active,.portal-drawer-core a.is-active { background:rgba(255,255,255,.11); color:#fff; }
+.portal-drawer-shortcuts a.is-shortcut { color:#bcd0dc; }
+.portal-drawer-shortcuts a.is-shortcut:hover { background:rgba(255,255,255,.06); color:#fff; }
+.portal-drawer-core a.is-active { position:relative; background:rgba(255,255,255,.13); color:#fff; font-weight:850; }
+.portal-drawer-core a.is-active::before { content:""; position:absolute; left:0; top:9px; bottom:9px; width:4px; border-radius:0 4px 4px 0; background:var(--portal-yellow); }
+.portal-drawer-product-brand { display:flex; align-items:center; gap:9px; color:#082b50; }
+.portal-drawer-product-brand strong { font-size:16px; }.portal-drawer-product-brand em { color:#e1ae00; font-style:normal; }
 .portal-drawer-directory { margin-top:10px; border-top:1px solid rgba(255,255,255,.12); }
 .portal-drawer-directory > summary { padding:17px 12px; color:#b8ceda; font-size:11px; font-weight:800; cursor:pointer; }
 .portal-drawer-directory[open] > summary { color:#fff; }
@@ -193,10 +198,17 @@
 .audit-log-filters-4a > div button { min-height:42px; padding:0 13px; border:1px solid #c8dbe5; border-radius:9px; background:#fff; color:#176e9a; font-weight:800; }
 .audit-log-filters-4a > div button:first-child { border:0; background:#087fb9; color:#fff; }
 .audit-log-empty-4a { display:grid; gap:4px; padding:28px!important; text-align:center; }.audit-log-empty-4a span { color:#7b8d98; }
+.audit-log-filter-toggle-4a { display:none; }
 
 .settings-sections-4a { display:flex; gap:5px; overflow-x:auto; margin-bottom:15px; padding:5px; border:1px solid var(--portal-line); border-radius:12px; background:#eaf0f4; scrollbar-width:none; }
 .settings-sections-4a button { flex:0 0 auto; min-height:39px; padding:0 13px; border:0; border-radius:8px; background:transparent; color:#607888; font-size:11px; font-weight:800; }
 .settings-sections-4a button.is-active { background:#fff; color:#143f5b; box-shadow:0 4px 12px rgba(20,55,76,.08); }
+.settings-section-picker-4a { display:none; }
+
+.monitoring-animal-list-4a { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:9px; }
+.monitoring-animal-row-4a { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:50px; padding:10px 13px; border:1px solid #d7e2e9; border-radius:11px; background:#fff; color:#24485f; text-align:left; box-shadow:0 3px 9px rgba(20,55,76,.04); }
+.monitoring-animal-row-4a span { font-size:13px; font-weight:800; }.monitoring-animal-row-4a small { color:#718491; font-size:10px; font-weight:750; }
+.monitoring-animal-row-4a.is-outstanding { border-left:4px solid #ecb900; }.monitoring-animal-row-4a.is-recorded { border-left:4px solid #26a571; }.monitoring-animal-row-4a.is-concern { border-left:4px solid #d78517; background:#fffaf0; }
 .settings-help-4a { margin:8px 0 0; color:#748895; font-size:11px; line-height:1.55; }
 .settings-save-4a { position:sticky; bottom:12px; z-index:5; box-shadow:0 12px 26px rgba(0,70,106,.2); }
 
@@ -245,6 +257,8 @@
     .report-overview-4a { grid-template-columns:1fr; }
     .report-evidence-4a header { align-items:flex-start; }
     .audit-log-filters-4a { grid-template-columns:1fr 1fr; }
+    .audit-log-filter-toggle-4a { width:100%; display:flex; align-items:center; justify-content:space-between; min-height:48px; margin-bottom:10px; padding:0 14px; border:1px solid #ccdbe4; border-radius:11px; background:#fff; color:#17435e; font-weight:850; }
+    .audit-log-filters-4a:not(.is-open) { display:none; }
     .audit-log-search-4a,.audit-log-filters-4a > div { grid-column:1 / -1; }
     .audit-log-filters-4a > div button { flex:1; }
     .permissions-person-picker-4a { display:block; }
@@ -508,6 +522,10 @@ body { background: linear-gradient(135deg, #f9fcff, #edf4fa); color: var(--porta
     .tasks-metrics-4a { grid-template-columns: 1fr; }
     .member-record-meta-4a { display: grid; }
     .member-record-meta-4a span { border: 0; }
+    .settings-sections-4a { display:none; }
+    .settings-section-picker-4a { display:grid; gap:5px; margin-bottom:15px; color:#607888; font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:.06em; }
+    .settings-section-picker-4a select { min-height:48px; width:100%; border:1px solid #cbdbe4; border-radius:11px; background:#fff; padding:0 13px; color:#173f5b; font-size:14px; font-weight:750; text-transform:none; letter-spacing:0; }
+    .monitoring-animal-list-4a { grid-template-columns:1fr; }
 }
 
 /* Mobile is the primary staff surface. Keep the next action close, legible and thumb-friendly. */

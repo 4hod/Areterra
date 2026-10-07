@@ -30,6 +30,9 @@ interface Props {
     };
 }
 
+type SettingsSection = 'organisation' | 'branding' | 'website' | 'email' | 'integrations' | 'advanced';
+const SETTINGS_SECTIONS: [SettingsSection, string][] = [['organisation', 'Organisation'], ['branding', 'Branding'], ['website', 'Website'], ['email', 'Email'], ['integrations', 'Integrations'], ['advanced', 'Advanced']];
+
 export default function Settings({ settings }: Props) {
     const { data, setData, put, processing } = useForm({
         org_name: settings.org_name,
@@ -46,7 +49,7 @@ export default function Settings({ settings }: Props) {
     });
     const [testingWordPress, setTestingWordPress] = useState(false);
     const [syncingWordPress, setSyncingWordPress] = useState(false);
-    const [section, setSection] = useState<'organisation' | 'branding' | 'website' | 'email' | 'integrations' | 'advanced'>('organisation');
+    const [section, setSection] = useState<SettingsSection>('organisation');
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -79,8 +82,9 @@ export default function Settings({ settings }: Props) {
             <ModuleHero eyebrow="Hub configuration" title="Settings" description="Shape how the Hub works for your organisation and team." icon="⚙️" tone="slate" />
 
             <nav className="settings-sections-4a" aria-label="Settings sections">
-                {([['organisation', 'Organisation'], ['branding', 'Branding'], ['website', 'Website'], ['email', 'Email'], ['integrations', 'Integrations'], ['advanced', 'Advanced']] as const).map(([value, label]) => <button type="button" key={value} onClick={() => setSection(value)} className={section === value ? 'is-active' : ''}>{label}</button>)}
+                {SETTINGS_SECTIONS.map(([value, label]) => <button type="button" key={value} onClick={() => setSection(value)} className={section === value ? 'is-active' : ''}>{label}</button>)}
             </nav>
+            <label className="settings-section-picker-4a"><span>Settings section</span><select value={section} onChange={(event) => setSection(event.target.value as SettingsSection)}>{SETTINGS_SECTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
 
             <form onSubmit={submit} className="space-y-4 settings-form-4a">
                 {section === 'organisation' && <Card title="Organisation details">
