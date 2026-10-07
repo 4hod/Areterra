@@ -12,24 +12,25 @@ interface NavSection { title: string; items: NavItem[] }
 
 export const NAV_SECTIONS: NavSection[] = [
     { title: 'Workspace', items: [
-        { href: '/', label: 'Management overview', icon: 'grid' },
-        { href: '/today', label: 'Daily work', icon: 'today' },
+        { href: '/', label: 'Dashboard', icon: 'grid' },
+        { href: '/today', label: 'Today', icon: 'today' },
         { href: '/tasks', label: 'Tasks', icon: 'tasks' },
         { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
-        { href: '/animals', label: 'Animals & welfare', icon: 'paw', cap: 'view_animals' },
-        { href: '/calendar', label: 'Activities & outcomes', icon: 'activity' },
+        { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
+        { href: '/calendar', label: 'Calendar & outcomes', icon: 'activity' },
     ] },
     { title: 'Daily operations', items: [
         { href: '/transport', label: 'Transport', icon: 'truck', cap: 'log_sessions' },
-        { href: '/register', label: 'Morning register & fire list', icon: 'register', cap: 'log_sessions' },
+        { href: '/register', label: 'Register & fire list', icon: 'register', cap: 'log_sessions' },
         { href: '/end-of-day', label: 'End of day', icon: 'moon', cap: 'log_sessions' },
         { href: '/monitoring', label: 'Daily monitoring', icon: 'monitor', cap: 'log_welfare' },
     ] },
     { title: 'Records', items: [
         { href: '/forms', label: 'Forms', icon: 'file' },
-        { href: '/reports', label: 'Impact reporting', icon: 'chart', cap: 'view_reports' },
+        { href: '/reports', label: 'Reports', icon: 'chart', cap: 'view_reports' },
         { href: '/reviews', label: 'Member reviews', icon: 'activity', cap: 'view_members' },
         { href: '/incidents', label: 'Incidents', icon: 'alert', cap: 'report_incidents' },
+        { href: '/safeguarding', label: 'Safeguarding', icon: 'shield', cap: 'access_safeguarding' },
         { href: '/compliance', label: 'Compliance', icon: 'shield', cap: 'view_all_compliance' },
         { href: '/documents', label: 'Documents', icon: 'folder' },
         { href: '/risk-assessments', label: 'Risk assessments', icon: 'shield' },
@@ -50,7 +51,7 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/insurance', label: 'Insurance', icon: 'shield', cap: 'manage_operations' },
         { href: '/automations', label: 'Automations', icon: 'activity', cap: 'manage_operations' },
         { href: '/referrals', label: 'Referrals', icon: 'mail', cap: 'create_members' },
-        { href: '/finance', label: 'Finance & grants', icon: 'money', cap: 'manage_finance' },
+        { href: '/finance', label: 'Finance', icon: 'money', cap: 'manage_finance' },
         { href: '/invoices', label: 'Invoices', icon: 'receipt', cap: 'manage_finance' },
     ] },
     { title: 'Administration', items: [
@@ -71,16 +72,18 @@ const MOBILE_NAV: NavItem[] = [
     { href: '/more', label: 'More', icon: 'grid' },
 ];
 
+export const CORE_NAV_HREFS = ['/today', '/register', '/animals', '/members', '/tasks'];
+
 const PRIMARY_NAV: NavItem[] = [
     { href: '/', label: 'Dashboard', icon: 'grid' },
     { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
     { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
-    { href: '/register', label: 'Attendance', icon: 'register', cap: 'log_sessions' },
-    { href: '/tasks', label: 'Activities', icon: 'tasks' },
+    { href: '/register', label: 'Register', icon: 'register', cap: 'log_sessions' },
+    { href: '/tasks', label: 'Tasks', icon: 'tasks' },
     { href: '/referrals', label: 'Referrals', icon: 'mail', cap: 'create_members' },
     { href: '/forms', label: 'Forms', icon: 'file' },
     { href: '/risk-assessments', label: 'Risk assessments', icon: 'shield' },
-    { href: '/incidents', label: 'Safeguarding', icon: 'shield', cap: 'report_incidents' },
+    { href: '/incidents', label: 'Incidents', icon: 'alert', cap: 'report_incidents' },
     { href: '/reports', label: 'Reports', icon: 'chart', cap: 'view_reports' },
     { href: '/more', label: 'More tools', icon: 'grid' },
 ];
@@ -148,6 +151,8 @@ export default function AppShell({ title, children }: { title: string; children:
     }, [url]);
 
     const availableItems = useMemo(() => NAV_SECTIONS.flatMap((section) => section.items).filter((item) => allowed(item, caps)), [caps]);
+    const shortcutFavourites = favourites.filter((href) => !CORE_NAV_HREFS.includes(href) && !isActive(href, url));
+    const shortcutRecents = recentModules.filter((href) => !CORE_NAV_HREFS.includes(href) && !isActive(href, url) && !shortcutFavourites.includes(href));
 
     function toggleFavourite(href: string) {
         setFavourites((current) => {
@@ -163,7 +168,7 @@ export default function AppShell({ title, children }: { title: string; children:
     }
 
     const nav = (close = false, pinnable = false) => NAV_SECTIONS.map((section) => {
-        const items = section.items.filter((item) => allowed(item, caps));
+        const items = section.items.filter((item) => allowed(item, caps) && (!pinnable || !CORE_NAV_HREFS.includes(item.href)));
         if (!items.length) return null;
         return <section className="portal-nav-section" key={section.title}>
             <p>{section.title}</p>
@@ -229,15 +234,15 @@ export default function AppShell({ title, children }: { title: string; children:
         {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>
             <div className="portal-drawer-head"><Link href="/today" className="portal-drawer-product-brand" aria-label="Areterra Hub — Today" onClick={() => setDrawer(false)}><span className="portal-mobile-brand-mark" aria-hidden="true"><i/><i/><i/></span><strong>Areterra <em>Hub</em></strong></Link><button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
             <nav>
-                {drawerLinks('Favourites', favourites)}
-                {drawerLinks('Recent', recentModules.filter((href) => !isActive(href, url)))}
+                {drawerLinks('Favourites', shortcutFavourites)}
+                {drawerLinks('Recent', shortcutRecents)}
                 <section className="portal-nav-section portal-drawer-core">
                     <p>Everyday</p>
                     {MOBILE_NAV.filter((item) => item.href !== '/more' && allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''} aria-current={isActive(item.href, url) ? 'page' : undefined}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
                     <Link href="/tasks" onClick={() => setDrawer(false)}><AppIcon name="tasks"/><span>Tasks</span></Link>
                     <Link href="/more" onClick={() => setDrawer(false)}><AppIcon name="grid"/><span>All modules</span></Link>
                 </section>
-                <details className="portal-drawer-directory"><summary>Choose and pin modules</summary>{nav(true, true)}</details>
+                <details className="portal-drawer-directory"><summary>Customise shortcuts</summary>{nav(true, true)}</details>
             </nav>
         </aside></div>}
 
