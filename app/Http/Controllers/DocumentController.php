@@ -26,6 +26,7 @@ class DocumentController extends Controller
                     'category' => $d->category,
                     'original_name' => $d->original_name,
                     'requires_read' => $d->requires_read,
+                    'expires_at' => $d->expires_at?->toDateString(),
                     'uploaded_by' => $d->uploader->name,
                     'created_at' => $d->created_at->toDateString(),
                     'read_by_me' => $d->reads->contains('user_id', $user->id),
@@ -43,6 +44,7 @@ class DocumentController extends Controller
             'category' => ['nullable', 'string', 'max:100'],
             'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,txt'], // 20 MB
             'requires_read' => ['boolean'],
+            'expires_at' => ['nullable', 'date'],
         ]);
 
         $path = $request->file('file')->store('documents');
@@ -53,6 +55,7 @@ class DocumentController extends Controller
             'file_path' => $path,
             'original_name' => $request->file('file')->getClientOriginalName(),
             'requires_read' => $data['requires_read'] ?? false,
+            'expires_at' => $data['expires_at'] ?? null,
             'uploaded_by' => $request->user()->id,
         ]);
 

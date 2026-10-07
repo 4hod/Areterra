@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
         // whose handle() type-hints a single concrete event.
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\CompleteTasksOnEvent::class);
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\SyncTransportChargeOnOutcome::class);
+        \Illuminate\Support\Facades\Event::listen(\App\Events\MemberMarkedAbsent::class, \App\Listeners\RunAutomationRules::class);
 
         // Audit trail on every major model (SPEC checklist: Audit Log).
         $audited = [
@@ -49,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\ProductOrder::class, \App\Models\MaintenanceTask::class, \App\Models\Project::class,
             \App\Models\FundingOpportunity::class, \App\Models\Incident::class, \App\Models\FormDefinition::class,
             \App\Models\SarRequest::class, \App\Models\InsurancePolicy::class,
+            \App\Models\VehicleCheck::class, \App\Models\PortfolioItem::class, \App\Models\Certificate::class,
+            \App\Models\AutomationRule::class, \App\Models\AutomationRun::class,
         ];
         foreach ($audited as $model) {
             $model::observe(\App\Observers\AuditLogObserver::class);

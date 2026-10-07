@@ -9,6 +9,9 @@ import ModuleHero from '../components/ModuleHero';
 interface Assessment {
     id: number;
     title: string;
+    category: string;
+    version: number;
+    is_current: boolean;
     description: string | null;
     likelihood: number;
     severity: number;
@@ -43,10 +46,18 @@ function MatrixPicker({ label, value, onChange }: { label: string; value: number
     );
 }
 
-export default function RiskAssessments({ assessments, canManage }: { assessments: Assessment[]; canManage: boolean }) {
+interface Props {
+    assessments: Assessment[];
+    canManage: boolean;
+    filters: { q: string; category: string; history: boolean };
+    categories: string[];
+}
+
+export default function RiskAssessments({ assessments, canManage, filters, categories }: Props) {
     const [editing, setEditing] = useState<Assessment | 'new' | null>(null);
     const { data, setData, post, put, processing, reset } = useForm({
         title: '',
+        category: 'general',
         description: '',
         likelihood: 2,
         severity: 2,
@@ -61,6 +72,7 @@ export default function RiskAssessments({ assessments, canManage }: { assessment
         } else {
             setData({
                 title: a.title,
+                category: a.category,
                 description: a.description ?? '',
                 likelihood: a.likelihood,
                 severity: a.severity,
@@ -88,6 +100,21 @@ export default function RiskAssessments({ assessments, canManage }: { assessment
                 </button>
             )}
 
+            <Card className="mb-4">
+                <div className="grid gap-2 sm:grid-cols-[1fr_220px_auto]">
+                    <input defaultValue={filters.q} placeholder="Search activity, hazard or control…" onKeyDown={(e) => {
+                        if (e.key === 'Enter') router.get('/risk-assessments', { ...filters, q: e.currentTarget.value }, { preserveState: true });
+                    }} className="rounded-xl border border-slate-300 px-4" />
+                    <select value={filters.category} onChange={(e) => router.get('/risk-assessments', { ...filters, category: e.target.value }, { preserveState: true })} className="rounded-xl border border-slate-300 px-3 bg-white">
+                        <option value="">All categories</option>
+                        {categories.map((category) => <option key={category}>{category}</option>)}
+                    </select>
+                    <button onClick={() => router.get('/risk-assessments', { ...filters, history: !filters.history }, { preserveState: true })} className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold">
+                        {filters.history ? 'Current only' : 'Version history'}
+                    </button>
+                </div>
+            </Card>
+
             {assessments.length === 0 && (
                 <Card><p className="text-slate-500">No risk assessments yet.</p></Card>
             )}
@@ -99,6 +126,8 @@ export default function RiskAssessments({ assessments, canManage }: { assessment
                             <div className="min-w-0">
                                 <div className="font-bold text-brand-dark">{a.title}</div>
                                 <div className="text-xs text-slate-400">
+                                    <span className="mr-2 rounded-full bg-blue-50 px-2 py-0.5 font-bold text-blue-700">{a.category}</span>
+                                    <span className="mr-2">v{a.version}{a.is_current ? ' · current' : ' · superseded'}</span>
                                     Likelihood {a.likelihood} × Severity {a.severity} = <b>risk {a.score}</b>
                                     {a.signed_off_by
                                         ? ` · signed off by ${a.signed_off_by}`
@@ -120,6 +149,9 @@ export default function RiskAssessments({ assessments, canManage }: { assessment
                                             Sign off
                                         </button>
                                     )}
+                                    {a.is_current && (
+                                        <button onClick={() => router.post(`/risk-assessments/${a.id}/new-version`)} className="rounded-full bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5">New version</button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -136,6 +168,13 @@ export default function RiskAssessments({ assessments, canManage }: { assessment
                     <label className="block text-sm font-medium">
                         Activity / hazard
                         <input value={data.title} onChange={(e) => setData('title', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Category
+                        <input list="risk-categories" value={data.category} onChange={(e) => setData('category', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
+                        <datalist id="risk-categories">
+                            {['animal care','cooking','outings','woodwork','transport','site','general', ...categories].filter((v,i,a) => a.indexOf(v) === i).map((category) => <option key={category}>{category}</option>)}
+                        </datalist>
                     </label>
                     <label className="block text-sm font-medium">
                         Description

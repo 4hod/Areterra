@@ -275,6 +275,9 @@ export default function Show(props: Props) {
                     <Link href={`/members/${member.id}/passport`} className="rounded-full bg-sky-50 text-brand text-xs font-bold px-3 py-2">
                         ✦ Day Passport
                     </Link>
+                    <Link href={`/members/${member.id}/portfolio`} className="rounded-full bg-amber-100 text-amber-900 text-xs font-bold px-3 py-2">
+                        🏆 My Areterra
+                    </Link>
                     <button onClick={() => window.print()} className="rounded-full bg-slate-100 text-slate-600 text-xs font-bold px-3 py-2">
                         🖨 Print
                     </button>

@@ -9,15 +9,31 @@ use Inertia\Inertia;
 
 class RiskAssessmentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:50'],
+            'history' => ['nullable', 'boolean'],
+        ]);
+
+        $query = RiskAssessment::with('signedOffBy:id,name')
+            ->when(! ($filters['history'] ?? false), fn ($q) => $q->where('is_current', true))
+            ->when($filters['q'] ?? null, fn ($q, $term) => $q->where(function ($inner) use ($term) {
+                $inner->where('title', 'like', "%{$term}%")->orWhere('description', 'like', "%{$term}%")
+                    ->orWhere('control_measures', 'like', "%{$term}%");
+            }))
+            ->when($filters['category'] ?? null, fn ($q, $category) => $q->where('category', $category));
+
         return Inertia::render('RiskAssessments', [
-            'assessments' => RiskAssessment::with('signedOffBy:id,name')
-                ->orderBy('title')
+            'assessments' => $query->orderBy('category')->orderBy('title')->orderByDesc('version')
                 ->get()
                 ->map(fn ($r) => [
                     'id' => $r->id,
                     'title' => $r->title,
+                    'category' => $r->category,
+                    'version' => $r->version,
+                    'is_current' => $r->is_current,
                     'description' => $r->description,
                     'likelihood' => $r->likelihood,
                     'severity' => $r->severity,
@@ -29,6 +45,11 @@ class RiskAssessmentController extends Controller
                     'signed_off_by' => $r->signedOffBy?->name,
                     'signed_off_at' => $r->signed_off_at?->toDateString(),
                 ]),
+            'filters' => [
+                'q' => $filters['q'] ?? '', 'category' => $filters['category'] ?? '',
+                'history' => (bool) ($filters['history'] ?? false),
+            ],
+            'categories' => RiskAssessment::query()->distinct()->orderBy('category')->pluck('category'),
             'canManage' => Gate::allows('manage_compliance'),
         ]);
     }
@@ -37,10 +58,38 @@ class RiskAssessmentController extends Controller
     {
         RiskAssessment::create([
             ...$this->validated($request),
+            'version' => 1,
+            'is_current' => true,
             'created_by' => $request->user()->id,
         ]);
 
         return back()->with('success', 'Risk assessment created.');
+    }
+
+    public function newVersion(Request $request, RiskAssessment $riskAssessment)
+    {
+        abort_unless($riskAssessment->is_current, 422, 'Only the current version can be revised.');
+
+        $next = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $riskAssessment) {
+            $riskAssessment->update(['is_current' => false, 'status' => 'archived']);
+
+            return RiskAssessment::create([
+                'title' => $riskAssessment->title,
+                'category' => $riskAssessment->category,
+                'version' => $riskAssessment->version + 1,
+                'supersedes_id' => $riskAssessment->id,
+                'description' => $riskAssessment->description,
+                'likelihood' => $riskAssessment->likelihood,
+                'severity' => $riskAssessment->severity,
+                'control_measures' => $riskAssessment->control_measures,
+                'review_date' => $riskAssessment->review_date,
+                'status' => 'draft',
+                'is_current' => true,
+                'created_by' => $request->user()->id,
+            ]);
+        });
+
+        return back()->with('success', "Version {$next->version} created as a draft.");
     }
 
     public function update(Request $request, RiskAssessment $riskAssessment)
@@ -65,6 +114,7 @@ class RiskAssessmentController extends Controller
     {
         return $request->validate([
             'title' => ['required', 'string', 'max:200'],
+            'category' => ['sometimes', 'string', 'max:50'],
             'description' => ['nullable', 'string'],
             'likelihood' => ['required', 'integer', 'between:1,5'],
             'severity' => ['required', 'integer', 'between:1,5'],

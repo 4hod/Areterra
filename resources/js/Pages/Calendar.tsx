@@ -1,9 +1,10 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { SharedProps } from '../types';
 
 interface CalEvent {
     date: string;
@@ -37,6 +38,7 @@ interface Props {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Calendar({ month, prevMonth, nextMonth, events, canManageLeave, pendingLeave }: Props) {
+    const canManageOperations = (usePage<SharedProps>().props.auth.user?.capabilities ?? []).includes('manage_operations');
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [reviewing, setReviewing] = useState(false);
     const [adding, setAdding] = useState(false);
@@ -78,6 +80,11 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
     function submitActivity(e: FormEvent) {
         e.preventDefault();
         post('/activities', { onSuccess: () => { setAdding(false); reset(); } });
+    }
+
+    function cancelActivity(activity: CalEvent) {
+        const reason = window.prompt(`Why is “${activity.title}” being cancelled?`);
+        if (reason?.trim()) router.post(`/activities/${activity.id}/cancel`, { reason: reason.trim() }, { preserveScroll: true });
     }
 
     return (
@@ -150,6 +157,7 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
                                 <span className="text-brand-dark font-medium">{e.start_time && `${e.start_time} · `}{e.title}</span>
                                 {e.status && <span className="text-xs text-slate-400">({e.status})</span>}
                                 {e.description && <span className="text-xs text-slate-500">{e.description}</span>}
+                                {e.type === 'activity' && e.status !== 'cancelled' && canManageOperations && <button onClick={() => cancelActivity(e)} className="ml-auto rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700">Cancel</button>}
                             </li>
                         ))}
                     </ul>

@@ -47,6 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/projects', label: 'Projects', icon: 'briefcase', cap: 'manage_operations' },
         { href: '/funding', label: 'Funding', icon: 'money', cap: 'manage_operations' },
         { href: '/insurance', label: 'Insurance', icon: 'shield', cap: 'manage_operations' },
+        { href: '/automations', label: 'Automations', icon: 'activity', cap: 'manage_operations' },
         { href: '/referrals', label: 'Referrals', icon: 'mail', cap: 'create_members' },
         { href: '/finance', label: 'Finance & grants', icon: 'money', cap: 'manage_finance' },
         { href: '/invoices', label: 'Invoices', icon: 'receipt', cap: 'manage_finance' },

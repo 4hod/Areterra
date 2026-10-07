@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Support\AutomationEngine;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -54,5 +55,14 @@ class ActivityController extends Controller
         ]);
 
         return back()->with('success', 'Activity added.');
+    }
+
+    public function cancel(Request $request, Activity $activity, AutomationEngine $engine)
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
+        $activity->update(['status' => 'cancelled', 'cancellation_reason' => $data['reason']]);
+        $engine->run('activity_cancelled', $activity, ['occurrence' => now()->toIso8601String()]);
+
+        return back()->with('success', 'Activity cancelled and affected members identified.');
     }
 }

@@ -21,6 +21,8 @@ class Referral extends Model
             'organisation' => 'encrypted',
             'person_name' => 'encrypted',
             'reviewed_at' => 'datetime',
+            'trial_completed_at' => 'datetime',
+            'trial_review_opened_at' => 'datetime',
         ];
     }
 

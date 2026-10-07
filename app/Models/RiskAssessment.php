@@ -17,6 +17,7 @@ class RiskAssessment extends Model
         return [
             'review_date' => 'date',
             'signed_off_at' => 'datetime',
+            'is_current' => 'boolean',
         ];
     }
 
@@ -24,6 +25,9 @@ class RiskAssessment extends Model
     {
         return $this->belongsTo(User::class, 'signed_off_by');
     }
+
+    public function supersedes() { return $this->belongsTo(self::class, 'supersedes_id'); }
+    public function versions() { return $this->hasMany(self::class, 'supersedes_id'); }
 
     public function riskScore(): int
     {

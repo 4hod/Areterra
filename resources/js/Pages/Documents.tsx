@@ -11,6 +11,7 @@ interface Doc {
     category: string | null;
     original_name: string;
     requires_read: boolean;
+    expires_at: string | null;
     uploaded_by: string;
     created_at: string;
     read_by_me: boolean;
@@ -25,7 +26,8 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
         category: string;
         file: File | null;
         requires_read: boolean;
-    }>({ title: '', category: '', file: null, requires_read: false });
+        expires_at: string;
+    }>({ title: '', category: '', file: null, requires_read: false, expires_at: '' });
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -63,6 +65,7 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
                                     {d.category && `${d.category} · `}
                                     {d.uploaded_by} · {new Date(d.created_at).toLocaleDateString('en-GB')}
                                     {d.requires_read && ` · read by ${d.read_count}/${d.staff_count}`}
+                                    {d.expires_at && ` · expires ${new Date(d.expires_at).toLocaleDateString('en-GB')}`}
                                 </div>
                             </div>
                             <div className="flex gap-1 shrink-0">
@@ -95,6 +98,10 @@ export default function Documents({ documents, canUpload }: { documents: Doc[]; 
                     <label className="block text-sm font-medium">
                         Category
                         <input value={data.category} onChange={(e) => setData('category', e.target.value)} placeholder="e.g. HR, Training, H&S" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <label className="block text-sm font-medium">
+                        Expiry date (optional)
+                        <input type="date" value={data.expires_at} onChange={(e) => setData('expires_at', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
                     </label>
                     <label className="block text-sm font-medium">
                         File
