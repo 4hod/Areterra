@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import ModuleHero from '../components/ModuleHero';
@@ -16,8 +16,23 @@ const SEVERITY: Record<string, { dot: string; label: string }> = {
     info: { dot: 'bg-brand', label: 'Info' },
 };
 
+function findingGroup(finding: Finding) {
+    const value = `${finding.message} ${finding.link}`.toLowerCase();
+    if (value.includes('animal') || value.includes('welfare') || value.includes('vet')) return 'Animal records';
+    if (value.includes('member') || value.includes('review') || value.includes('session')) return 'Member records';
+    if (value.includes('supervision') || value.includes('staff')) return 'Team records';
+    if (value.includes('document') || value.includes('policy') || value.includes('compliance')) return 'Documents & compliance';
+    if (value.includes('referral')) return 'Referrals';
+    return 'Other checks';
+}
+
 export default function Audit({ findings, counts }: { findings: Finding[]; counts: Record<string, number> }) {
     const [checkedAt] = useState(() => new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+    const [openGroup, setOpenGroup] = useState<string | null>(null);
+    const groups = useMemo(() => Object.entries(findings.reduce<Record<string, Finding[]>>((result, finding) => {
+        (result[findingGroup(finding)] ??= []).push(finding);
+        return result;
+    }, {})), [findings]);
 
     return (
         <AppShell title="System Audit">
@@ -56,18 +71,20 @@ export default function Audit({ findings, counts }: { findings: Finding[]; count
                 </Card>
             )}
 
-            <div className="space-y-2">
-                {findings.map((f, i) => (
-                    <Link key={i} href={f.link} className="block">
-                        <Card>
-                            <div className="flex items-center gap-3">
-                                <span className={`h-3 w-3 shrink-0 rounded-full ${SEVERITY[f.severity].dot}`} />
-                                <span className="flex-1 text-sm font-medium">{f.message}</span>
-                                <span className="text-brand text-sm font-bold">→</span>
-                            </div>
-                        </Card>
-                    </Link>
-                ))}
+            <div className="audit-groups-4a">
+                {groups.map(([group, rows]) => {
+                    const critical = rows.filter((row) => row.severity === 'critical').length;
+                    const warning = rows.filter((row) => row.severity === 'warning').length;
+                    const open = openGroup === group;
+                    return <section key={group} className={open ? 'is-open' : ''}>
+                        <button type="button" onClick={() => setOpenGroup(open ? null : group)} aria-expanded={open}>
+                            <span className={critical ? 'is-critical' : warning ? 'is-warning' : 'is-info'}>{critical ? '!' : warning ? '•' : 'i'}</span>
+                            <div><h2>{group}</h2><p>{critical ? `${critical} critical` : ''}{critical && warning ? ' · ' : ''}{warning ? `${warning} warning${warning === 1 ? '' : 's'}` : ''}{!critical && !warning ? `${rows.length} item${rows.length === 1 ? '' : 's'} to review` : ''}</p></div>
+                            <strong>{rows.length}</strong><i>{open ? '−' : '+'}</i>
+                        </button>
+                        {open && <div>{rows.map((finding, index) => <Link key={index} href={finding.link}><span className={`audit-finding-dot-4a ${SEVERITY[finding.severity].dot}`} /><b>{finding.message}</b><em>View →</em></Link>)}</div>}
+                    </section>;
+                })}
             </div>
 
             <p className="mt-4 text-xs text-slate-400">

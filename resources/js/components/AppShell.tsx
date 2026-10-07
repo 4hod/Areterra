@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { SharedProps } from '../types';
 import AccountMenu from './AccountMenu';
 import AppIcon from './AppIcon';
@@ -98,6 +98,8 @@ export default function AppShell({ title, children }: { title: string; children:
     const caps = auth.user?.capabilities ?? [];
     const [drawer, setDrawer] = useState(false);
     const [searching, setSearching] = useState(false);
+    const [favourites, setFavourites] = useState<string[]>([]);
+    const [recentModules, setRecentModules] = useState<string[]>([]);
     const [pushPrompt, setPushPrompt] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const initials = (auth.user?.name ?? 'User').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
@@ -128,21 +130,57 @@ export default function AppShell({ title, children }: { title: string; children:
         return () => window.clearTimeout(timer);
     }, [pushConfigured]);
 
+    useEffect(() => {
+        try {
+            const storedFavourites = JSON.parse(localStorage.getItem('ah-nav-favourites') ?? '[]');
+            setFavourites(Array.isArray(storedFavourites) ? storedFavourites.filter((href): href is string => typeof href === 'string') : []);
+            const storedRecent = JSON.parse(localStorage.getItem('ah-nav-recent') ?? '[]');
+            const recent = Array.isArray(storedRecent) ? storedRecent.filter((href): href is string => typeof href === 'string') : [];
+            const next = [url.split('?')[0], ...recent.filter((href) => href !== url.split('?')[0])]
+                .filter((href) => href !== '/' && href !== '/more')
+                .slice(0, 4);
+            setRecentModules(next);
+            localStorage.setItem('ah-nav-recent', JSON.stringify(next));
+        } catch {
+            setFavourites([]);
+            setRecentModules([]);
+        }
+    }, [url]);
+
+    const availableItems = useMemo(() => NAV_SECTIONS.flatMap((section) => section.items).filter((item) => allowed(item, caps)), [caps]);
+
+    function toggleFavourite(href: string) {
+        setFavourites((current) => {
+            const next = current.includes(href) ? current.filter((item) => item !== href) : [...current, href];
+            localStorage.setItem('ah-nav-favourites', JSON.stringify(next));
+            return next;
+        });
+    }
+
     function dismissPushPrompt() {
         sessionStorage.setItem('ah-push-prompted', '1');
         setPushPrompt(false);
     }
 
-    const nav = (close = false) => NAV_SECTIONS.map((section) => {
+    const nav = (close = false, pinnable = false) => NAV_SECTIONS.map((section) => {
         const items = section.items.filter((item) => allowed(item, caps));
         if (!items.length) return null;
         return <section className="portal-nav-section" key={section.title}>
             <p>{section.title}</p>
-            {items.map((item) => <Link key={item.href} href={item.href} onClick={() => close && setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}>
-                <AppIcon name={item.icon}/><span>{item.label}</span>
-            </Link>)}
+            {items.map((item) => <div className="portal-nav-row" key={item.href}>
+                <Link href={item.href} onClick={() => close && setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}>
+                    <AppIcon name={item.icon}/><span>{item.label}</span>
+                </Link>
+                {pinnable && <button type="button" onClick={() => toggleFavourite(item.href)} aria-label={`${favourites.includes(item.href) ? 'Unpin' : 'Pin'} ${item.label}`} aria-pressed={favourites.includes(item.href)}>★</button>}
+            </div>)}
         </section>;
     });
+
+    const drawerLinks = (title: string, hrefs: string[]) => {
+        const items = hrefs.map((href) => availableItems.find((item) => item.href === href)).filter(Boolean) as NavItem[];
+        if (!items.length) return null;
+        return <section className="portal-nav-section portal-drawer-shortcuts"><p>{title}</p>{items.map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}</section>;
+    };
 
     const primaryNav = (close = false) => <section className="portal-nav-section portal-primary-nav">
         {PRIMARY_NAV.filter((item) => allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} onClick={() => close && setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}>
@@ -190,7 +228,17 @@ export default function AppShell({ title, children }: { title: string; children:
 
         {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>
             <div className="portal-drawer-head">{branding.logoUrl ? <img src={branding.logoUrl} alt={branding.orgName}/> : <strong>{branding.orgName}</strong>}<button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
-            <nav>{nav(true)}</nav>
+            <nav>
+                {drawerLinks('Favourites', favourites)}
+                {drawerLinks('Recent', recentModules)}
+                <section className="portal-nav-section portal-drawer-core">
+                    <p>Everyday</p>
+                    {MOBILE_NAV.filter((item) => item.href !== '/more' && allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
+                    <Link href="/tasks" onClick={() => setDrawer(false)}><AppIcon name="tasks"/><span>Tasks</span></Link>
+                    <Link href="/more" onClick={() => setDrawer(false)}><AppIcon name="grid"/><span>All modules</span></Link>
+                </section>
+                <details className="portal-drawer-directory"><summary>Choose and pin modules</summary>{nav(true, true)}</details>
+            </nav>
         </aside></div>}
 
         {pushPrompt && <div className="portal-prompt"><b>Stay in the loop</b><p>Turn on notifications for announcements, welfare alerts and reminders.</p><div><Link href="/notifications" onClick={dismissPushPrompt}>Enable</Link><button onClick={dismissPushPrompt}>Not now</button></div></div>}

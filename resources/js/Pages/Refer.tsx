@@ -1,7 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import { SharedProps } from '../types';
-import ModuleHero from '../components/ModuleHero';
 
 // Public referral form — no login required.
 export default function Refer() {
@@ -25,21 +24,21 @@ export default function Refer() {
     return (
         <>
             <Head title="Make a referral" />
-            <ModuleHero eyebrow="New enquiry" title="Make a referral" description="Capture the right information and give every enquiry a confident start." icon="🤝" tone="teal" />
-            <div className="min-h-screen bg-brand-dark py-10 px-4">
-                <div className="max-w-xl mx-auto">
-                    <div className="text-center text-white mb-6">
+            <div className="refer-public-4a">
+                <header className="refer-public-head-4a">
+                    <div>
                         {branding.logoUrl ? (
-                            <img src={branding.logoUrl} alt={branding.orgName} className="h-10 mx-auto mb-1 object-contain" />
+                            <img src={branding.logoUrl} alt={branding.orgName} />
                         ) : (
-                            <div className="text-2xl font-extrabold">{branding.orgName}</div>
+                            <strong>{branding.orgName}</strong>
                         )}
-                        <div className="text-white/60 text-sm">Animals. People. Purpose.</div>
-                        <h1 className="text-xl font-bold mt-4">Make a referral</h1>
-                        <p className="text-white/70 text-sm mt-1">
-                            Refer an adult with learning disabilities to our day opportunity services.
-                        </p>
+                        <span>People · Animals · Brighter Futures</span>
                     </div>
+                    <a href="https://areterra.co.uk">Visit Areterra</a>
+                </header>
+                <main className="refer-public-main-4a">
+                    <section className="refer-public-intro-4a"><span>New enquiry</span><h1>Make a referral</h1><p>Tell us about the person and what they are looking for. Our team will review the enquiry and contact you about the right next step.</p><div><b>1</b><span>Share the essentials</span><b>2</b><span>We review the referral</span><b>3</b><span>We contact you</span></div></section>
+                    <div className="refer-public-form-wrap-4a">
 
                     {flash.success ? (
                         <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -47,7 +46,7 @@ export default function Refer() {
                             <p className="font-bold text-brand-dark">{flash.success}</p>
                         </div>
                     ) : (
-                        <form onSubmit={submit} className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
+                        <form onSubmit={submit} className="refer-public-form-4a bg-white rounded-2xl shadow-xl p-6 space-y-4">
                             <h2 className="font-bold text-brand-dark">About you</h2>
                             <div className="grid sm:grid-cols-2 gap-3">
                                 <label className="block text-sm font-medium">
@@ -110,13 +109,12 @@ export default function Refer() {
                             <button type="submit" disabled={processing || !data.authority_confirmed || !data.privacy_acknowledged} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
                                 Send referral
                             </button>
-                            <p className="text-[11px] text-slate-400 text-center">
-                                Areterra · Registered charity No. 1196211 · 01562 307 306 · team@areterra.co.uk
-                            </p>
                         </form>
                     )}
+                    </div>
+                </main>
+                <footer className="refer-public-footer-4a">Areterra · Registered charity No. 1196211 · 01562 307 306 · team@areterra.co.uk</footer>
                 </div>
-            </div>
         </>
     );
 }

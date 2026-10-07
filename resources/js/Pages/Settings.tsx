@@ -46,6 +46,7 @@ export default function Settings({ settings }: Props) {
     });
     const [testingWordPress, setTestingWordPress] = useState(false);
     const [syncingWordPress, setSyncingWordPress] = useState(false);
+    const [section, setSection] = useState<'organisation' | 'branding' | 'website' | 'email' | 'integrations' | 'advanced'>('organisation');
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -77,13 +78,23 @@ export default function Settings({ settings }: Props) {
             <Head title="Hub Settings" />
             <ModuleHero eyebrow="Hub configuration" title="Settings" description="Shape how the Hub works for your organisation and team." icon="⚙️" tone="slate" />
 
-            <form onSubmit={submit} className="space-y-4">
-                <Card title="Organisation">
+            <nav className="settings-sections-4a" aria-label="Settings sections">
+                {([['organisation', 'Organisation'], ['branding', 'Branding'], ['website', 'Website'], ['email', 'Email'], ['integrations', 'Integrations'], ['advanced', 'Advanced']] as const).map(([value, label]) => <button type="button" key={value} onClick={() => setSection(value)} className={section === value ? 'is-active' : ''}>{label}</button>)}
+            </nav>
+
+            <form onSubmit={submit} className="space-y-4 settings-form-4a">
+                {section === 'organisation' && <Card title="Organisation details">
                     <div className="space-y-3">
                         <label className="block text-sm font-medium">
                             Organisation name
                             <input value={data.org_name} onChange={(e) => setData('org_name', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
                         </label>
+                        <p className="settings-help-4a">Shown throughout the Hub and on formal records.</p>
+                    </div>
+                </Card>}
+
+                {section === 'branding' && <Card title="Branding">
+                    <div className="space-y-3">
                         <label className="block text-sm font-medium">
                             Logo URL
                             <input type="url" value={data.logo_url} onChange={(e) => setData('logo_url', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
@@ -92,18 +103,31 @@ export default function Settings({ settings }: Props) {
                             Login page photo URL
                             <input type="url" value={data.login_photo_url} onChange={(e) => setData('login_photo_url', e.target.value)} placeholder="Photo shown on the right panel of the login screen" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
                         </label>
+                        <p className="settings-help-4a">Use approved Areterra assets so the staff and public experiences remain consistent.</p>
+                    </div>
+                </Card>}
+
+                {section === 'website' && <Card title="Website">
+                    <div className="space-y-3">
+                        <label className="block text-sm font-medium">
+                            Main website address
+                            <input type="url" value={data.wordpress_url} onChange={(e) => setData('wordpress_url', e.target.value)} placeholder="https://areterra.co.uk" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                        </label>
+                        <p className="settings-help-4a">This is also used by the legacy member-data connection below.</p>
+                    </div>
+                </Card>}
+
+                {section === 'email' && <Card title="Email identity">
+                    <div className="space-y-3">
                         <label className="block text-sm font-medium">
                             Reply-to email
                             <input type="email" value={data.reply_to} onChange={(e) => setData('reply_to', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />
                         </label>
-                        <label className="block text-sm font-medium">
-                            Dashboard banner text
-                            <input value={data.banner_text} onChange={(e) => setData('banner_text', e.target.value)} placeholder="Optional announcement banner shown on the dashboard" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
-                        </label>
+                        <p className="settings-help-4a">Replies to Hub-generated messages are sent here.</p>
                     </div>
-                </Card>
+                </Card>}
 
-                <Card title="WordPress member sync">
+                {section === 'integrations' && <><Card title="WordPress member sync">
                     <p className="text-sm text-slate-500 mb-3">
                         Pull dates of birth, medical/profile notes, interests, staff notes and end-of-day session notes from the original WordPress Hub. Existing members are matched by name, so they are updated rather than duplicated.
                     </p>
@@ -196,9 +220,17 @@ export default function Settings({ settings }: Props) {
                             <input type="password" value={data.ms_client_secret} onChange={(e) => setData('ms_client_secret', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
                         </label>
                     </div>
-                </Card>
+                </Card></>}
 
-                <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
+                {section === 'advanced' && <Card title="Advanced display options">
+                    <label className="block text-sm font-medium">
+                        Dashboard banner text
+                        <input value={data.banner_text} onChange={(e) => setData('banner_text', e.target.value)} placeholder="Optional announcement banner shown on the dashboard" className="mt-1 w-full rounded-lg border border-slate-300 px-3" />
+                    </label>
+                    <p className="settings-help-4a">Leave blank when there is no organisation-wide message.</p>
+                </Card>}
+
+                <button type="submit" disabled={processing} className="settings-save-4a w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
                     Save settings
                 </button>
             </form>

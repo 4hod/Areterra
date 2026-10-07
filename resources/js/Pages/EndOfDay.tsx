@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
@@ -122,10 +122,15 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                 </section>
 
                 {rows.length === 0 && (
-                    <div className="module-empty-4a">
+                    <div className="module-empty-4a eod-guided-empty-4a">
                         <span>🌙</span>
                         <h2>No members to record yet</h2>
-                        <p>Complete the morning register first, then today’s attendees will appear here.</p>
+                        <p>Today’s end-of-day list is clear. If people are still expected, complete the morning register first.</p>
+                        <div>
+                            <Link href="/register">Open morning register</Link>
+                            <Link href="/today">Review today’s work</Link>
+                        </div>
+                        <small>Once everyone is signed out, use Daily Work to confirm the remaining site-closing jobs.</small>
                     </div>
                 )}
 

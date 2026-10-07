@@ -30,8 +30,8 @@ export default function Today({ checklist, date }: { checklist: ChecklistItem[];
                         <h1>{new Date(date).toLocaleDateString('en-GB', { weekday: 'long' })}</h1>
                         <p>{new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                     </div>
-                    <div className="today-progress-4a" style={{ '--today-progress': `${percent}%` } as CSSProperties}>
-                        <div><strong>{percent}%</strong><span>{done} of {applicableItems.length} applicable tasks</span></div>
+                    <div className={`today-progress-4a ${done === 0 ? 'is-not-started' : ''}`} style={{ '--today-progress': `${percent}%` } as CSSProperties}>
+                        <div><strong>{done === 0 ? 'Today’s work' : `${percent}%`}</strong><span>{done} of {applicableItems.length} complete</span></div>
                     </div>
                 </section>
 

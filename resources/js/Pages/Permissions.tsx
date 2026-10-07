@@ -29,6 +29,7 @@ export default function Permissions({ catalogue, presets, users }: Props) {
     const [selectedId, setSelectedId] = useState<number | null>(users[0]?.id ?? null);
     const [draft, setDraft] = useState<string[]>(users[0]?.capabilities ?? []);
     const [saving, setSaving] = useState(false);
+    const [customising, setCustomising] = useState(false);
 
     const { errors } = usePage().props as unknown as { errors: Record<string, string> };
     const selected = users.find((u) => u.id === selectedId) ?? null;
@@ -43,6 +44,7 @@ export default function Permissions({ catalogue, presets, users }: Props) {
     function choose(person: PersonRow) {
         setSelectedId(person.id);
         setDraft(person.capabilities);
+        setCustomising(false);
     }
 
     function toggle(capability: string) {
@@ -89,8 +91,10 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                 tone="slate"
             />
 
+            <label className="permissions-person-picker-4a"><span>Choose a person</span><select value={selectedId ?? ''} onChange={(event) => { const person = users.find((user) => user.id === Number(event.target.value)); if (person) choose(person); }}>{users.map((person) => <option key={person.id} value={person.id}>{person.name} — {person.job_title || person.role}</option>)}</select></label>
+
             <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-                <Card title="People">
+                <Card title="People" className="permissions-people-card-4a">
                     <ul className="divide-y divide-slate-200">
                         {users.map((person) => {
                             const active = person.id === selectedId;
@@ -140,12 +144,10 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                             )}
 
                             <p className="text-sm text-slate-500">
-                                Set up from the <strong>{selected.role.replace('_', ' ')}</strong> preset. Changing a
-                                preset later does not change anyone already set up — what is ticked here is what{' '}
-                                {selected.name.split(' ')[0]} can do.
+                                Current role: <strong>{selected.role.replace('_', ' ')}</strong>. Choose a straightforward role preset, or open custom permissions only when this person needs an exception.
                             </p>
 
-                            <div className="mt-3 flex flex-wrap gap-2">
+                            <div className="permissions-presets-4a">
                                 {presets.map((preset) => (
                                     <button
                                         key={preset.role}
@@ -154,10 +156,11 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                                         disabled={saving}
                                         className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-40"
                                     >
-                                        Start from {preset.label.toLowerCase()}
+                                        {preset.label}
                                     </button>
                                 ))}
                             </div>
+                            <button type="button" className="permissions-custom-toggle-4a" onClick={() => setCustomising((value) => !value)} aria-expanded={customising}>{customising ? 'Hide custom permissions' : 'Custom permissions'} <span>{customising ? '−' : '+'}</span></button>
                             {dirty && (
                                 <p className="mt-3 text-sm text-amber-700">
                                     Unsaved changes. {selected.name.split(' ')[0]} keeps their current access until you save.
@@ -165,7 +168,7 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                             )}
                         </Card>
 
-                        {Object.entries(catalogue).map(([group, capabilities]) => {
+                        {customising && Object.entries(catalogue).map(([group, capabilities]) => {
                             const keys = Object.keys(capabilities);
                             const allOn = keys.every((k) => draft.includes(k));
 
