@@ -49,6 +49,14 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        'microsoft_graph' => [
+            'transport' => 'microsoft_graph',
+            'tenant_id' => env('MICROSOFT_TENANT_ID'),
+            'client_id' => env('MICROSOFT_CLIENT_ID'),
+            'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+            'sender' => env('MAIL_FROM_ADDRESS', 'team@areterra.co.uk'),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

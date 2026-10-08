@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Mail\MicrosoftGraphTransport;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -15,6 +18,23 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Mail::extend('microsoft_graph', function (array $config) {
+            $storedSecret = Setting::get('ms_client_secret');
+
+            try {
+                $storedSecret = $storedSecret ? decrypt($storedSecret) : null;
+            } catch (\Throwable) {
+                $storedSecret = null;
+            }
+
+            return new MicrosoftGraphTransport(
+                tenantId: $config['tenant_id'] ?? config('services.microsoft.tenant_id') ?? Setting::get('ms_tenant_id'),
+                clientId: $config['client_id'] ?? config('services.microsoft.client_id') ?? Setting::get('ms_client_id'),
+                clientSecret: $config['client_secret'] ?? config('services.microsoft.client_secret') ?? $storedSecret,
+                sender: $config['sender'] ?? config('mail.from.address'),
+            );
+        });
+
         // No Gate::before shortcut for administrators. Permissions are held per
         // user, so there is exactly one answer to "can this person do X" and
         // route middleware, controllers and the UI all read the same one.
