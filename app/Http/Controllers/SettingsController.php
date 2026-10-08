@@ -18,6 +18,8 @@ class SettingsController extends Controller
                 'logo_url' => Setting::get('logo_url'),
                 'login_photo_url' => Setting::get('login_photo_url'),
                 'reply_to' => Setting::get('reply_to', 'team@areterra.co.uk'),
+                'mail_connected' => Setting::get('ms_mail_refresh_token') !== null,
+                'mail_sender' => Setting::get('ms_mail_sender'),
                 'banner_text' => Setting::get('banner_text'),
                 'ms_client_id' => Setting::get('ms_client_id'),
                 'ms_tenant_id' => Setting::get('ms_tenant_id'),

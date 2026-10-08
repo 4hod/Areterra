@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -141,5 +142,42 @@ class AuthTest extends TestCase
 
         $this->assertStringContainsString('prompt=login', $response->headers->get('Location'));
         $response->assertSessionHas('ms_password_confirmation', true);
+    }
+
+    public function test_administrator_can_connect_one_delegated_microsoft_mailbox(): void
+    {
+        Config::set('services.microsoft.client_id', '11111111-1111-4111-8111-111111111111');
+        Config::set('services.microsoft.tenant_id', '22222222-2222-4222-8222-222222222222');
+        Config::set('services.microsoft.client_secret', 'a-realistic-client-secret-value');
+
+        $admin = User::factory()->create(['role' => 'administrator']);
+
+        $redirect = $this->actingAs($admin)->get('/settings/email/microsoft/connect');
+        $redirect->assertRedirect();
+        $this->assertStringContainsString('Mail.Send', urldecode($redirect->headers->get('Location')));
+        $redirect->assertSessionHas('ms_mail_connection', true);
+
+        Http::fake([
+            'login.microsoftonline.com/*' => Http::response([
+                'access_token' => 'mail-access-token',
+                'refresh_token' => 'mail-refresh-token',
+            ]),
+            'graph.microsoft.com/v1.0/me' => Http::response([
+                'mail' => 'team@areterra.co.uk',
+                'userPrincipalName' => 'team@areterra.co.uk',
+            ]),
+        ]);
+
+        $this->actingAs($admin)
+            ->withSession([
+                'ms_oauth_state' => 'expected-state',
+                'ms_mail_connection' => true,
+            ])
+            ->get('/ah-ms-callback?state=expected-state&code=authorisation-code')
+            ->assertRedirect('/settings?section=email')
+            ->assertSessionHas('success');
+
+        $this->assertSame('team@areterra.co.uk', Setting::get('ms_mail_sender'));
+        $this->assertSame('mail-refresh-token', decrypt(Setting::get('ms_mail_refresh_token')));
     }
 }

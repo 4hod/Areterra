@@ -31,6 +31,7 @@ class MicrosoftGraphTransportTest extends TestCase
             tenantId: 'tenant-id',
             clientId: 'client-id',
             clientSecret: 'client-secret',
+            refreshToken: 'mail-refresh-token',
             sender: 'team@areterra.co.uk',
         );
 
@@ -44,12 +45,13 @@ class MicrosoftGraphTransportTest extends TestCase
 
         Http::assertSent(function (Request $request) {
             return str_contains($request->url(), '/oauth2/v2.0/token')
-                && $request['grant_type'] === 'client_credentials'
-                && $request['scope'] === 'https://graph.microsoft.com/.default';
+                && $request['grant_type'] === 'refresh_token'
+                && $request['refresh_token'] === 'mail-refresh-token'
+                && str_contains($request['scope'], 'Mail.Send');
         });
 
         Http::assertSent(function (Request $request) {
-            if ($request->url() !== 'https://graph.microsoft.com/v1.0/users/team%40areterra.co.uk/sendMail') {
+            if ($request->url() !== 'https://graph.microsoft.com/v1.0/me/sendMail') {
                 return false;
             }
 
@@ -77,6 +79,7 @@ class MicrosoftGraphTransportTest extends TestCase
             tenantId: 'tenant-id',
             clientId: 'client-id',
             clientSecret: 'client-secret',
+            refreshToken: 'mail-refresh-token',
             sender: 'team@areterra.co.uk',
         );
 

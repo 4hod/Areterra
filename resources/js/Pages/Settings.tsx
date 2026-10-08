@@ -18,6 +18,8 @@ interface Props {
         logo_url: string | null;
         login_photo_url: string | null;
         reply_to: string;
+        mail_connected: boolean;
+        mail_sender: string | null;
         banner_text: string | null;
         ms_client_id: string | null;
         ms_tenant_id: string | null;
@@ -49,7 +51,8 @@ export default function Settings({ settings }: Props) {
     });
     const [testingWordPress, setTestingWordPress] = useState(false);
     const [syncingWordPress, setSyncingWordPress] = useState(false);
-    const [section, setSection] = useState<SettingsSection>('organisation');
+    const initialSection = new URLSearchParams(window.location.search).get('section') as SettingsSection | null;
+    const [section, setSection] = useState<SettingsSection>(initialSection && SETTINGS_SECTIONS.some(([value]) => value === initialSection) ? initialSection : 'organisation');
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -123,6 +126,19 @@ export default function Settings({ settings }: Props) {
 
                 {section === 'email' && <Card title="Email identity">
                     <div className="space-y-3">
+                        <div className={`rounded-lg border p-3 ${settings.mail_connected ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
+                            <div className="font-bold text-brand-dark">
+                                {settings.mail_connected ? 'Microsoft mailbox connected' : 'Microsoft mailbox not connected'}
+                            </div>
+                            <p className="mt-1 text-sm text-slate-600">
+                                {settings.mail_connected
+                                    ? `Hub email is sent securely through ${settings.mail_sender}.`
+                                    : 'Connect the Areterra mailbox once. Its password is never stored in the Hub.'}
+                            </p>
+                            <a href="/settings/email/microsoft/connect" className="mt-3 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white">
+                                {settings.mail_connected ? 'Reconnect mailbox' : 'Connect Microsoft mailbox'}
+                            </a>
+                        </div>
                         <label className="block text-sm font-medium">
                             Reply-to email
                             <input type="email" value={data.reply_to} onChange={(e) => setData('reply_to', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" required />

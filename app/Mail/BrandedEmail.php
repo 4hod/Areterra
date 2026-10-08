@@ -21,7 +21,7 @@ class BrandedEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), 'Areterra Team'),
+            from: new Address(Setting::get('ms_mail_sender', config('mail.from.address')), 'Areterra Team'),
             replyTo: [new Address(Setting::get('reply_to', 'team@areterra.co.uk'))],
             subject: $this->emailSubject,
         );

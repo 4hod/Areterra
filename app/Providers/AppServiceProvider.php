@@ -20,18 +20,22 @@ class AppServiceProvider extends ServiceProvider
     {
         Mail::extend('microsoft_graph', function (array $config) {
             $storedSecret = Setting::get('ms_client_secret');
+            $storedRefreshToken = Setting::get('ms_mail_refresh_token');
 
             try {
                 $storedSecret = $storedSecret ? decrypt($storedSecret) : null;
+                $storedRefreshToken = $storedRefreshToken ? decrypt($storedRefreshToken) : null;
             } catch (\Throwable) {
                 $storedSecret = null;
+                $storedRefreshToken = null;
             }
 
             return new MicrosoftGraphTransport(
                 tenantId: $config['tenant_id'] ?? config('services.microsoft.tenant_id') ?? Setting::get('ms_tenant_id'),
                 clientId: $config['client_id'] ?? config('services.microsoft.client_id') ?? Setting::get('ms_client_id'),
                 clientSecret: $config['client_secret'] ?? config('services.microsoft.client_secret') ?? $storedSecret,
-                sender: $config['sender'] ?? config('mail.from.address'),
+                refreshToken: $storedRefreshToken,
+                sender: Setting::get('ms_mail_sender', $config['sender'] ?? config('mail.from.address')),
             );
         });
 
