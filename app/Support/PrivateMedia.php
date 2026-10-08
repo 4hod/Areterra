@@ -8,6 +8,11 @@ use App\Models\User;
 
 final class PrivateMedia
 {
+    public static function disk(): string
+    {
+        return (string) config('filesystems.default', 'local');
+    }
+
     public static function path(?string $storedPath): ?string
     {
         if (! $storedPath) {

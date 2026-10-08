@@ -36,6 +36,18 @@ class SecurityCheck extends Command
         if (! config('security.require_microsoft_sso')) {
             $failures[] = 'REQUIRE_MICROSOFT_SSO must be true after Entra MFA testing.';
         }
+        if (app()->environment('production') && config('filesystems.default') === 'local') {
+            $failures[] = 'FILESYSTEM_DISK must use backed-up object storage in production.';
+        }
+        if (config('filesystems.default') === 's3' && blank(config('filesystems.disks.s3.bucket'))) {
+            $failures[] = 'The S3-compatible private storage bucket is not configured.';
+        }
+        if (app()->environment('production') && config('mail.default') === 'log') {
+            $failures[] = 'MAIL_MAILER is still set to log; external notification email is disabled.';
+        }
+        if (app()->environment('production') && blank(config('webpush.vapid.public_key'))) {
+            $failures[] = 'Web push VAPID keys are not configured.';
+        }
 
         $weakPasswords = ['password', 'Password123', 'Password123!', 'Areterra123', 'Areterra123!'];
         $weakAccounts = User::withTrashed()->get()->filter(

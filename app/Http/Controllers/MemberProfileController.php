@@ -25,11 +25,11 @@ class MemberProfileController extends Controller
         ]);
 
         $oldPath = PrivateMedia::path($member->photo_path);
-        $path = $request->file('photo')->store('member-photos', 'local');
+        $path = $request->file('photo')->store('member-photos', PrivateMedia::disk());
         $member->update(['photo_path' => $path]);
 
         if ($oldPath && $oldPath !== $path) {
-            Storage::disk('local')->delete($oldPath);
+            Storage::disk(PrivateMedia::disk())->delete($oldPath);
             Storage::disk('public')->delete($oldPath);
         }
 

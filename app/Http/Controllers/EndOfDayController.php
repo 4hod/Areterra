@@ -87,7 +87,7 @@ class EndOfDayController extends Controller
             ->values();
 
         foreach ($request->file('photos', []) as $file) {
-            $photos->push($file->store('end-of-day-photos', 'local'));
+            $photos->push($file->store('end-of-day-photos', PrivateMedia::disk()));
         }
 
         $record = EndOfDayRecord::updateOrCreate(
@@ -102,7 +102,7 @@ class EndOfDayController extends Controller
 
         foreach ($removedPaths as $removedPath) {
             if ($path = PrivateMedia::path($removedPath)) {
-                Storage::disk('local')->delete($path);
+                Storage::disk(PrivateMedia::disk())->delete($path);
                 Storage::disk('public')->delete($path);
             }
         }
