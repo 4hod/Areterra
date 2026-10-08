@@ -180,7 +180,9 @@ class FinanceSweepTest extends SweepTestCase
             'entries' => $prefilled->map(fn ($e) => [
                 'id' => $e->id,
                 'staff_name' => $e->staff_name,
-                'hourly_rate' => $e->hourly_rate ?: 13.20,
+                // MySQL returns DECIMAL values as strings, so "0.00" is
+                // truthy even though it is not a usable rate.
+                'hourly_rate' => (float) $e->hourly_rate > 0 ? $e->hourly_rate : 13.20,
                 'total_hours' => 120,
             ])->all(),
         ]), 'payroll.entries.save');
