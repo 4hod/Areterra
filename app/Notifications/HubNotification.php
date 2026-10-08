@@ -26,10 +26,15 @@ abstract class HubNotification extends Notification implements ShouldQueue
      */
     public function viaConnections(): array
     {
+        // The deferred driver flushes at process shutdown. In the test runner
+        // that can terminate PHP before Collision has reported later tests, so
+        // execute inline there. Production still stays safely off the request.
+        $connection = app()->environment('testing') ? 'sync' : 'deferred';
+
         return [
-            'database' => 'deferred',
-            'mail' => 'deferred',
-            WebPushChannel::class => 'deferred',
+            'database' => $connection,
+            'mail' => $connection,
+            WebPushChannel::class => $connection,
         ];
     }
 

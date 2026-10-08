@@ -87,7 +87,10 @@ final class TransportCharges
     {
         $member = Member::with(['financeProfile', 'settings'])->findOrFail($memberId);
         $profile = $member->financeProfile;
-        $chargeTransport = $profile?->charge_transport ?? (bool) ($member->settings?->transport_required ?? false);
+        // A collected journey was actually provided and is chargeable unless
+        // the member has an explicit finance-profile opt-out. Older members
+        // without a finance profile must retain the established behaviour.
+        $chargeTransport = $profile === null || $profile->charge_transport;
         if (! $chargeTransport) {
             return 0.0;
         }
