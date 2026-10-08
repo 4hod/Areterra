@@ -7,6 +7,7 @@ use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Notifications\LeaveReviewed;
 use App\Notifications\LeaveSubmitted;
+use App\Support\LeaveCalendar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
@@ -45,19 +46,30 @@ class LeaveController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string'],
+            'start_half_day' => ['sometimes', 'boolean'],
+            'end_half_day' => ['sometimes', 'boolean'],
         ]);
+
+        $start = \Illuminate\Support\Carbon::parse($data['start_date']);
+        $end = \Illuminate\Support\Carbon::parse($data['end_date']);
+        $daysByYear = LeaveCalendar::daysByYear(
+            $request->user(),
+            $start,
+            $end,
+            (bool) ($data['start_half_day'] ?? false),
+            (bool) ($data['end_half_day'] ?? false),
+        );
 
         $leave = $request->user()->leaveRequests()->create([
             ...$data,
-            'days' => LeaveRequest::weekdaysBetween(
-                \Illuminate\Support\Carbon::parse($data['start_date']),
-                \Illuminate\Support\Carbon::parse($data['end_date']),
-            ),
+            'days' => array_sum($daysByYear),
+            'days_by_year' => $daysByYear,
             'status' => 'pending',
         ]);
 
         Notification::send(
-            User::managers()->where('id', '!=', $request->user()->id)->get(),
+            User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'approve_leave'))
+                ->where('id', '!=', $request->user()->id)->get(),
             new LeaveSubmitted($leave),
         );
 
@@ -66,6 +78,9 @@ class LeaveController extends Controller
 
     public function review(Request $request, LeaveRequest $leave)
     {
+        abort_if($leave->user_id === $request->user()->id, 403, 'You cannot review your own leave request.');
+        abort_unless($leave->status === 'pending', 422, 'This leave request has already been reviewed.');
+
         $data = $request->validate([
             'status' => ['required', 'in:approved,declined'],
             'review_notes' => ['nullable', 'string'],

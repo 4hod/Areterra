@@ -23,6 +23,7 @@ class DocumentController extends Controller
                 ->when($context, fn ($query) => $query->whereMorphedTo('attachable', $context))
                 ->orderByDesc('created_at')
                 ->get()
+                ->filter(fn ($document) => ! $document->attachable || RecordLinks::isVisible($document->attachable))
                 ->map(fn ($d) => [
                     'id' => $d->id,
                     'title' => $d->title,
@@ -78,11 +79,15 @@ class DocumentController extends Controller
 
     public function download(Document $document)
     {
+        $this->authorizeDocument($document);
+
         return Storage::download($document->file_path, $document->original_name);
     }
 
     public function markRead(Request $request, Document $document)
     {
+        $this->authorizeDocument($document);
+
         $document->reads()->firstOrCreate(
             ['user_id' => $request->user()->id],
             ['read_at' => now()],
@@ -96,5 +101,11 @@ class DocumentController extends Controller
         $document->delete();
 
         return back()->with('success', 'Document removed. The stored file is retained for recovery and audit purposes.');
+    }
+
+    private function authorizeDocument(Document $document): void
+    {
+        $document->loadMissing('attachable');
+        abort_if($document->attachable && ! RecordLinks::isVisible($document->attachable), 403);
     }
 }

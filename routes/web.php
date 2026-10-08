@@ -349,6 +349,12 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
             ->name('permissions.update');
         Route::post('/settings/permissions/{user}/preset', [App\Http\Controllers\PermissionsController::class, 'applyPreset'])
             ->name('permissions.preset');
+        Route::post('/settings/users', [App\Http\Controllers\PermissionsController::class, 'storeUser'])
+            ->name('users.store');
+        Route::put('/settings/users/{user}', [App\Http\Controllers\PermissionsController::class, 'updateUser'])
+            ->name('users.update');
+        Route::delete('/settings/users/{user}', [App\Http\Controllers\PermissionsController::class, 'destroyUser'])
+            ->name('users.destroy');
     });
     Route::post('/settings/wordpress/sync', [App\Http\Controllers\WordPressSyncController::class, 'sync'])
         ->middleware('can:manage_settings')->name('settings.wordpress.sync');
@@ -373,11 +379,11 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     // Email composer
     Route::get('/email', [App\Http\Controllers\EmailComposerController::class, 'index'])
-        ->middleware('can:view_member_details')->name('email');
+        ->middleware('can:manage_member_communications')->name('email');
     Route::post('/email/send', [App\Http\Controllers\EmailComposerController::class, 'send'])
-        ->middleware('can:view_member_details')->name('email.send');
+        ->middleware('can:manage_member_communications')->name('email.send');
     Route::delete('/email/templates/{template}', [App\Http\Controllers\EmailComposerController::class, 'destroyTemplate'])
-        ->middleware('can:view_member_details')->name('email.templates.destroy');
+        ->middleware('can:manage_member_communications')->name('email.templates.destroy');
 
     // Daily monitoring dashboard
     Route::get('/monitoring', [App\Http\Controllers\MonitoringPageController::class, 'index'])
@@ -385,7 +391,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     // Transport corrections
     Route::delete('/transport/payments/{entry}', [App\Http\Controllers\TransportController::class, 'deletePayment'])
-        ->middleware('can:log_sessions')->name('transport.payments.destroy');
+        ->middleware('can:manage_finance')->name('transport.payments.destroy');
 
     // Invoices
     Route::delete('/invoices/{invoice}', [App\Http\Controllers\InvoiceController::class, 'destroy'])

@@ -41,6 +41,8 @@ export default function Leave({ balance, myRequests, types, isManager, pending, 
         type: 'annual',
         start_date: '',
         end_date: '',
+        start_half_day: false,
+        end_half_day: false,
         reason: '',
     });
 
@@ -240,6 +242,17 @@ export default function Leave({ balance, myRequests, types, isManager, pending, 
                         </label>
                     </div>
                     {errors.end_date && <p className="text-red-600 text-sm">{errors.end_date}</p>}
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <input type="checkbox" checked={data.start_half_day} onChange={(e) => setData('start_half_day', e.target.checked)} />
+                            First day is a half day
+                        </label>
+                        <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <input type="checkbox" checked={data.end_half_day} onChange={(e) => setData('end_half_day', e.target.checked)} />
+                            Last day is a half day
+                        </label>
+                    </div>
+                    <p className="text-xs text-slate-500">Only the person's normal working days are charged. England and Wales bank holidays are excluded automatically.</p>
                     <label className="block text-sm font-medium">
                         Reason (optional)
                         <textarea

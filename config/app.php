@@ -65,7 +65,9 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Areterra operates in the UK. Carbon dates, operating-day boundaries,
+    // register times and scheduled reminders must follow GMT/BST automatically.
+    'timezone' => 'Europe/London',
 
     /*
     |--------------------------------------------------------------------------

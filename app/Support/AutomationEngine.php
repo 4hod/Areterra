@@ -40,24 +40,24 @@ class AutomationEngine
 
         AutomationRule::where('trigger', $trigger)->where('active', true)->get()->each(function (AutomationRule $rule) use ($trigger, $subject, $context) {
             $fingerprint = hash('sha256', implode('|', [$rule->id, $subject->getMorphClass(), $subject->getKey(), $context['occurrence'] ?? 'once']));
-            if (AutomationRun::where('fingerprint', $fingerprint)->exists()) {
+            if (AutomationRun::where('fingerprint', $fingerprint)->where('status', 'completed')->exists()) {
                 return;
             }
 
             try {
                 $summary = $this->execute($rule, $subject, $context);
-                AutomationRun::create([
+                AutomationRun::updateOrCreate(['fingerprint' => $fingerprint], [
                     'automation_rule_id' => $rule->id, 'trigger' => $trigger,
                     'subject_type' => $subject->getMorphClass(), 'subject_id' => $subject->getKey(),
-                    'status' => 'completed', 'summary' => $summary, 'fingerprint' => $fingerprint, 'ran_at' => now(),
+                    'status' => 'completed', 'summary' => $summary, 'ran_at' => now(),
                 ]);
                 $rule->update(['last_run_at' => now()]);
             } catch (\Throwable $exception) {
                 Log::error('Areterra automation failed', ['rule' => $rule->id, 'error' => $exception->getMessage()]);
-                AutomationRun::create([
+                AutomationRun::updateOrCreate(['fingerprint' => $fingerprint], [
                     'automation_rule_id' => $rule->id, 'trigger' => $trigger,
                     'subject_type' => $subject->getMorphClass(), 'subject_id' => $subject->getKey(),
-                    'status' => 'failed', 'summary' => $exception->getMessage(), 'fingerprint' => $fingerprint, 'ran_at' => now(),
+                    'status' => 'failed', 'summary' => $exception->getMessage(), 'ran_at' => now(),
                 ]);
             }
         });
@@ -93,7 +93,10 @@ class AutomationEngine
 
     private function createEscalationTask(string $trigger, Model $subject): string
     {
-        $manager = User::managers()->orderByRaw("case when lower(name) like '%ethan%' then 0 else 1 end")->first();
+        $manager = User::query()
+            ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_operations'))
+            ->orderBy('name')
+            ->first();
         if ($trigger === 'maintenance_open_7_days' && $subject instanceof MaintenanceTask) {
             $title = 'Escalated maintenance: '.$subject->title;
             $description = 'This maintenance issue has remained open for at least seven days.';
@@ -120,7 +123,8 @@ class AutomationEngine
         if (! $subject instanceof Referral) {
             throw new \InvalidArgumentException('Trial review recipe requires a referral.');
         }
-        $manager = User::managers()->first();
+        $manager = User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'create_members'))
+            ->orderBy('name')->first();
         Task::create([
             'title' => 'Review trial day: '.$subject->person_name,
             'description' => 'Review the completed trial day and agree the next step with the person/referrer.',
@@ -142,7 +146,8 @@ class AutomationEngine
         $message = $names->isEmpty()
             ? "{$subject->title} was cancelled; no member participants were linked."
             : "{$subject->title} was cancelled. Affected members: ".$names->join(', ').'.';
-        User::managers()->get()->each(fn (User $user) => $user->notify(new AutomationAlert('Activity cancelled', $message, '/calendar')));
+        User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_operations'))
+            ->get()->each(fn (User $user) => $user->notify(new AutomationAlert('Activity cancelled', $message, '/calendar')));
 
         return $message;
     }

@@ -219,12 +219,13 @@ class FinanceController extends Controller
 
     public function storeGrant(Request $request)
     {
-        Grant::create($request->validate([
+        $grant = Grant::create($request->validate([
             'title' => ['required', 'string', 'max:200'], 'funder' => ['required', 'string', 'max:200'],
             'amount' => ['required', 'numeric', 'min:0'], 'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'status' => ['required', 'in:applied,active,completed,declined'], 'notes' => ['nullable', 'string'],
         ]));
+        $this->syncGrantIncome($grant);
         return back()->with('success', 'Grant added.');
     }
 
@@ -234,6 +235,7 @@ class FinanceController extends Controller
             'status' => ['sometimes', 'in:applied,active,completed,declined'],
             'amount' => ['sometimes', 'numeric', 'min:0'], 'notes' => ['nullable', 'string'],
         ]));
+        $this->syncGrantIncome($grant->fresh());
         return back()->with('success', 'Grant updated.');
     }
 
@@ -272,5 +274,32 @@ class FinanceController extends Controller
         return back()
             ->with('success', 'Expenditure recorded.')
             ->with('problems', $warning ? [$warning] : []);
+    }
+
+    private function syncGrantIncome(Grant $grant): void
+    {
+        if (in_array($grant->status, ['active', 'completed'], true)) {
+            \App\Support\Ledger::post(
+                source: $grant,
+                direction: 'income',
+                category: 'grant_income',
+                description: 'Grant income — '.$grant->title,
+                amount: (float) $grant->amount,
+                date: ($grant->start_date ?? today())->toDateString(),
+                grant: $grant,
+            );
+
+            return;
+        }
+
+        $entry = \App\Models\LedgerEntry::query()
+            ->effective()
+            ->where('source_type', $grant->getMorphClass())
+            ->where('source_id', $grant->id)
+            ->where('category', 'grant_income')
+            ->first();
+        if ($entry) {
+            \App\Support\Ledger::reverse($entry, 'Grant is no longer active.');
+        }
     }
 }

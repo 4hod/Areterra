@@ -13,6 +13,7 @@ use App\Services\TodayChecklist;
 use App\Services\VehicleCheckRecorder;
 use Illuminate\Http\Request;
 use App\Support\TransportCharges;
+use App\Jobs\GeocodeMember;
 use Inertia\Inertia;
 
 class TransportController extends Controller
@@ -36,14 +37,10 @@ class TransportController extends Controller
             $address = collect([$m->address_line1, $m->address_line2, $m->town, $m->postcode])
                 ->filter()->implode(', ');
 
-            // Geocode once per address, ever — cached on the member record.
+            // Geocoding is external network work. Queue it rather than making
+            // this page wait once per member; failed lookups remain retryable.
             if ($address && ! $m->geocoded_at) {
-                $coords = \App\Support\Geocoder::resolve($address);
-                $m->update([
-                    'lat' => $coords['lat'] ?? null,
-                    'lng' => $coords['lng'] ?? null,
-                    'geocoded_at' => now(),
-                ]);
+                GeocodeMember::dispatch($m->id, $address)->afterResponse();
             }
 
             $balance = TransportLedgerEntry::balanceFor($m->id);
@@ -281,15 +278,6 @@ class TransportController extends Controller
             // still knows which member and date to recalculate.
             $run->delete();
             TransportRunUndone::dispatch($run);
-        }
-
-        if ($data['phase'] === 'morning') {
-            TransportLedgerEntry::where('member_id', $member->id)
-                ->where('type', 'charge')
-                ->whereDate('entry_date', today())
-                ->where('notes', 'Transport day charge')
-                ->limit(1)
-                ->delete();
         }
 
         return back()->with('success', 'Undone.');

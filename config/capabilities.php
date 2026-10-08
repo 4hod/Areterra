@@ -49,6 +49,7 @@ $manager = array_merge($staff, [
     'manage_policies',
     'manage_finance',
     'manage_orders',
+    'manage_member_communications',
 ]);
 
 $catalogue = [
@@ -64,6 +65,7 @@ $catalogue = [
         'create_members' => 'Add new members and review referrals',
         'edit_members' => 'Edit member records, goals and reviews',
         'delete_members' => 'Archive and delete member records',
+        'manage_member_communications' => 'Send member emails and manage email templates',
     ],
     'Daily work' => [
         'log_sessions' => 'Take the register, record transport and end-of-day notes',

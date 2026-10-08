@@ -6,12 +6,14 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleCheck;
 use Illuminate\Validation\ValidationException;
+use App\Support\Ledger;
 
 class VehicleCheckRecorder
 {
     public function record(Vehicle $vehicle, User $user, array $data): VehicleCheck
     {
-        $lastMileage = $vehicle->checks()->value('odometer_miles');
+        $previousCheck = $vehicle->checks()->latest('checked_at')->first();
+        $lastMileage = $previousCheck?->odometer_miles;
         if ($lastMileage !== null && (float) $data['odometer_miles'] < (float) $lastMileage) {
             throw ValidationException::withMessages([
                 'odometer_miles' => 'Mileage cannot be lower than the previous vehicle check.',
@@ -27,6 +29,18 @@ class VehicleCheckRecorder
             'checked_at' => now(),
             'checked_by' => $user->id,
         ]);
+
+        if ($lastMileage !== null && (float) $check->odometer_miles > (float) $lastMileage) {
+            $miles = (float) $check->odometer_miles - (float) $lastMileage;
+            Ledger::post(
+                source: $check,
+                direction: 'expense',
+                category: 'vehicle_costs',
+                description: "{$vehicle->registration} — {$miles} miles since previous check",
+                amount: round($miles * (float) config('periods.mileage_rate', 0.45), 2),
+                date: today()->toDateString(),
+            );
+        }
 
         if (! $safe) {
             $failed = collect([

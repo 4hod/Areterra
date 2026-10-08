@@ -124,6 +124,15 @@ php /home/YOUR_CPANEL_USER/hub-app/artisan schedule:run >> /dev/null 2>&1
 
 This powers the 12:00 register and 14:30 end-of-day reminders.
 
+Notifications use Laravel's deferred queue connection, which runs after the
+web response and does not require a permanent queue worker. Background jobs
+such as address geocoding do require one; if the host cannot supervise a
+worker, run this additional cron every minute:
+
+```bash
+php /home/YOUR_CPANEL_USER/hub-app/artisan queue:work --stop-when-empty --tries=3 >> /dev/null 2>&1
+```
+
 ## 8 · HTTPS
 
 cPanel hosts normally issue a free certificate automatically (AutoSSL)

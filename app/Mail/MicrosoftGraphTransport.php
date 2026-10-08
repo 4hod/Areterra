@@ -97,7 +97,7 @@ class MicrosoftGraphTransport extends AbstractTransport
 
     private function tokenCacheKey(): string
     {
-        return 'microsoft-graph-mail-token:'.hash('sha256', "{$this->tenantId}|{$this->clientId}");
+        return 'microsoft-graph-mail-token:'.hash('sha256', "{$this->tenantId}|{$this->clientId}|".mb_strtolower($this->sender));
     }
 
     public function __toString(): string

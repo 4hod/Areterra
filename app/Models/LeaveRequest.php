@@ -19,6 +19,9 @@ class LeaveRequest extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'days' => 'decimal:1',
+            'days_by_year' => 'array',
+            'start_half_day' => 'boolean',
+            'end_half_day' => 'boolean',
             'reviewed_at' => 'datetime',
         ];
     }
@@ -33,16 +36,4 @@ class LeaveRequest extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
-    // Weekdays between the two dates, inclusive.
-    public static function weekdaysBetween(\Carbon\CarbonInterface $start, \Carbon\CarbonInterface $end): float
-    {
-        $days = 0;
-        for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
-            if ($d->isWeekday()) {
-                $days++;
-            }
-        }
-
-        return (float) $days;
-    }
 }

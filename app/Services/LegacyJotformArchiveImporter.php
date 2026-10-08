@@ -56,6 +56,10 @@ class LegacyJotformArchiveImporter
                 'merged' => ['end_of_day' => 0],
                 'conflicts' => ['attendance' => 0, 'transport' => 0],
                 'source_flags' => ['transport_issues' => 0],
+                // These are historic operational records. They may already have
+                // been invoiced or paid outside the Hub, so importing them must
+                // never create a second financial charge.
+                'historic_transport_charges_created' => 0,
                 'already_imported' => 0,
             ];
 

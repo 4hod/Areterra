@@ -107,14 +107,25 @@ class PayrollController extends Controller
             'status' => ['sometimes', 'in:draft,finalised,paid'],
         ]);
 
+        $status = $data['status'] ?? null;
+        unset($data['status']);
         $period->update($data);
+
+        if ($status !== null && $status !== $period->status) {
+            abort_unless(
+                $period->status === 'finalised' && in_array($status, ['draft', 'paid'], true),
+                422,
+                'Use the approval workflow to finalise a draft pay period.',
+            );
+            $period->transitionTo($status, 'Changed from payroll screen');
+        }
 
         return back()->with('success', 'Period updated.');
     }
 
     public function saveEntries(Request $request, PayrollPeriod $period)
     {
-        if ($period->isLocked() && $request->missing('force')) {
+        if ($period->isLocked()) {
             return back()->with('error', 'This period is finalised — set it back to draft to edit.');
         }
 
@@ -136,7 +147,7 @@ class PayrollController extends Controller
         // One transaction: a failure part-way through the loop can no longer
         // leave some lines saved, some deleted and the rest lost.
         DB::transaction(function () use ($data, $period) {
-            $period->entries()->whereIn('id', $data['deleted'] ?? [])->delete();
+            $period->entries()->whereIn('id', $data['deleted'] ?? [])->get()->each->delete();
 
             foreach ($data['entries'] as $e) {
                 $values = [
@@ -153,7 +164,7 @@ class PayrollController extends Controller
                 $values = [...$values, ...PayrollEntry::computeTotals($values)];
 
                 if (! empty($e['id'])) {
-                    $period->entries()->whereKey($e['id'])->update($values);
+                    $period->entries()->findOrFail($e['id'])->update($values);
                 } else {
                     $period->entries()->create($values);
                 }

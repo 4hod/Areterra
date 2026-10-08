@@ -66,6 +66,10 @@ run build`, and caches config/routes. Two things to switch on:
   `php artisan migrate --seed --force` once (then remove `--seed`).
 - **Scheduler**: enable the scheduler for the environment — this powers the
   12:00 register and 14:30 end-of-day reminders.
+- **Queue worker**: enable one default queue worker. Background geocoding and
+  retryable operational jobs use the database queue. User notifications use
+  Laravel's deferred connection and therefore still send without the worker,
+  but the worker is required for the remaining background jobs.
 - **Scale to zero**: disable it for the live staff environment so the first
   staff member of the day does not wait for a cold start.
 

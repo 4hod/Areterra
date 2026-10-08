@@ -78,10 +78,19 @@ class RecordLinks
 
     public static function metadataIfVisible(Model $record): ?array
     {
+        return self::isVisible($record) ? self::metadata($record) : null;
+    }
+
+    public static function isVisible(Model $record): bool
+    {
+        if ($record instanceof Incident && ! Gate::allows('view_all_incidents')) {
+            return auth()->check() && (int) $record->reported_by === (int) auth()->id();
+        }
+
         $type = self::type($record);
         $capability = self::TYPES[$type][1] ?? null;
 
-        return $capability && ! Gate::allows($capability) ? null : self::metadata($record);
+        return ! $capability || Gate::allows($capability);
     }
 
     public static function type(Model $record): string

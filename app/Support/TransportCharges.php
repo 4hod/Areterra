@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Models\TransportLedgerEntry;
 use App\Models\TransportRun;
+use App\Models\Member;
+use App\Models\Setting;
 use Carbon\CarbonInterface;
 
 /**
@@ -83,12 +85,22 @@ final class TransportCharges
      */
     public static function expectedFor(int $memberId, CarbonInterface $date): float
     {
+        $member = Member::with(['financeProfile', 'settings'])->findOrFail($memberId);
+        $profile = $member->financeProfile;
+        $chargeTransport = $profile?->charge_transport ?? (bool) ($member->settings?->transport_required ?? false);
+        if (! $chargeTransport) {
+            return 0.0;
+        }
+
         $legs = TransportRun::whereDate('run_date', $date)
             ->where('member_id', $memberId)
             ->whereIn('outcome', self::CHARGEABLE)
             ->count();
 
-        return round($legs * TransportLedgerEntry::LEG_RATE, 2);
+        $dailyRate = (float) ($profile?->custom_transport_rate
+            ?? Setting::get('finance_rate_transport_day', (string) TransportLedgerEntry::DAILY_RATE));
+
+        return round($legs * ($dailyRate / 2), 2);
     }
 
     public static function currentCharge(int $memberId, CarbonInterface $date): ?TransportLedgerEntry

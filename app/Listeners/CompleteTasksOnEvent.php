@@ -47,6 +47,12 @@ class CompleteTasksOnEvent
         // The event's single public property is the subject record.
         $subject = collect(get_object_vars($event))->first();
 
+        // A vet record completes the task attached to its animal, not a task
+        // attached to the individual visit row.
+        if ($event instanceof \App\Events\VetRecordCreated) {
+            $subject = $event->record->animal;
+        }
+
         if (! is_object($subject) || ! method_exists($subject, 'getMorphClass')) {
             return;
         }

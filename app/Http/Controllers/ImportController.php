@@ -6,6 +6,11 @@ use App\Models\Animal;
 use App\Models\Member;
 use App\Services\LegacyJotformArchiveImporter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use RuntimeException;
 
@@ -45,6 +50,8 @@ class ImportController extends Controller
         ]);
 
         [$headers, $rows, $problems] = $this->parse($request);
+        $token = (string) Str::uuid();
+        Cache::put($this->cacheKey($request, $token), $request->file('file')->get(), now()->addHour());
 
         return back()->with([
             'import_preview' => [
@@ -53,7 +60,7 @@ class ImportController extends Controller
                 'rows' => array_slice($rows, 0, 50),
                 'total' => count($rows),
                 'problems' => $problems,
-                'csv' => base64_encode($request->file('file')->get()),
+                'token' => $token,
             ],
         ]);
     }
@@ -62,17 +69,22 @@ class ImportController extends Controller
     {
         $data = $request->validate([
             'kind' => ['required', 'in:members,animals'],
-            'csv' => ['required', 'string'],
+            'token' => ['required', 'uuid'],
         ]);
 
-        $rows = $this->parseCsv(base64_decode($data['csv']));
+        $content = Cache::pull($this->cacheKey($request, $data['token']));
+        abort_unless(is_string($content), 410, 'This import preview has expired. Upload the CSV again.');
+
+        $rows = $this->parseCsv($content);
+        $problems = $this->problemsFor($data['kind'], $rows['rows']);
+        if ($problems !== []) {
+            throw ValidationException::withMessages(['file' => $problems]);
+        }
         $created = 0;
 
-        foreach ($rows['rows'] as $row) {
+        DB::transaction(function () use ($rows, $data, &$created) {
+          foreach ($rows['rows'] as $row) {
             if ($data['kind'] === 'members') {
-                if (empty($row['first_name']) || empty($row['last_name'])) {
-                    continue;
-                }
                 $member = Member::firstOrCreate(
                     ['first_name' => $row['first_name'], 'last_name' => $row['last_name']],
                     collect($row)->only([
@@ -86,9 +98,6 @@ class ImportController extends Controller
                     $created++;
                 }
             } else {
-                if (empty($row['name']) || empty($row['species']) || ! in_array($row['species'], Animal::SPECIES, true)) {
-                    continue;
-                }
                 $animal = Animal::firstOrCreate(
                     ['name' => $row['name'], 'species' => $row['species']],
                     collect($row)->only(['breed', 'sex', 'status', 'joined_date', 'care_requirements', 'feeding_notes'])
@@ -98,7 +107,8 @@ class ImportController extends Controller
                     $created++;
                 }
             }
-        }
+          }
+        });
 
         return redirect()->route('import')->with('success', "Imported {$created} new {$data['kind']}. Existing records were skipped.");
     }
@@ -106,38 +116,66 @@ class ImportController extends Controller
     private function parse(Request $request): array
     {
         $parsed = $this->parseCsv($request->file('file')->get());
-        $problems = [];
-
-        foreach ($parsed['rows'] as $i => $row) {
-            if ($request->string('kind')->toString() === 'members' && (empty($row['first_name']) || empty($row['last_name']))) {
-                $problems[] = 'Row '.($i + 2).': missing first_name or last_name — will be skipped';
-            }
-            if ($request->string('kind')->toString() === 'animals') {
-                if (empty($row['name']) || empty($row['species'])) {
-                    $problems[] = 'Row '.($i + 2).': missing name or species — will be skipped';
-                } elseif (! in_array($row['species'], Animal::SPECIES, true)) {
-                    $problems[] = 'Row '.($i + 2).": unknown species \"{$row['species']}\" — will be skipped";
-                }
-            }
-        }
+        $problems = $this->problemsFor($request->string('kind')->toString(), $parsed['rows']);
 
         return [$parsed['headers'], $parsed['rows'], $problems];
     }
 
     private function parseCsv(string $content): array
     {
-        $lines = array_values(array_filter(array_map('trim', explode("\n", $content)), fn ($l) => $l !== ''));
-        if ($lines === []) {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, preg_replace('/^\xEF\xBB\xBF/', '', $content));
+        rewind($stream);
+
+        $headerRow = fgetcsv($stream);
+        if ($headerRow === false) {
+            fclose($stream);
             return ['headers' => [], 'rows' => []];
         }
 
-        $headers = array_map(fn ($h) => strtolower(trim($h)), str_getcsv(array_shift($lines)));
+        $headers = array_map(fn ($header) => strtolower(trim((string) $header)), $headerRow);
         $rows = [];
-        foreach ($lines as $line) {
-            $values = str_getcsv($line);
+        while (($values = fgetcsv($stream)) !== false) {
+            if (count(array_filter($values, fn ($value) => trim((string) $value) !== '')) === 0) {
+                continue;
+            }
             $rows[] = array_combine($headers, array_pad(array_slice($values, 0, count($headers)), count($headers), null));
         }
+        fclose($stream);
 
         return ['headers' => $headers, 'rows' => $rows];
+    }
+
+    private function problemsFor(string $kind, array $rows): array
+    {
+        $rules = $kind === 'members'
+            ? [
+                'first_name' => ['required', 'string', 'max:100'],
+                'last_name' => ['required', 'string', 'max:100'],
+                'status' => ['nullable', 'in:active,inactive,on-leave,archived'],
+                'dob' => ['nullable', 'date'],
+                'email' => ['nullable', 'email'],
+            ]
+            : [
+                'name' => ['required', 'string', 'max:100'],
+                'species' => ['required', 'in:'.implode(',', Animal::SPECIES)],
+                'status' => ['nullable', 'in:active,inactive'],
+                'joined_date' => ['nullable', 'date'],
+            ];
+
+        $problems = [];
+        foreach ($rows as $index => $row) {
+            $validator = Validator::make($row, $rules);
+            foreach ($validator->errors()->all() as $message) {
+                $problems[] = 'Row '.($index + 2).': '.$message;
+            }
+        }
+
+        return $problems;
+    }
+
+    private function cacheKey(Request $request, string $token): string
+    {
+        return 'csv-import-preview:'.$request->user()->id.':'.$token;
     }
 }

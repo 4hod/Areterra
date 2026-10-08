@@ -43,6 +43,9 @@ class MicrosoftAuthController extends Controller
             return redirect('/login')->with('error', 'Microsoft sign-in is not set up yet.');
         }
 
+        // A cancelled mailbox-consent flow must never change the meaning of a
+        // later, ordinary sign-in or password-confirmation callback.
+        $request->session()->forget('ms_mail_connection');
         $state = Str::random(40);
         $request->session()->put('ms_oauth_state', $state);
         $confirmingPassword = $request->boolean('confirm');

@@ -104,7 +104,7 @@ class WelfareCheckController extends Controller
 
         if ($alerts) {
             \Illuminate\Support\Facades\Notification::send(
-                \App\Models\User::managers()->get(),
+                \App\Models\User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'edit_animals'))->get(),
                 new \App\Notifications\ConcernRaised(
                     "Welfare: {$animal->name}",
                     "{$animal->species} {$animal->name} — ".implode('; ', $alerts).'.',

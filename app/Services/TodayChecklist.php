@@ -14,8 +14,10 @@ class TodayChecklist
 {
     public function build(CarbonInterface $date): array
     {
-        $attendees = Attendance::whereDate('date', $date)->where('checked_in', true)->get();
-        $memberWorkExpected = Member::scheduledFor($date)->exists() || $attendees->isNotEmpty();
+        $attendanceRecords = Attendance::whereDate('date', $date)->get();
+        $attendees = $attendanceRecords->where('checked_in', true);
+        $scheduledMemberIds = Member::scheduledFor($date)->pluck('members.id');
+        $memberWorkExpected = $scheduledMemberIds->isNotEmpty() || $attendees->isNotEmpty();
 
         $transportMemberIds = Member::scheduledFor($date)
             ->whereHas('settings', fn ($q) => $q->where('transport_required', true))
@@ -65,8 +67,10 @@ class TodayChecklist
                 'key' => 'register',
                 'label' => 'Morning Register',
                 'applicable' => $memberWorkExpected,
-                'done' => $attendees->isNotEmpty(),
-                'detail' => $memberWorkExpected ? $attendees->count().' checked in' : 'No members are scheduled today',
+                'done' => ! $memberWorkExpected || $scheduledMemberIds->every(
+                    fn ($memberId) => $attendanceRecords->contains(fn ($attendance) => (int) $attendance->member_id === (int) $memberId),
+                ),
+                'detail' => $memberWorkExpected ? $attendees->count().' checked in; '.$attendanceRecords->where('status', 'absent')->count().' absent' : 'No members are scheduled today',
             ],
             [
                 'key' => 'moods',

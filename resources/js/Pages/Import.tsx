@@ -10,7 +10,7 @@ interface Preview {
     rows: Record<string, string | null>[];
     total: number;
     problems: string[];
-    csv: string;
+    token: string;
 }
 
 interface ArchiveReport {
@@ -21,6 +21,7 @@ interface ArchiveReport {
     merged: { end_of_day: number };
     conflicts: { attendance: number; transport: number };
     source_flags: { transport_issues: number };
+    historic_transport_charges_created: number;
     already_imported: number;
 }
 
@@ -35,7 +36,7 @@ export default function Import() {
 
     function commit() {
         if (!preview) return;
-        router.post('/import/commit', { kind: preview.kind, csv: preview.csv });
+        router.post('/import/commit', { kind: preview.kind, token: preview.token });
     }
 
     return (
@@ -57,6 +58,9 @@ export default function Import() {
                 <p className="text-xs text-slate-500 mt-2">
                     Imports attendance, morning transport and end-of-shift history. Existing member/date records are matched, every source row is retained encrypted, and the whole import rolls back if a workbook or code is unrecognised.
                 </p>
+                <p className="mt-2 rounded-lg bg-sky-50 p-3 text-xs text-sky-900">
+                    Historic transport is imported as an operational record only. It does not create a new member charge, because those journeys may already have been paid outside the Hub.
+                </p>
             </Card>
 
             {archiveReport && (
@@ -68,6 +72,7 @@ export default function Import() {
                         <div className={`rounded-lg p-3 ${archiveReport.conflicts.attendance + archiveReport.conflicts.transport > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}><strong className="block">Conflicts</strong>{archiveReport.conflicts.attendance} attendance · {archiveReport.conflicts.transport} transport</div>
                     </div>
                     <p className="text-sm text-slate-600 mt-3">{archiveReport.already_imported} source rows had already been imported and were left unchanged.</p>
+                    <p className="mt-2 text-sm text-sky-800">Historic transport charges created: {archiveReport.historic_transport_charges_created} (deliberately zero to prevent double charging).</p>
                     {archiveReport.source_flags.transport_issues > 0 && (
                         <p className="text-sm text-amber-800 bg-amber-50 rounded-lg p-3 mt-3">
                             {archiveReport.source_flags.transport_issues} transport source row{archiveReport.source_flags.transport_issues === 1 ? '' : 's'} marked that an issue occurred. The original row is retained encrypted for review.
@@ -136,7 +141,7 @@ export default function Import() {
                             </tbody>
                         </table>
                     </div>
-                    <button onClick={commit} className="mt-4 w-full rounded-lg bg-brand text-white font-bold py-3">
+                    <button disabled={preview.problems.length > 0} onClick={commit} className="mt-4 w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
                         ✓ Run import ({preview.total} rows)
                     </button>
                 </Card>

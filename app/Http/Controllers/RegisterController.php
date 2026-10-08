@@ -192,6 +192,10 @@ class RegisterController extends Controller
 
         if (($data['checked_in'] ?? true) === false) {
             $data['checked_in_at'] = null;
+            $data['status'] = 'absent';
+        } elseif (($data['checked_in'] ?? null) === true) {
+            $data['status'] = 'present';
+            $data['checked_in_at'] ??= now();
         }
 
         $attendance->update($data);

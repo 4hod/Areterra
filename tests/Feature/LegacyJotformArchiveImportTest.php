@@ -53,11 +53,13 @@ class LegacyJotformArchiveImportTest extends TestCase
         $response->assertSessionHas('archive_import_report.created.attendance', 2);
         $response->assertSessionHas('archive_import_report.created.transport', 1);
         $response->assertSessionHas('archive_import_report.source_flags.transport_issues', 1);
+        $response->assertSessionHas('archive_import_report.historic_transport_charges_created', 0);
 
         $this->assertDatabaseCount('legacy_import_rows', 4);
         $this->assertDatabaseCount('end_of_day_records', 1);
         $this->assertDatabaseCount('attendances', 2);
         $this->assertDatabaseCount('transport_runs', 1);
+        $this->assertDatabaseCount('transport_ledger_entries', 0);
         $this->assertStringContainsString('First shift note', EndOfDayRecord::first()->notes);
         $this->assertStringContainsString('Second shift note', EndOfDayRecord::first()->notes);
         $this->assertSame(2, Attendance::where('status', 'present')->count());

@@ -109,7 +109,7 @@ class EndOfDayController extends Controller
 
         if ($record->concern && ($record->wasRecentlyCreated || $record->wasChanged('concern'))) {
             // Concerns flagged at end of day auto-create a safeguarding entry (SPEC.md §25).
-            \App\Models\SafeguardingConcern::firstOrCreate(
+            $concern = \App\Models\SafeguardingConcern::firstOrCreate(
                 ['end_of_day_record_id' => $record->id],
                 [
                     'member_id' => $member->id,
@@ -120,15 +120,9 @@ class EndOfDayController extends Controller
                 ],
             );
 
-            \Illuminate\Support\Facades\Notification::send(
-                \App\Models\User::managers()->get(),
-                new \App\Notifications\ConcernRaised(
-                    "End of day concern: {$member->displayName()}",
-                    $record->concern_detail ?? 'A concern was flagged in today\'s end-of-day record.',
-                    '/end-of-day',
-                    'safeguarding',
-                ),
-            );
+            if ($concern->wasRecentlyCreated) {
+                \App\Events\SafeguardingConcernRaised::dispatch($concern);
+            }
         }
 
         return back()->with('success', "End of day saved for {$member->displayName()}.");

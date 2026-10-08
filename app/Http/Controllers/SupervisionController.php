@@ -49,7 +49,7 @@ class SupervisionController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'subject_key' => ['required', 'string'], // "user:1" or "roster:2"
+            'subject_key' => ['required', 'regex:/^(user|roster):[1-9][0-9]*$/'],
             'type' => ['required', 'in:'.implode(',', Supervision::TYPES)],
             'date' => ['required', 'date'],
             'duration_minutes' => ['nullable', 'integer', 'min:0'],
@@ -60,7 +60,7 @@ class SupervisionController extends Controller
             'staff_signed_off' => ['boolean'],
         ]);
 
-        [$kind, $id] = explode(':', $data['subject_key']);
+        [$kind, $id] = explode(':', $data['subject_key'], 2);
         $type = $kind === 'user' ? User::class : StaffRosterMember::class;
         abort_unless($type::whereKey($id)->exists(), 422);
 

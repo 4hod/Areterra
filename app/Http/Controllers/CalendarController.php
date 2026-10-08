@@ -12,8 +12,9 @@ class CalendarController extends Controller
 {
     public function index(Request $request)
     {
-        $month = $request->filled('month')
-            ? \Carbon\Carbon::createFromFormat('Y-m', $request->string('month'))->startOfMonth()
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
+        $month = ! empty($data['month'])
+            ? \Carbon\Carbon::createFromFormat('!Y-m', $data['month'])
             : now()->startOfMonth();
 
         $start = $month->copy()->startOfMonth();

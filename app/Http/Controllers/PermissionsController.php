@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 /**
@@ -32,6 +33,7 @@ class PermissionsController extends Controller
                     'email' => $u->email,
                     'job_title' => $u->job_title,
                     'role' => $u->role,
+                    'working_days' => $u->working_days ?: \App\Support\LeaveCalendar::DEFAULT_WORKING_DAYS,
                     // Old deployments may have grants for capabilities that no
                     // longer exist. They must not inflate the visible count or
                     // be submitted back through the current permissions form.
@@ -74,6 +76,52 @@ class PermissionsController extends Controller
             $user->name,
             str($data['role'])->replace('_', ' ')->title(),
         ));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'job_title' => ['nullable', 'string', 'max:100'],
+            'role' => ['required', 'in:'.implode(',', array_keys(config('capabilities.roles')))],
+            'working_days' => ['sometimes', 'array', 'min:1'],
+            'working_days.*' => ['integer', 'between:1,7', 'distinct'],
+        ]);
+
+        $user = User::create([
+            ...$data,
+            // Staff use Microsoft SSO. A random local password means this
+            // account cannot be entered with a shared/default credential.
+            'password' => Str::password(40),
+        ]);
+
+        return back()->with('success', "Account created for {$user->name}. They can now sign in with Microsoft using {$user->email}.");
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'job_title' => ['nullable', 'string', 'max:100'],
+            'working_days' => ['required', 'array', 'min:1'],
+            'working_days.*' => ['integer', 'between:1,7', 'distinct'],
+        ]);
+
+        $data['working_days'] = array_values(array_unique(array_map('intval', $data['working_days'])));
+        sort($data['working_days']);
+        $user->update($data);
+
+        return back()->with('success', "Working pattern updated for {$user->name}.");
+    }
+
+    public function destroyUser(Request $request, User $user)
+    {
+        abort_if($user->is($request->user()), 422, 'You cannot deactivate your own account.');
+
+        $this->guardAgainstLockout($request, $user, []);
+        $user->delete();
+
+        return back()->with('success', "{$user->name}'s account was deactivated.");
     }
 
     /**

@@ -75,7 +75,10 @@ class ProductOrderController extends Controller
             'status' => 'pending',
         ]);
 
-        Notification::send(User::managers()->get(), new OrderRequested($order));
+        Notification::send(
+            User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_orders'))->get(),
+            new OrderRequested($order),
+        );
 
         return back()->with('success', 'Order request submitted.');
     }
@@ -94,6 +97,9 @@ class ProductOrderController extends Controller
 
     public function approve(ProductOrder $order, Request $request)
     {
+        abort_if($order->requested_by === $request->user()->id, 403, 'You cannot approve your own order.');
+        abort_unless($order->status === 'pending', 422, 'Only a pending order can be approved.');
+
         $order->update([
             'status' => 'approved',
             'approved_by' => $request->user()->id,
@@ -108,6 +114,9 @@ class ProductOrderController extends Controller
 
     public function reject(Request $request, ProductOrder $order)
     {
+        abort_if($order->requested_by === $request->user()->id, 403, 'You cannot reject your own order.');
+        abort_unless($order->status === 'pending', 422, 'Only a pending order can be declined.');
+
         $data = $request->validate([
             'rejection_reason' => ['nullable', 'string', 'max:500'],
         ]);

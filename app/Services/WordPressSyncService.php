@@ -48,29 +48,21 @@ class WordPressSyncService
             $byWordPressId = $existing
                 ->filter(fn (Member $member) => $member->wordpress_id !== null)
                 ->keyBy(fn (Member $member) => (string) $member->wordpress_id);
-            $byName = $existing->keyBy(fn (Member $member) => $this->nameKey(
-                $member->first_name,
-                $member->last_name,
-            ));
-
             foreach ($remoteMembers as $remote) {
                 $wordpressId = (int) $remote['member']['id'];
-                $nameKey = $this->nameKey(
-                    (string) $remote['member']['first_name'],
-                    (string) $remote['member']['last_name'],
-                );
 
                 /** @var Member|null $member */
-                $member = $byWordPressId->get((string) $wordpressId) ?? $byName->get($nameKey);
+                $member = $byWordPressId->get((string) $wordpressId);
+                if ($member?->trashed()) {
+                    // Archiving is a deliberate Hub decision. A remote sync
+                    // must never silently resurrect that record.
+                    continue;
+                }
                 $isNew = $member === null;
                 $member ??= new Member();
 
                 $payload = $this->memberPayload($remote['member'], $isNew);
                 $member->fill($payload);
-
-                if ($member->trashed() && ($payload['status'] ?? 'active') === 'active') {
-                    $member->restore();
-                }
 
                 if ($isNew || $member->isDirty()) {
                     $member->save();
@@ -83,7 +75,6 @@ class WordPressSyncService
                 ]);
 
                 $byWordPressId->put((string) $wordpressId, $member);
-                $byName->put($nameKey, $member);
 
                 foreach ($remote['notes'] as $remoteNote) {
                     $change = $this->syncMemberNote($member, $remoteNote);

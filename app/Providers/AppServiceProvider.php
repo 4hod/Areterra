@@ -51,7 +51,6 @@ class AppServiceProvider extends ServiceProvider
         // whose handle() type-hints a single concrete event.
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\CompleteTasksOnEvent::class);
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\SyncTransportChargeOnOutcome::class);
-        \Illuminate\Support\Facades\Event::listen(\App\Events\MemberMarkedAbsent::class, \App\Listeners\RunAutomationRules::class);
 
         // Audit trail on every major model (SPEC checklist: Audit Log).
         $audited = [

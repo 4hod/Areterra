@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Animal;
+use App\Events\VetRecordCreated;
 use Illuminate\Http\Request;
 
 class VetRecordController extends Controller
@@ -18,7 +19,8 @@ class VetRecordController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $animal->vetRecords()->create($data);
+        $record = $animal->vetRecords()->create($data);
+        VetRecordCreated::dispatch($record);
 
         return back()->with('success', "Vet record added for {$animal->name}.");
     }

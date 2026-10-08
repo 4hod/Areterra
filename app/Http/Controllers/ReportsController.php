@@ -89,9 +89,18 @@ class ReportsController extends Controller
             $out = fopen('php://output', 'w');
             fputcsv($out, $headers);
             foreach ($rows as $row) {
-                fputcsv($out, $row);
+                fputcsv($out, collect($row)->map(fn ($value) => $this->safeCsvValue($value))->all());
             }
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    private function safeCsvValue(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+
+        return preg_match('/^[=+\-@]/', ltrim($value)) ? "'".$value : $value;
     }
 }

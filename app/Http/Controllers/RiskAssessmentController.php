@@ -58,6 +58,7 @@ class RiskAssessmentController extends Controller
     {
         RiskAssessment::create([
             ...$this->validated($request),
+            'status' => 'draft',
             'version' => 1,
             'is_current' => true,
             'created_by' => $request->user()->id,
@@ -94,13 +95,23 @@ class RiskAssessmentController extends Controller
 
     public function update(Request $request, RiskAssessment $riskAssessment)
     {
-        $riskAssessment->update($this->validated($request));
+        $data = $this->validated($request);
+        $riskAssessment->update([
+            ...$data,
+            // Editing a signed assessment invalidates the old approval. It
+            // must be signed off again before it is active.
+            'status' => 'draft',
+            'signed_off_by' => null,
+            'signed_off_at' => null,
+        ]);
 
         return back()->with('success', 'Risk assessment saved.');
     }
 
     public function signOff(Request $request, RiskAssessment $riskAssessment)
     {
+        abort_unless($riskAssessment->is_current && $riskAssessment->status === 'draft', 422, 'Only the current draft can be signed off.');
+
         $riskAssessment->update([
             'signed_off_by' => $request->user()->id,
             'signed_off_at' => now(),

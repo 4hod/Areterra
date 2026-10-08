@@ -227,7 +227,15 @@ class MemberController extends Controller
 
         $data = $this->validated($request);
 
-        $member->update($data['member']);
+        $addressFields = ['address_line1', 'address_line2', 'town', 'postcode'];
+        $addressChanged = collect($addressFields)->contains(
+            fn ($field) => array_key_exists($field, $data['member']) && $data['member'][$field] !== $member->{$field},
+        );
+
+        $member->update([
+            ...$data['member'],
+            ...($addressChanged ? ['lat' => null, 'lng' => null, 'geocoded_at' => null] : []),
+        ]);
         $member->settings()->updateOrCreate([], $data['settings']);
 
         return back()->with('success', 'Member updated.');
@@ -241,7 +249,13 @@ class MemberController extends Controller
             'status' => ['required', 'in:active,inactive,on-leave,archived'],
         ]);
 
-        $count = Member::whereIn('id', $data['ids'])->update(['status' => $data['status']]);
+        if ($data['status'] === 'archived') {
+            Gate::authorize('delete_members');
+        }
+
+        $members = Member::whereIn('id', $data['ids'])->get();
+        $members->each(fn (Member $member) => $member->update(['status' => $data['status']]));
+        $count = $members->count();
 
         return back()->with('success', "{$count} member".($count === 1 ? '' : 's')." set to {$data['status']}.");
     }

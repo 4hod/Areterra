@@ -7,6 +7,7 @@ use App\Events\InvoicePaid;
 use App\Models\Member;
 use App\Models\MemberInvoice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class InvoiceController extends Controller
@@ -39,7 +40,7 @@ class InvoiceController extends Controller
 
     public function store(Request $request)
     {
-        MemberInvoice::create($request->validate([
+        $invoice = MemberInvoice::create($request->validate([
             'member_id' => ['required', 'exists:members,id'],
             'qb_reference' => ['required', 'string', 'max:50'],
             'amount' => ['required', 'numeric', 'min:0.01'],
@@ -49,14 +50,17 @@ class InvoiceController extends Controller
             'qb_url' => ['nullable', 'url', 'max:500'],
         ]));
 
+        if ($invoice->status === 'paid') {
+            $invoice->update(['paid_date' => today()]);
+            InvoicePaid::dispatch($invoice->fresh());
+        }
+
         return back()->with('success', 'Invoice tracked.');
     }
 
     public function markPaid(MemberInvoice $invoice)
     {
-        $invoice->update(['status' => 'paid', 'paid_date' => today()]);
-
-        InvoicePaid::dispatch($invoice->fresh());
+        $this->markInvoicePaid($invoice);
 
         return back()->with('success', "{$invoice->qb_reference} marked paid.");
     }
@@ -68,18 +72,26 @@ class InvoiceController extends Controller
             'ids.*' => ['exists:member_invoices,id'],
         ]);
 
-        $count = MemberInvoice::whereIn('id', $data['ids'])->update(['status' => 'paid', 'paid_date' => today()]);
+        $invoices = MemberInvoice::whereIn('id', $data['ids'])->get();
+        DB::transaction(fn () => $invoices->each(fn (MemberInvoice $invoice) => $this->markInvoicePaid($invoice)));
+        $count = $invoices->count();
 
         return back()->with('success', "{$count} invoice".($count === 1 ? '' : 's').' marked paid.');
     }
 
     public function update(Request $request, MemberInvoice $invoice)
     {
+        $wasPaid = $invoice->status === 'paid';
         $invoice->update($request->validate([
             'status' => ['sometimes', 'in:draft,sent,paid,overdue,cancelled'],
             'due_date' => ['nullable', 'date'],
             'qb_url' => ['nullable', 'url', 'max:500'],
         ]));
+
+        if (! $wasPaid && $invoice->status === 'paid') {
+            $invoice->update(['paid_date' => $invoice->paid_date ?? today()]);
+            InvoicePaid::dispatch($invoice->fresh());
+        }
 
         return back()->with('success', 'Invoice updated.');
     }
@@ -89,5 +101,15 @@ class InvoiceController extends Controller
         $invoice->delete();
 
         return back()->with('success', "{$invoice->qb_reference} removed.");
+    }
+
+    private function markInvoicePaid(MemberInvoice $invoice): void
+    {
+        if ($invoice->status === 'paid') {
+            return;
+        }
+
+        $invoice->update(['status' => 'paid', 'paid_date' => today()]);
+        InvoicePaid::dispatch($invoice->fresh());
     }
 }

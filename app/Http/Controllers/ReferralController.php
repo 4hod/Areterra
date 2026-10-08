@@ -60,6 +60,8 @@ class ReferralController extends Controller
 
     public function review(Request $request, Referral $referral)
     {
+        abort_unless($referral->status === 'pending', 422, 'This referral has already been reviewed.');
+
         $data = $request->validate([
             'status' => ['required', 'in:accepted,declined'],
         ]);
@@ -73,11 +75,12 @@ class ReferralController extends Controller
         // Accepting creates an inactive member profile ready to complete.
         if ($data['status'] === 'accepted') {
             $parts = preg_split('/\s+/', trim($referral->person_name), 2);
-            $member = Member::firstOrCreate(
-                ['first_name' => $parts[0], 'last_name' => $parts[1] ?? ''],
-                ['status' => 'inactive'],
-            );
-            $member->settings()->firstOrCreate([]);
+            $member = Member::create([
+                'first_name' => $parts[0],
+                'last_name' => $parts[1] ?? '',
+                'status' => 'inactive',
+            ]);
+            $member->settings()->create([]);
 
             return redirect()->route('members.show', $member)
                 ->with('success', "Referral accepted — complete {$member->displayName()}'s profile.");

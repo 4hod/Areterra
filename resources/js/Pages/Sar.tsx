@@ -7,7 +7,7 @@ interface Props {
     generated_at: string;
     member: Record<string, any>;
     attendance: { date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null }[];
-    endOfDay: { date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean }[];
+    endOfDay: { date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean; food_intake?: string | null; fluid_intake?: string | null; toileting_notes?: string | null; medication_given?: boolean; medication_notes?: string | null; concern_detail?: string | null; incident?: boolean; incident_detail?: string | null; photos?: string[] }[];
     reviews: { date: string; outcomes: string | null; actions: string | null }[];
     abc: { date: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null }[];
     transportLedger: { date: string; type: string; amount: number }[];
@@ -18,6 +18,7 @@ interface Props {
     outcomes: { date: string | null; outcome: string; goal: string | null; recorded_by: string | null }[];
     alerts: { type: string; severity: string; text: string }[];
     bodyMaps: { recorded_at: string | null; markers: { view: string; x: number; y: number; note?: string }[]; notes: string | null; recorded_by: string | null }[];
+    additionalSections: Record<string, Record<string, unknown>[]>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -31,7 +32,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     );
 }
 
-export default function Sar({ generated_at, member, attendance, endOfDay, reviews, abc, transportLedger, contacts, consents, communications, goals, outcomes, alerts, bodyMaps }: Props) {
+export default function Sar({ generated_at, member, attendance, endOfDay, reviews, abc, transportLedger, contacts, consents, communications, goals, outcomes, alerts, bodyMaps, additionalSections }: Props) {
     const { branding } = usePage<SharedProps>().props;
 
     return (
@@ -185,7 +186,14 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                         {r.end_mood && ` → ${MOOD_EMOJI[r.end_mood]}`}
                         {r.concern && ' · ⚠ concern flagged'}
                         {r.activities && <div>Activities: {r.activities}</div>}
+                        {r.food_intake && <div>Food intake: {r.food_intake}</div>}
+                        {r.fluid_intake && <div>Fluid intake: {r.fluid_intake}</div>}
+                        {r.toileting_notes && <div>Toileting: {r.toileting_notes}</div>}
+                        {r.medication_given && <div>Medication given{r.medication_notes ? ` — ${r.medication_notes}` : ''}</div>}
+                        {r.concern_detail && <div>Concern detail: {r.concern_detail}</div>}
+                        {r.incident_detail && <div>Incident detail: {r.incident_detail}</div>}
                         {r.notes && <div>Notes: {r.notes}</div>}
+                        {r.photos && r.photos.length > 0 && <div className="mt-2 grid grid-cols-2 gap-2">{r.photos.map((photo) => <img key={photo} src={photo} alt={`Session record ${r.date}`} className="max-h-48 object-contain" />)}</div>}
                     </div>
                 ))}
                 {endOfDay.length === 0 && <p className="text-slate-400">None.</p>}
@@ -238,6 +246,19 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                 ))}
                 {transportLedger.length === 0 && <p className="text-slate-400">None.</p>}
             </Section>
+
+            {Object.entries(additionalSections).map(([title, records]) => (
+                <Section key={title} title={`${title} (${records.length})`}>
+                    {records.map((record, index) => (
+                        <div key={index} className="mb-2 border-b border-slate-100 pb-2">
+                            {Object.entries(record).filter(([, value]) => value !== null && value !== '' && value !== undefined).map(([label, value]) => (
+                                <div key={label}><b>{label.replace(/_/g, ' ')}:</b>{' '}{typeof value === 'object' ? JSON.stringify(value) : String(value)}</div>
+                            ))}
+                        </div>
+                    ))}
+                    {records.length === 0 && <p className="text-slate-400">None.</p>}
+                </Section>
+            ))}
 
             <p className="text-[10px] text-slate-400 mt-8">
                 Areterra · Little Croft, Fenn Green, WV15 6JA · 01562 307 306 · Registered charity No. 1196211

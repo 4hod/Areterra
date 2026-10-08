@@ -41,7 +41,7 @@ class SendEndOfDayReminder extends Command
         }
 
         Notification::send(
-            User::managers()->get(),
+            User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_operations'))->get(),
             new DailyReminder(
                 'End of day records missing',
                 "{$missing} of {$attendees->count()} members who attended today have no end-of-day record yet.",

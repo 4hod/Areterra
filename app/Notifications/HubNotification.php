@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Mail\BrandedEmail;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
@@ -12,9 +13,25 @@ use NotificationChannels\WebPush\WebPushMessage;
 // Base for all Hub notifications: routes to push and/or email according to the
 // recipient's NotificationPref (global toggles + per-category opt-outs), with
 // email acting as the fallback channel (SPEC.md §22).
-abstract class HubNotification extends Notification
+abstract class HubNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    public bool $afterCommit = true;
+
+    /**
+     * The deferred driver runs after the HTTP response and needs no long-lived
+     * queue worker. A mail/push outage therefore cannot turn a successful save
+     * into an error page, while shared hosting still delivers notifications.
+     */
+    public function viaConnections(): array
+    {
+        return [
+            'database' => 'deferred',
+            'mail' => 'deferred',
+            WebPushChannel::class => 'deferred',
+        ];
+    }
 
     abstract public function category(): string;
 

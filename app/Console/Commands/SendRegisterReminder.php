@@ -40,7 +40,7 @@ class SendRegisterReminder extends Command
         }
 
         Notification::send(
-            User::managers()->get(),
+            User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_operations'))->get(),
             new DailyReminder(
                 'Morning register not done',
                 "{$scheduled} members are scheduled today but nobody has been checked in yet.",

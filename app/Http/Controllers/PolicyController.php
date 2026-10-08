@@ -48,6 +48,7 @@ class PolicyController extends Controller
     {
         $policy = Policy::create([
             ...$this->validated($request),
+            'status' => 'draft',
             'created_by' => $request->user()->id,
         ]);
 
@@ -56,13 +57,20 @@ class PolicyController extends Controller
 
     public function update(Request $request, Policy $policy)
     {
-        $policy->update($this->validated($request));
+        $policy->update([
+            ...$this->validated($request),
+            'status' => 'draft',
+            'approved_by' => null,
+            'approved_at' => null,
+        ]);
 
         return back()->with('success', 'Policy saved.');
     }
 
     public function approve(Request $request, Policy $policy)
     {
+        abort_unless($policy->status === 'draft' && $policy->approved_at === null, 422, 'Only a draft policy can be approved.');
+
         $policy->update([
             'approved_by' => $request->user()->id,
             'approved_at' => now(),

@@ -22,7 +22,7 @@ class SecurityHeaders
         if (app()->environment('production')) {
             $response->headers->set(
                 'Content-Security-Policy',
-                "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://unpkg.com; font-src 'self' https://fonts.bunny.net; img-src 'self' data: blob: https:; connect-src 'self' https://api.postcodes.io; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests",
+                "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; font-src 'self' https://fonts.bunny.net; img-src 'self' data: blob: https:; connect-src 'self' https://api.postcodes.io; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests",
             );
 
             if ($request->isSecure()) {

@@ -7,6 +7,7 @@ use App\Models\FormSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use App\Support\RecordLinks;
 use Inertia\Inertia;
 
@@ -127,7 +128,16 @@ class FormController extends Controller
 
         $rules = [];
         foreach ($form->fields as $field) {
-            $rules["field_{$field->id}"] = [$field->is_required ? 'required' : 'nullable', 'string'];
+            $rules["field_{$field->id}"] = [
+                $field->is_required ? 'required' : 'nullable',
+                ...match ($field->type) {
+                    'select' => ['string', Rule::in($field->options ?? [])],
+                    'number' => ['numeric'],
+                    'date' => ['date_format:Y-m-d'],
+                    'checkbox' => ['nullable', Rule::in(['yes'])],
+                    default => ['string'],
+                },
+            ];
         }
         $rules['about'] = ['nullable', 'string'];
         $rules['about_id'] = ['nullable', 'integer'];
