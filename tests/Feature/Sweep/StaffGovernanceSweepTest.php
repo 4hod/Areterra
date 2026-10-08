@@ -12,6 +12,8 @@ class StaffGovernanceSweepTest extends SweepTestCase
     {
         $this->get('/leave')->assertOk();
 
+        $staff = \App\Models\User::factory()->create(['role' => 'staff']);
+        $this->actingAs($staff);
         $this->assertWriteOk($this->post('/leave', [
             'type' => 'annual',
             'start_date' => now()->addWeek()->toDateString(),
@@ -21,6 +23,8 @@ class StaffGovernanceSweepTest extends SweepTestCase
         $l = DB::table('leave_requests')->first();
         $this->assertNotNull($l, 'leave request not created');
 
+        // Leave must be approved by somebody other than the requester.
+        $this->actingAs($this->admin);
         $this->assertWriteOk($this->put("/leave/{$l->id}/review", [
             'status' => 'approved', 'review_notes' => 'Cover arranged.',
         ]), 'leave.review');

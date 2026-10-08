@@ -64,7 +64,7 @@ class LeaveTest extends TestCase
         ])->assertRedirect();
 
         $leave = LeaveRequest::first();
-        $this->assertSame(['2026' => 1.0, '2027' => 2.0], $leave->days_by_year);
+        $this->assertEquals(['2026' => 1.0, '2027' => 2.0], $leave->days_by_year);
 
         $this->actingAs($manager)->put("/leave/{$leave->id}/review", ['status' => 'approved'])
             ->assertRedirect();
