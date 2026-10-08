@@ -42,10 +42,11 @@ class AnnouncementController extends Controller
 
         $announcement = Announcement::create([...$data, 'user_id' => $request->user()->id]);
 
-        Notification::send(
-            User::where('id', '!=', $request->user()->id)->get(),
-            new AnnouncementPosted($announcement),
-        );
+        $recipients = User::where('id', '!=', $request->user()->id)->get();
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new AnnouncementPosted($announcement));
+        }
 
         return back()->with('success', 'Announcement posted.');
     }

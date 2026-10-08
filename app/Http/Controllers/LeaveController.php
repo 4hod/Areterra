@@ -67,11 +67,12 @@ class LeaveController extends Controller
             'status' => 'pending',
         ]);
 
-        Notification::send(
-            User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'approve_leave'))
-                ->where('id', '!=', $request->user()->id)->get(),
-            new LeaveSubmitted($leave),
-        );
+        $recipients = User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'approve_leave'))
+            ->where('id', '!=', $request->user()->id)->get();
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new LeaveSubmitted($leave));
+        }
 
         return back()->with('success', 'Leave request submitted.');
     }

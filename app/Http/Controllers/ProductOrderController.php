@@ -75,11 +75,12 @@ class ProductOrderController extends Controller
             'status' => 'pending',
         ]);
 
-        Notification::send(
-            User::whereKeyNot($request->user()->id)
-                ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_orders'))->get(),
-            new OrderRequested($order),
-        );
+        $recipients = User::whereKeyNot($request->user()->id)
+            ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_orders'))->get();
+
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new OrderRequested($order));
+        }
 
         return back()->with('success', 'Order request submitted.');
     }

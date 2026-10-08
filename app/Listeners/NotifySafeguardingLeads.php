@@ -15,14 +15,13 @@ class NotifySafeguardingLeads
             ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'access_safeguarding'))
             ->get();
 
-        Notification::send(
-            $recipients,
-            new ConcernRaised(
+        if ($recipients->isNotEmpty()) {
+            Notification::send($recipients, new ConcernRaised(
                 'Safeguarding concern recorded',
                 'A safeguarding concern requires review in the secure Hub.',
                 '/safeguarding',
                 'safeguarding',
-            ),
-        );
+            ));
+        }
     }
 }
