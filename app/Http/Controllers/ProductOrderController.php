@@ -76,7 +76,8 @@ class ProductOrderController extends Controller
         ]);
 
         Notification::send(
-            User::whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_orders'))->get(),
+            User::whereKeyNot($request->user()->id)
+                ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'manage_orders'))->get(),
             new OrderRequested($order),
         );
 
