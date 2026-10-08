@@ -17,8 +17,6 @@ abstract class HubNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public bool $afterCommit = true;
-
     abstract public function category(): string;
 
     abstract public function title(): string;
