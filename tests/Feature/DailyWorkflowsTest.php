@@ -36,6 +36,10 @@ class DailyWorkflowsTest extends TestCase
         Queue::fake();
         $this->staff = User::factory()->create(['role' => 'staff']);
         $this->manager = User::factory()->create(['role' => 'manager']);
+        $this->manager->syncCapabilities(array_values(array_diff(
+            $this->manager->capabilities(),
+            ['edit_animals', 'manage_orders'],
+        )));
     }
 
     // ---------------------------------------------------------- incidents
