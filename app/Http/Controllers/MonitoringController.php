@@ -33,15 +33,19 @@ class MonitoringController extends Controller
 
         // Monitoring concern → welfare alert to managers (SPEC checklist).
         if ($monitoring->concern && ($monitoring->wasRecentlyCreated || $monitoring->wasChanged('concern'))) {
-            \Illuminate\Support\Facades\Notification::send(
-                \App\Models\User::whereKeyNot($request->user()->id)
-                    ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'edit_animals'))->get(),
+            $recipients = \App\Models\User::whereKeyNot($request->user()->id)
+                ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'edit_animals'))->get();
+
+            if ($recipients->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send(
+                    $recipients,
                 new \App\Notifications\ConcernRaised(
                     "Monitoring concern: {$animal->name}",
                     trim("{$animal->species} {$animal->name} flagged during daily monitoring. ".($data['notes'] ?? '')),
                     "/animals/{$animal->id}",
                 ),
-            );
+                );
+            }
         }
 
         return back()->with('success', "Monitoring saved for {$animal->name}.");

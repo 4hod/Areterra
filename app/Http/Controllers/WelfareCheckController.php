@@ -103,15 +103,19 @@ class WelfareCheckController extends Controller
         }
 
         if ($alerts) {
-            \Illuminate\Support\Facades\Notification::send(
-                \App\Models\User::whereKeyNot($userId)
-                    ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'edit_animals'))->get(),
+            $recipients = \App\Models\User::whereKeyNot($userId)
+                ->whereHas('capabilityGrants', fn ($query) => $query->where('capability', 'edit_animals'))->get();
+
+            if ($recipients->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send(
+                    $recipients,
                 new \App\Notifications\ConcernRaised(
                     "Welfare: {$animal->name}",
                     "{$animal->species} {$animal->name} — ".implode('; ', $alerts).'.',
                     "/animals/{$animal->id}",
                 ),
-            );
+                );
+            }
         }
     }
 }
