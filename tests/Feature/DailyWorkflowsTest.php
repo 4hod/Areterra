@@ -36,6 +36,10 @@ class DailyWorkflowsTest extends TestCase
         Notification::fake();
         $this->staff = User::factory()->create(['role' => 'staff']);
         $this->manager = User::factory()->create(['role' => 'manager']);
+        $this->manager->syncCapabilities(array_values(array_diff(
+            $this->manager->capabilities(),
+            ['edit_animals', 'manage_orders'],
+        )));
     }
 
     // ---------------------------------------------------------- incidents
@@ -84,14 +88,6 @@ class DailyWorkflowsTest extends TestCase
 
     public function test_a_welfare_concern_raises_a_vet_follow_up_task(): void
     {
-        // This assertion is about the domain-event follow-up, not manager
-        // notification delivery (covered by the notification tests). Keeping
-        // this manager outside the recipient set also prevents queued delivery
-        // from leaking into PHPUnit's shutdown phase on both database drivers.
-        $this->manager->syncCapabilities(array_values(array_diff(
-            $this->manager->capabilities(),
-            ['edit_animals'],
-        )));
         $rico = Animal::create(['name' => 'Rico', 'species' => 'Macaw']);
 
         $this->actingAs($this->staff)->post("/animals/{$rico->id}/welfare-checks", [
