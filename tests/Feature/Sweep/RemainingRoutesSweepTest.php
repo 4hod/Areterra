@@ -6,6 +6,7 @@ use App\Models\Announcement;
 use App\Notifications\AnnouncementPosted;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -79,7 +80,7 @@ class RemainingRoutesSweepTest extends SweepTestCase
             'body' => 'Something happened worth knowing about.',
             'user_id' => $this->admin->id,
         ]);
-        $this->admin->notify(new AnnouncementPosted($announcement));
+        Notification::sendNow($this->admin, new AnnouncementPosted($announcement));
         $n = DB::table('notifications')->first();
         $this->assertNotNull($n, 'notification not stored');
 
