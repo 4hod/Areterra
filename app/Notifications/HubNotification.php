@@ -19,25 +19,6 @@ abstract class HubNotification extends Notification implements ShouldQueue
 
     public bool $afterCommit = true;
 
-    /**
-     * The deferred driver runs after the HTTP response and needs no long-lived
-     * queue worker. A mail/push outage therefore cannot turn a successful save
-     * into an error page, while shared hosting still delivers notifications.
-     */
-    public function viaConnections(): array
-    {
-        // The deferred driver flushes at process shutdown. In the test runner
-        // that can terminate PHP before Collision has reported later tests, so
-        // execute inline there. Production still stays safely off the request.
-        $connection = app()->environment('testing') ? 'sync' : 'deferred';
-
-        return [
-            'database' => $connection,
-            'mail' => $connection,
-            WebPushChannel::class => $connection,
-        ];
-    }
-
     abstract public function category(): string;
 
     abstract public function title(): string;

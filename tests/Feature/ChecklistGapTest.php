@@ -148,7 +148,22 @@ class ChecklistGapTest extends TestCase
         $this->assertSame(3, $preview['total']);
         $this->assertCount(1, $preview['problems']);
 
-        $this->actingAs($admin)->post('/import/commit', ['kind' => 'members', 'csv' => $preview['csv']])
+        // Invalid previews are refused in full; correct the source and preview
+        // it again before committing the server-side token.
+        $this->actingAs($admin)->post('/import/commit', ['kind' => 'members', 'token' => $preview['token']])
+            ->assertSessionHasErrors('file');
+
+        $clean = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+            'members-clean.csv',
+            "first_name,last_name,preferred_name\nJohn,Smith,\nJane,Doe,JJ\n",
+        );
+        $cleanResponse = $this->actingAs($admin)->post('/import/preview', [
+            'kind' => 'members',
+            'file' => $clean,
+        ]);
+        $cleanPreview = $cleanResponse->getSession()->get('import_preview');
+
+        $this->actingAs($admin)->post('/import/commit', ['kind' => 'members', 'token' => $cleanPreview['token']])
             ->assertRedirect();
 
         $this->assertSame(2, Member::count());
@@ -170,6 +185,7 @@ class ChecklistGapTest extends TestCase
     public function test_transport_payment_delete_restores_balance(): void
     {
         $staff = $this->staff();
+        $manager = User::factory()->create(['role' => 'manager']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
         $member->// Scheduled for whatever day the suite happens to run on — hardcoding
         // weekdays makes these tests fail every Saturday.
@@ -178,7 +194,8 @@ class ChecklistGapTest extends TestCase
         $this->actingAs($staff)->post("/transport/{$member->id}/pay", ['amount' => 10]);
         $payment = TransportLedgerEntry::where('type', 'payment')->first();
 
-        $this->actingAs($staff)->delete("/transport/payments/{$payment->id}")->assertRedirect();
+        $this->actingAs($staff)->delete("/transport/payments/{$payment->id}")->assertForbidden();
+        $this->actingAs($manager)->delete("/transport/payments/{$payment->id}")->assertRedirect();
         $this->assertSame(0.0, TransportLedgerEntry::balanceFor($member->id));
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EmailTemplate;
 use App\Models\Member;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
@@ -38,6 +39,16 @@ class EmailComposerController extends Controller
             'save_template' => ['boolean'],
             'template_name' => ['required_if:save_template,true', 'nullable', 'string', 'max:100'],
         ]);
+
+        // Staff may record an email already sent in Outlook, but transmitting
+        // from the organisation's connected mailbox is a separate permission.
+        if (! ($data['log_only'] ?? false)) {
+            Gate::authorize('manage_member_communications');
+        }
+
+        if (($data['save_template'] ?? false)) {
+            Gate::authorize('manage_member_communications');
+        }
 
         $member = Member::findOrFail($data['member_id']);
 

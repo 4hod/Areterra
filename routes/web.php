@@ -381,7 +381,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::get('/email', [App\Http\Controllers\EmailComposerController::class, 'index'])
         ->middleware('can:manage_member_communications')->name('email');
     Route::post('/email/send', [App\Http\Controllers\EmailComposerController::class, 'send'])
-        ->middleware('can:manage_member_communications')->name('email.send');
+        ->middleware('can:view_member_details')->name('email.send');
     Route::delete('/email/templates/{template}', [App\Http\Controllers\EmailComposerController::class, 'destroyTemplate'])
         ->middleware('can:manage_member_communications')->name('email.templates.destroy');
 
