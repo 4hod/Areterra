@@ -12,6 +12,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\WelfareCheck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
@@ -30,6 +31,9 @@ class DailyWorkflowsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // These tests verify the records and follow-up tasks, not outbound
+        // delivery. Keep queued mail/push outside this workflow suite.
+        Notification::fake();
         $this->staff = User::factory()->create(['role' => 'staff']);
         $this->manager = User::factory()->create(['role' => 'manager']);
     }
