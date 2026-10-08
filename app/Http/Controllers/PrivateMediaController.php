@@ -35,8 +35,10 @@ class PrivateMediaController extends Controller
         $path = PrivateMedia::path($storedPath);
         abort_unless($path && str_starts_with($path, $requiredPrefix), 404);
 
-        if (Storage::disk('local')->exists($path)) {
-            return Storage::disk('local')->response($path, null, [
+        $disk = PrivateMedia::disk();
+
+        if (Storage::disk($disk)->exists($path)) {
+            return Storage::disk($disk)->response($path, null, [
                 'Cache-Control' => 'private, no-store',
                 'X-Content-Type-Options' => 'nosniff',
             ]);

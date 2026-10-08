@@ -61,11 +61,11 @@ class AuthController extends Controller
 
         $user = $request->user();
         $oldPath = PrivateMedia::path($user->photo_path);
-        $path = $request->file('photo')->store('staff-photos', 'local');
+        $path = $request->file('photo')->store('staff-photos', PrivateMedia::disk());
         $user->update(['photo_path' => $path]);
 
         if ($oldPath && $oldPath !== $path) {
-            Storage::disk('local')->delete($oldPath);
+            Storage::disk(PrivateMedia::disk())->delete($oldPath);
             Storage::disk('public')->delete($oldPath);
         }
 
@@ -78,7 +78,7 @@ class AuthController extends Controller
         $oldPath = PrivateMedia::path($user->photo_path);
         $user->update(['photo_path' => null]);
         if ($oldPath) {
-            Storage::disk('local')->delete($oldPath);
+            Storage::disk(PrivateMedia::disk())->delete($oldPath);
             Storage::disk('public')->delete($oldPath);
         }
 

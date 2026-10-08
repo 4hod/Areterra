@@ -11,17 +11,37 @@ use Illuminate\Support\Facades\Storage;
 
 class MigratePrivateMedia extends Command
 {
-    protected $signature = 'hub:migrate-private-media {--commit : Move files and update database paths}';
+    protected $signature = 'hub:migrate-private-media
+        {--source=public : Filesystem disk containing the existing files}
+        {--target= : Destination disk; defaults to FILESYSTEM_DISK}
+        {--commit : Move files and update database paths}';
 
     protected $description = 'Move client/staff media from public storage to permission-checked private storage';
 
     public function handle(): int
     {
         $commit = (bool) $this->option('commit');
+        $sourceDisk = (string) $this->option('source');
+        $targetDisk = (string) ($this->option('target') ?: PrivateMedia::disk());
+
+        if ($sourceDisk === $targetDisk) {
+            $this->error('Source and target disks must be different.');
+
+            return self::FAILURE;
+        }
+
+        foreach ([$sourceDisk, $targetDisk] as $disk) {
+            if (! config("filesystems.disks.{$disk}")) {
+                $this->error("Filesystem disk [{$disk}] is not configured.");
+
+                return self::FAILURE;
+            }
+        }
+
         $moved = 0;
         $missing = 0;
 
-        $move = function (?string $storedPath, string $requiredPrefix) use ($commit, &$moved, &$missing): ?string {
+        $move = function (?string $storedPath, string $requiredPrefix) use ($commit, $sourceDisk, $targetDisk, &$moved, &$missing): ?string {
             $path = PrivateMedia::path($storedPath);
             if (! $path) {
                 return null;
@@ -33,11 +53,11 @@ class MigratePrivateMedia extends Command
                 return $storedPath;
             }
 
-            if (Storage::disk('local')->exists($path)) {
-                if (Storage::disk('public')->exists($path)) {
-                    $this->line(($commit ? 'Removing verified public duplicate' : 'Would remove public duplicate')." {$path}");
+            if (Storage::disk($targetDisk)->exists($path)) {
+                if (Storage::disk($sourceDisk)->exists($path)) {
+                    $this->line(($commit ? 'Removing verified source duplicate' : 'Would remove source duplicate')." {$path}");
                     if ($commit) {
-                        Storage::disk('public')->delete($path);
+                        Storage::disk($sourceDisk)->delete($path);
                     }
                     $moved++;
                 }
@@ -45,7 +65,7 @@ class MigratePrivateMedia extends Command
                 return $path;
             }
 
-            if (! Storage::disk('public')->exists($path)) {
+            if (! Storage::disk($sourceDisk)->exists($path)) {
                 $this->error("Missing media file: {$path}");
                 $missing++;
 
@@ -54,11 +74,19 @@ class MigratePrivateMedia extends Command
 
             $this->line(($commit ? 'Moving' : 'Would move')." {$path}");
             if ($commit) {
-                Storage::disk('local')->put($path, Storage::disk('public')->get($path));
-                if (! Storage::disk('local')->exists($path)) {
+                $stream = Storage::disk($sourceDisk)->readStream($path);
+                if (! is_resource($stream)) {
+                    throw new \RuntimeException("Could not read source media {$path}");
+                }
+                try {
+                    Storage::disk($targetDisk)->writeStream($path, $stream);
+                } finally {
+                    fclose($stream);
+                }
+                if (! Storage::disk($targetDisk)->exists($path)) {
                     throw new \RuntimeException("Private copy verification failed for {$path}");
                 }
-                Storage::disk('public')->delete($path);
+                Storage::disk($sourceDisk)->delete($path);
             }
             $moved++;
 
