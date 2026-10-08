@@ -36,6 +36,15 @@ abstract class HubNotification extends Notification implements ShouldQueue
             return ['mail'];
         }
 
+        // Laravel's notification fake still calls via(). Avoid creating a
+        // preference row (and registering a write inside RefreshDatabase's
+        // transaction) when the test only needs to assert who was notified.
+        // Real requests continue through the preference-aware channels below.
+        if (app()->environment('testing')
+            && app(\Illuminate\Notifications\ChannelManager::class) instanceof \Illuminate\Support\Testing\Fakes\NotificationFake) {
+            return ['database'];
+        }
+
         // In-app history is always kept — the category toggles below only
         // govern whether push/email are also sent, per SPEC.md's
         // Notification Preferences page ("push on/off", "email on/off",
