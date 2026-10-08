@@ -11,7 +11,7 @@ use App\Models\Referral;
 use App\Models\SafeguardingConcern;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class Phase4Test extends TestCase
@@ -20,7 +20,7 @@ class Phase4Test extends TestCase
 
     public function test_end_of_day_concern_auto_creates_safeguarding_entry(): void
     {
-        Notification::fake();
+        Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
         Attendance::create(['member_id' => $member->id, 'date' => today(), 'checked_in' => true, 'arrival_mood' => 'happy']);

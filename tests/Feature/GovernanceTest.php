@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Notifications\AnnouncementPosted;
 use App\Notifications\ConcernRaised;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class GovernanceTest extends TestCase
@@ -19,7 +19,7 @@ class GovernanceTest extends TestCase
 
     public function test_announcement_notifies_all_other_staff(): void
     {
-        Notification::fake();
+        Queue::fake();
         $manager = User::factory()->create(['role' => 'manager']);
         $staff = User::factory()->create(['role' => 'staff']);
 
@@ -28,13 +28,13 @@ class GovernanceTest extends TestCase
             'body' => 'The August rota is out.',
         ])->assertRedirect();
 
-        Notification::assertSentTo($staff, AnnouncementPosted::class);
-        Notification::assertNotSentTo($manager, AnnouncementPosted::class);
+        $this->assertNotificationQueuedTo($staff, AnnouncementPosted::class);
+        $this->assertNotificationNotQueuedTo($manager, AnnouncementPosted::class);
     }
 
     public function test_welfare_concern_notifies_managers(): void
     {
-        Notification::fake();
+        Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $manager = User::factory()->create(['role' => 'manager']);
         $animal = Animal::create(['name' => 'Demon', 'species' => 'Macaw']);
@@ -47,13 +47,13 @@ class GovernanceTest extends TestCase
             'treats_given' => false,
         ])->assertRedirect();
 
-        Notification::assertSentTo($manager, ConcernRaised::class);
-        Notification::assertNotSentTo($staff, ConcernRaised::class);
+        $this->assertNotificationQueuedTo($manager, ConcernRaised::class);
+        $this->assertNotificationNotQueuedTo($staff, ConcernRaised::class);
     }
 
     public function test_end_of_day_concern_notifies_managers_once(): void
     {
-        Notification::fake();
+        Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $manager = User::factory()->create(['role' => 'manager']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
@@ -68,7 +68,7 @@ class GovernanceTest extends TestCase
         // Re-saving the same record with concern still set must not re-notify.
         $this->actingAs($staff)->post("/end-of-day/{$member->id}", [...$payload, 'notes' => 'edited'])->assertRedirect();
 
-        Notification::assertSentToTimes($manager, ConcernRaised::class, 1);
+        $this->assertUniqueNotificationCount(ConcernRaised::class, 1);
     }
 
     public function test_audit_surfaces_overdue_and_missing_items(): void

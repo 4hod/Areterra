@@ -13,7 +13,7 @@ use NotificationChannels\WebPush\WebPushMessage;
 // Base for all Hub notifications: routes to push and/or email according to the
 // recipient's NotificationPref (global toggles + per-category opt-outs), with
 // email acting as the fallback channel (SPEC.md §22).
-abstract class HubNotificationBase extends Notification
+abstract class HubNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -34,15 +34,6 @@ abstract class HubNotificationBase extends Notification
     {
         if (! $notifiable instanceof User) {
             return ['mail'];
-        }
-
-        // Laravel's notification fake still calls via(). Avoid creating a
-        // preference row (and registering a write inside RefreshDatabase's
-        // transaction) when the test only needs to assert who was notified.
-        // Real requests continue through the preference-aware channels below.
-        if (app()->environment('testing')
-            && app(\Illuminate\Notifications\ChannelManager::class) instanceof \Illuminate\Support\Testing\Fakes\NotificationFake) {
-            return ['database'];
         }
 
         // In-app history is always kept — the category toggles below only
@@ -99,20 +90,5 @@ abstract class HubNotificationBase extends Notification
         // down welfare concerns and product orders the moment a manager
         // existed to notify.
         return (new BrandedEmail($this->title(), $body))->to($notifiable->email);
-    }
-}
-
-// Notification::fake() exercises recipients and channels synchronously. On
-// PHPUnit 12, making the faked object itself queueable registers an after-
-// commit shutdown callback inside RefreshDatabase and can terminate the test
-// process. Production keeps the real ShouldQueue contract; tests use the same
-// notification behaviour without the queue marker.
-if (app()->environment('testing')) {
-    abstract class HubNotification extends HubNotificationBase
-    {
-    }
-} else {
-    abstract class HubNotification extends HubNotificationBase implements ShouldQueue
-    {
     }
 }

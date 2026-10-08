@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Notifications\LeaveReviewed;
 use App\Notifications\LeaveSubmitted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class LeaveTest extends TestCase
@@ -17,7 +17,7 @@ class LeaveTest extends TestCase
 
     public function test_leave_days_follow_the_staff_working_pattern(): void
     {
-        Notification::fake();
+        Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $manager = User::factory()->create(['role' => 'manager']);
 
@@ -29,12 +29,12 @@ class LeaveTest extends TestCase
         ])->assertRedirect();
 
         $this->assertSame(4.0, (float) LeaveRequest::first()->days);
-        Notification::assertSentTo($manager, LeaveSubmitted::class);
+        $this->assertNotificationQueuedTo($manager, LeaveSubmitted::class);
     }
 
     public function test_bank_holidays_and_half_days_are_not_overcharged(): void
     {
-        Notification::fake();
+        Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         User::factory()->create(['role' => 'manager']);
 
@@ -53,7 +53,7 @@ class LeaveTest extends TestCase
 
     public function test_leave_spanning_new_year_is_split_between_entitlement_years(): void
     {
-        Notification::fake();
+        Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $manager = User::factory()->create(['role' => 'manager']);
 
@@ -75,7 +75,7 @@ class LeaveTest extends TestCase
 
     public function test_manager_approval_updates_balance_and_notifies_staff(): void
     {
-        Notification::fake();
+        Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $manager = User::factory()->create(['role' => 'manager']);
 
@@ -90,7 +90,7 @@ class LeaveTest extends TestCase
         $this->actingAs($manager)->put("/leave/{$leave->id}/review", ['status' => 'approved'])
             ->assertRedirect();
 
-        Notification::assertSentTo($staff, LeaveReviewed::class);
+        $this->assertNotificationQueuedTo($staff, LeaveReviewed::class);
 
         $balance = LeaveBalance::remainingFor($staff, $leave->start_date->year);
         $this->assertSame(28.0, $balance['entitlement']);

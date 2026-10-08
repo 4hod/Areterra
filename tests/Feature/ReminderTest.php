@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Notifications\DailyReminder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class ReminderTest extends TestCase
@@ -29,7 +29,7 @@ class ReminderTest extends TestCase
     public function test_register_reminder_fires_once_on_operating_day_with_no_register(): void
     {
         Carbon::setTestNow('2026-07-20 12:00:00'); // Monday
-        Notification::fake();
+        Queue::fake();
 
         $manager = User::factory()->create(['role' => 'manager']);
         User::factory()->create(['role' => 'staff']);
@@ -39,13 +39,13 @@ class ReminderTest extends TestCase
         // Second run the same day must dedupe.
         $this->artisan('hub:remind-register')->assertSuccessful();
 
-        Notification::assertSentToTimes($manager, DailyReminder::class, 1);
-        Notification::assertCount(1);
+        $this->assertNotificationQueuedTo($manager, DailyReminder::class);
+        $this->assertUniqueNotificationCount(DailyReminder::class, 1);
     }
 
     public function test_no_reminder_on_wednesday_or_weekend(): void
     {
-        Notification::fake();
+        Queue::fake();
         User::factory()->create(['role' => 'manager']);
         $this->scheduleMember();
 
@@ -54,13 +54,13 @@ class ReminderTest extends TestCase
             $this->artisan('hub:remind-register')->assertSuccessful();
         }
 
-        Notification::assertNothingSent();
+        Queue::assertNothingPushed();
     }
 
     public function test_no_reminder_when_register_is_done(): void
     {
         Carbon::setTestNow('2026-07-20 12:00:00'); // Monday
-        Notification::fake();
+        Queue::fake();
         User::factory()->create(['role' => 'manager']);
         $this->scheduleMember();
 
@@ -68,13 +68,13 @@ class ReminderTest extends TestCase
 
         $this->artisan('hub:remind-register')->assertSuccessful();
 
-        Notification::assertNothingSent();
+        Queue::assertNothingPushed();
     }
 
     public function test_end_of_day_reminder_counts_missing_records(): void
     {
         Carbon::setTestNow('2026-07-20 14:30:00'); // Monday
-        Notification::fake();
+        Queue::fake();
         $manager = User::factory()->create(['role' => 'manager']);
         $this->scheduleMember();
 
@@ -82,6 +82,6 @@ class ReminderTest extends TestCase
 
         $this->artisan('hub:remind-end-of-day')->assertSuccessful();
 
-        Notification::assertSentTo($manager, DailyReminder::class);
+        $this->assertNotificationQueuedTo($manager, DailyReminder::class);
     }
 }
