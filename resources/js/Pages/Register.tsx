@@ -20,7 +20,6 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
     const outstanding = rows.length - present - absent;
     const percent = rows.length ? Math.round((present / rows.length) * 100) : 0;
     const staffPresent = staff.filter((person) => person.present);
-    const membersPresent = rows.filter((row) => row.checked_in);
 
     function openCheckIn(row: Row) { setEditing(row); setMood(row.arrival_mood); setNotes(row.notes ?? ''); }
 
@@ -62,9 +61,9 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
                     </section>
                 ) : (
                     <div className="flex flex-wrap justify-end gap-2 mb-3 register-screen-actions-4a">
-                        <button onClick={() => window.print()} className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2">
+                        <Link href="/fire-register?print=1" className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2">
                             Print fire register
-                        </button>
+                        </Link>
                         <button onClick={cancelDay} className="rounded-full bg-slate-100 text-slate-700 font-semibold text-xs px-4 py-2">
                             Cancel today
                         </button>
@@ -111,18 +110,6 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
                     </div>
                 </section>
 
-                <section className="fire-register-print" aria-hidden="true">
-                    <header>
-                        <h1>Fire register</h1>
-                        <p>{new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                        <p>Printed {new Date().toLocaleString('en-GB')}</p>
-                    </header>
-                    <div className="fire-register-summary"><strong>{membersPresent.length + staffPresent.length}</strong> people recorded on site</div>
-                    <h2>Members ({membersPresent.length})</h2>
-                    <table><thead><tr><th>Accounted for</th><th>Name</th></tr></thead><tbody>{membersPresent.map((member) => <tr key={member.id}><td>☐</td><td>{member.name}</td></tr>)}</tbody></table>
-                    <h2>Staff ({staffPresent.length})</h2>
-                    <table><thead><tr><th>Accounted for</th><th>Name</th><th>Role</th></tr></thead><tbody>{staffPresent.map((person) => <tr key={person.key}><td>☐</td><td>{person.name}</td><td>{person.job_title ?? 'Staff'}</td></tr>)}</tbody></table>
-                </section>
             </div>
 
             <Modal open={editing !== null} title={editing?.name ?? ''} onClose={() => setEditing(null)}>

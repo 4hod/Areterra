@@ -3,10 +3,22 @@
 namespace Tests\Feature\Sweep;
 
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\DB;
 
 class PermissionsSweepTest extends SweepTestCase
 {
+    public function test_development_seeded_accounts_receive_their_permission_presets(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $administrator = User::where('email', 'ekilburn@areterra.co.uk')->firstOrFail();
+        $staff = User::where('email', 'lucy@areterra.co.uk')->firstOrFail();
+
+        $this->assertEqualsCanonicalizing(User::preset('administrator'), $administrator->capabilities());
+        $this->assertEqualsCanonicalizing(User::preset('staff'), $staff->capabilities());
+    }
+
     public function test_a_new_account_starts_from_its_role_preset(): void
     {
         $staff = User::factory()->create(['role' => 'staff']);

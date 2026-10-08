@@ -40,14 +40,19 @@ function PanelTitle({ icon, title, count, href, action }: { icon: string; title:
 }
 
 const quickActions = [
-    { href: '/register', label: 'Take the register', icon: 'register' },
-    { href: '/incidents', label: 'Report an incident', icon: 'alert' },
-    { href: '/documents', label: 'Open documents', icon: 'folder' },
-    { href: '/leave', label: 'Request leave', icon: 'leave' },
+    { href: '/register', label: 'Take the register', icon: 'register', caps: ['view_member_details', 'log_sessions'] },
+    { href: '/incidents', label: 'Report an incident', icon: 'alert', caps: ['report_incidents'] },
+    { href: '/documents', label: 'Open documents', icon: 'folder', caps: ['view_documents'] },
+    { href: '/leave', label: 'Request leave', icon: 'leave', caps: ['request_leave'] },
 ];
 
 export default function Dashboard(props: Props) {
     const { auth } = usePage<SharedProps>().props;
+    const capabilities = auth.user?.capabilities ?? [];
+    const hasAll = (...required: string[]) => required.every((capability) => capabilities.includes(capability));
+    const canUseRegister = hasAll('view_member_details', 'log_sessions');
+    const canViewMemberDetails = hasAll('view_member_details');
+    const availableQuickActions = quickActions.filter((action) => hasAll(...action.caps));
     const firstName = auth.user?.name?.split(' ')[0] ?? 'there';
     const completed = props.checklist.filter((item) => item.done).length;
     const openTasks = props.checklist.length - completed;
@@ -61,7 +66,7 @@ export default function Dashboard(props: Props) {
     const dayName = currentDate.toLocaleDateString('en-GB', { weekday: 'long' });
     const dateLine = currentDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    if (props.orgIsEmpty) return <AppShell title="Dashboard"><Head title="Dashboard"/><section className="overview-empty"><AppIcon name="paw"/><span>YOUR NEW WORKSPACE</span><h1>Welcome to Areterra Hub, {firstName}.</h1><p>Add your first members and animals to bring attendance, welfare and daily operations to life.</p><div><Link href="/members">Add a member</Link><Link href="/animals">Add an animal</Link></div></section></AppShell>;
+    if (props.orgIsEmpty) return <AppShell title="Dashboard"><Head title="Dashboard"/><section className="overview-empty"><AppIcon name="paw"/><span>YOUR NEW WORKSPACE</span><h1>Welcome to Areterra Hub, {firstName}.</h1><p>Add your first members and animals to bring attendance, welfare and daily operations to life.</p><div>{capabilities.includes('create_members') && <Link href="/members">Add a member</Link>}{capabilities.includes('edit_animals') && <Link href="/animals">Add an animal</Link>}</div></section></AppShell>;
 
     return <AppShell title="Dashboard">
         <Head title="Dashboard"/>
@@ -91,10 +96,10 @@ export default function Dashboard(props: Props) {
                 </article>
 
                 <article className="overview-panel overview-register-panel">
-                    <PanelTitle icon="register" title="Today’s register" count={props.stats.membersInToday || props.staffAvatars.length ? 'Live' : 'Not started'}/>
+                    <PanelTitle icon="register" title="Fire register" count={props.stats.membersInToday || props.staffAvatars.length ? 'Live' : 'Not started'}/>
                     <div className="overview-register-numbers"><div><strong>{props.stats.membersInToday}</strong><span>members present</span></div><i/><div><strong>{props.staffAvatars.length}</strong><span>staff on site</span></div></div>
                     <p>The printable fire register uses these live attendance records.</p>
-                    <div><Link href="/register">Open register</Link><Link href="/register">Print fire register</Link></div>
+                    <div>{canUseRegister && <Link href="/register">Open morning register</Link>}<Link href="/fire-register?print=1">Print fire register</Link></div>
                 </article>
             </section>
 
@@ -102,9 +107,9 @@ export default function Dashboard(props: Props) {
                 <article className="overview-panel">
                     <PanelTitle icon="users" title="Member support" href="/members" action="Open members"/>
                     <div className="overview-service-list">
-                        <Link href="/reviews"><AppIcon name="file"/><div><b>Support-plan reviews</b><span>{reviewNotices.length ? `${reviewNotices.length} reviews due` : 'No reviews currently due'}</span></div><em>Review</em></Link>
-                        <Link href="/end-of-day"><AppIcon name="activity"/><div><b>Session outcomes</b><span>Record progress and achievements</span></div><em>Record</em></Link>
-                        <Link href="/documents"><AppIcon name="folder"/><div><b>Member documents</b><span>Support plans and personal records</span></div><em>Open</em></Link>
+                        {canViewMemberDetails && <Link href="/reviews"><AppIcon name="file"/><div><b>Support-plan reviews</b><span>{reviewNotices.length ? `${reviewNotices.length} reviews due` : 'No reviews currently due'}</span></div><em>Review</em></Link>}
+                        {canUseRegister && <Link href="/end-of-day"><AppIcon name="activity"/><div><b>Session outcomes</b><span>Record progress and achievements</span></div><em>Record</em></Link>}
+                        {capabilities.includes('view_documents') && <Link href="/documents"><AppIcon name="folder"/><div><b>Member documents</b><span>Support plans and personal records</span></div><em>Open</em></Link>}
                     </div>
                 </article>
 
@@ -117,7 +122,7 @@ export default function Dashboard(props: Props) {
             </section>
 
             <h2 className="overview-section-heading">Quick actions</h2>
-            <section className="overview-quick-actions">{quickActions.map((action) => <Link href={action.href} key={action.href}><AppIcon name={action.icon}/><b>{action.label}</b><AppIcon name="arrow"/></Link>)}</section>
+            <section className="overview-quick-actions">{availableQuickActions.map((action) => <Link href={action.href} key={action.href}><AppIcon name={action.icon}/><b>{action.label}</b><AppIcon name="arrow"/></Link>)}</section>
 
             <section className="overview-bottom-grid">
                 <article className="overview-panel">
@@ -127,7 +132,7 @@ export default function Dashboard(props: Props) {
                 <article className="overview-panel">
                     <PanelTitle icon="megaphone" title="Latest updates" href="/announcements" action="All updates"/>
                     <div className="overview-updates">{props.announcements.length ? props.announcements.slice(0, 4).map((item) => <Link href="/announcements" key={item.id}><i className={item.read ? '' : 'is-new'}/><span><b>{item.title}</b><small>{item.author} · {new Date(item.created_at.replace(' ', 'T')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</small></span></Link>) : <p>No announcements yet.</p>}</div>
-                    {props.birthdays.length > 0 && <div className="overview-birthdays"><b>Coming up</b>{props.birthdays.map((birthday) => <Link href={`/members/${birthday.id}`} key={birthday.id}>{birthday.name} · {birthday.is_today ? 'today' : birthday.date}</Link>)}</div>}
+                    {props.birthdays.length > 0 && <div className="overview-birthdays"><b>Coming up</b>{props.birthdays.map((birthday) => canViewMemberDetails ? <Link href={`/members/${birthday.id}`} key={birthday.id}>{birthday.name} · {birthday.is_today ? 'today' : birthday.date}</Link> : <span key={birthday.id}>{birthday.name} · {birthday.is_today ? 'today' : birthday.date}</span>)}</div>}
                 </article>
             </section>
 

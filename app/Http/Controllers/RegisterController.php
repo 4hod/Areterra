@@ -18,6 +18,42 @@ use Inertia\Inertia;
 
 class RegisterController extends Controller
 {
+    public function fireRegister(Request $request)
+    {
+        $today = today();
+
+        $members = Attendance::query()
+            ->with('member:id,first_name,last_name,preferred_name')
+            ->whereDate('date', $today)
+            ->where('checked_in', true)
+            ->whereHas('member')
+            ->get()
+            ->map(fn (Attendance $attendance) => [
+                'id' => $attendance->member_id,
+                'name' => $attendance->member->displayName(),
+                'checked_in_at' => $attendance->checked_in_at?->format('H:i'),
+            ])
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $staff = StaffAttendance::query()
+            ->whereDate('date', $today)
+            ->where('present', true)
+            ->orderBy('staff_name')
+            ->get()
+            ->map(fn (StaffAttendance $attendance) => [
+                'id' => $attendance->id,
+                'name' => $attendance->staff_name,
+            ]);
+
+        return Inertia::render('FireRegister', [
+            'date' => $today->toDateString(),
+            'members' => $members,
+            'staff' => $staff,
+            'autoPrint' => $request->boolean('print'),
+        ]);
+    }
+
     public function index()
     {
         $today = today();

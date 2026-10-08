@@ -1,19 +1,30 @@
 import type { CSSProperties } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
-import { ChecklistItem } from '../types';
+import { ChecklistItem, SharedProps } from '../types';
 
 const LINKS: Record<string, string> = { transport: '/transport', register: '/register', moods: '/register', welfare: '/animals', end_of_day: '/end-of-day', return_transport: '/transport' };
 const ICONS: Record<string, string> = { transport: '🚌', register: '✓', moods: '🙂', welfare: '🌿', end_of_day: '🌙', return_transport: '🏠' };
+const REQUIRED_CAPABILITIES: Record<string, string[]> = {
+    transport: ['view_member_details', 'log_sessions'],
+    register: ['view_member_details', 'log_sessions'],
+    moods: ['view_member_details', 'log_sessions'],
+    welfare: ['view_animals'],
+    end_of_day: ['view_member_details', 'log_sessions'],
+    return_transport: ['view_member_details', 'log_sessions'],
+};
 
 export default function Today({ checklist, date }: { checklist: ChecklistItem[]; date: string }) {
-    const applicableItems = checklist.filter((item) => item.applicable);
+    const capabilities = usePage<SharedProps>().props.auth.user?.capabilities ?? [];
+    const canOpen = (key: string) => (REQUIRED_CAPABILITIES[key] ?? []).every((capability) => capabilities.includes(capability));
+    const visibleChecklist = checklist.filter((item) => canOpen(item.key));
+    const applicableItems = visibleChecklist.filter((item) => item.applicable);
     const doneItems = applicableItems.filter((item) => item.done);
     const done = doneItems.length;
     const percent = applicableItems.length ? Math.round((done / applicableItems.length) * 100) : 100;
-    const welfareItem = checklist.find((item) => item.key === 'welfare');
-    const orderedItems = checklist.filter((item) => item.key !== 'welfare' && item.applicable);
-    const notScheduledItems = checklist.filter((item) => !item.applicable);
+    const welfareItem = visibleChecklist.find((item) => item.key === 'welfare');
+    const orderedItems = visibleChecklist.filter((item) => item.key !== 'welfare' && item.applicable);
+    const notScheduledItems = visibleChecklist.filter((item) => !item.applicable);
     const openItems = orderedItems.filter((item) => !item.done);
     const completedItems = orderedItems.filter((item) => item.done);
     const nextItem = welfareItem && !welfareItem.done

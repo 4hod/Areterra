@@ -38,6 +38,7 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
     const [selected, setSelected] = useState<number[]>([]);
     const canCreate = auth.user?.capabilities.includes('create_members') || auth.user?.role === 'administrator';
     const canEdit = auth.user?.capabilities.includes('edit_members') || auth.user?.role === 'administrator';
+    const canViewDetails = auth.user?.capabilities.includes('view_member_details') || auth.user?.role === 'administrator';
     const { data, setData, post, processing, errors, reset } = useForm({
         first_name: '', last_name: '', preferred_name: '', status: 'active', attendance_days: [1, 2, 4, 5] as number[],
     });
@@ -71,6 +72,22 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
 
     function bulkSetStatus(newStatus: string) {
         router.put('/members/bulk/status', { ids: selected, status: newStatus }, { preserveScroll: true, onSuccess: () => setSelected([]) });
+    }
+
+    function cardContents(member: MemberRow) {
+        return <>
+            <div className="member-card-top-4a">
+                <div className="member-avatar-4a">{member.name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2)}</div>
+                <StatusPill status={member.status} />
+            </div>
+            <div className="member-card-name-4a">{member.name}</div>
+            <div className="member-card-summary-4a">{attendanceSummary(member)}</div>
+            <div className="member-card-label-4a">Regular week</div>
+            <div className="member-days-4a">
+                {[1, 2, 3, 4, 5, 6, 7].map((day) => <span key={day} className={member.attendance_days.includes(day) ? 'is-planned' : ''}>{DAY_LABELS[day]}</span>)}
+            </div>
+            <div className="member-card-footer-4a"><span>{member.attendance_days.length ? `${member.attendance_days.length} planned day${member.attendance_days.length === 1 ? '' : 's'}` : 'Attendance not set'}</span>{canViewDetails && <b>Open profile →</b>}</div>
+        </>;
     }
 
     return (
@@ -117,19 +134,9 @@ export default function Index({ members, filters }: { members: MemberRow[]; filt
                     {members.map((member) => (
                         <article key={member.id} className="member-profile-card-4a">
                             {selectionMode && canEdit && <input className="member-select-4a" type="checkbox" checked={selected.includes(member.id)} onChange={() => toggleSelected(member.id)} aria-label={`Select ${member.name}`} />}
-                            <Link href={`/members/${member.id}`} className="member-card-link-4a">
-                                <div className="member-card-top-4a">
-                                    <div className="member-avatar-4a">{member.name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2)}</div>
-                                    <StatusPill status={member.status} />
-                                </div>
-                                <div className="member-card-name-4a">{member.name}</div>
-                                <div className="member-card-summary-4a">{attendanceSummary(member)}</div>
-                                <div className="member-card-label-4a">Regular week</div>
-                                <div className="member-days-4a">
-                                    {[1, 2, 3, 4, 5, 6, 7].map((day) => <span key={day} className={member.attendance_days.includes(day) ? 'is-planned' : ''}>{DAY_LABELS[day]}</span>)}
-                                </div>
-                                <div className="member-card-footer-4a"><span>{member.attendance_days.length ? `${member.attendance_days.length} planned day${member.attendance_days.length === 1 ? '' : 's'}` : 'Attendance not set'}</span><b>Open profile →</b></div>
-                            </Link>
+                            {canViewDetails
+                                ? <Link href={`/members/${member.id}`} className="member-card-link-4a">{cardContents(member)}</Link>
+                                : <div className="member-card-link-4a">{cardContents(member)}</div>}
                         </article>
                     ))}
                 </section>

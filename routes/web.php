@@ -98,6 +98,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::get('/register', [RegisterController::class, 'index'])
         ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register');
+    Route::get('/fire-register', [RegisterController::class, 'fireRegister'])
+        ->name('fire-register');
     Route::post('/register/{member}/check-in', [RegisterController::class, 'checkIn'])
         ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register.check-in');
     Route::put('/register/{member}', [RegisterController::class, 'update'])

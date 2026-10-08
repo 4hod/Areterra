@@ -7,7 +7,7 @@ import DialogHost from './DialogHost';
 import NotificationBell from './NotificationBell';
 import SearchOverlay from './SearchOverlay';
 
-interface NavItem { href: string; label: string; icon: string; cap?: string }
+interface NavItem { href: string; label: string; icon: string; cap?: string; capsAll?: string[] }
 interface NavSection { title: string; items: NavItem[] }
 
 export const NAV_SECTIONS: NavSection[] = [
@@ -20,19 +20,20 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/calendar', label: 'Calendar & outcomes', icon: 'activity' },
     ] },
     { title: 'Daily operations', items: [
-        { href: '/transport', label: 'Transport', icon: 'truck', cap: 'log_sessions' },
-        { href: '/register', label: 'Register & fire list', icon: 'register', cap: 'log_sessions' },
-        { href: '/end-of-day', label: 'End of day', icon: 'moon', cap: 'log_sessions' },
+        { href: '/transport', label: 'Transport', icon: 'truck', capsAll: ['view_member_details', 'log_sessions'] },
+        { href: '/register', label: 'Morning register', icon: 'register', capsAll: ['view_member_details', 'log_sessions'] },
+        { href: '/fire-register', label: 'Fire register', icon: 'shield' },
+        { href: '/end-of-day', label: 'End of day', icon: 'moon', capsAll: ['view_member_details', 'log_sessions'] },
         { href: '/monitoring', label: 'Daily monitoring', icon: 'monitor', cap: 'log_welfare' },
     ] },
     { title: 'Records', items: [
         { href: '/forms', label: 'Forms', icon: 'file' },
         { href: '/reports', label: 'Reports', icon: 'chart', cap: 'view_reports' },
-        { href: '/reviews', label: 'Member reviews', icon: 'activity', cap: 'view_members' },
+        { href: '/reviews', label: 'Member reviews', icon: 'activity', cap: 'view_member_details' },
         { href: '/incidents', label: 'Incidents', icon: 'alert', cap: 'report_incidents' },
         { href: '/safeguarding', label: 'Safeguarding', icon: 'shield', cap: 'access_safeguarding' },
         { href: '/compliance', label: 'Compliance', icon: 'shield', cap: 'view_all_compliance' },
-        { href: '/documents', label: 'Documents', icon: 'folder' },
+        { href: '/documents', label: 'Documents', icon: 'folder', cap: 'view_documents' },
         { href: '/risk-assessments', label: 'Risk assessments', icon: 'shield' },
         { href: '/sar-requests', label: 'SAR requests', icon: 'lock', cap: 'edit_members' },
     ] },
@@ -66,7 +67,7 @@ export const NAV_SECTIONS: NavSection[] = [
 
 const MOBILE_NAV: NavItem[] = [
     { href: '/today', label: 'Today', icon: 'today' },
-    { href: '/register', label: 'Register', icon: 'register', cap: 'log_sessions' },
+    { href: '/register', label: 'Register', icon: 'register', capsAll: ['view_member_details', 'log_sessions'] },
     { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
     { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
     { href: '/more', label: 'More', icon: 'grid' },
@@ -78,7 +79,8 @@ const PRIMARY_NAV: NavItem[] = [
     { href: '/', label: 'Dashboard', icon: 'grid' },
     { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
     { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
-    { href: '/register', label: 'Register', icon: 'register', cap: 'log_sessions' },
+    { href: '/register', label: 'Register', icon: 'register', capsAll: ['view_member_details', 'log_sessions'] },
+    { href: '/fire-register', label: 'Fire register', icon: 'shield' },
     { href: '/tasks', label: 'Tasks', icon: 'tasks' },
     { href: '/referrals', label: 'Referrals', icon: 'mail', cap: 'create_members' },
     { href: '/forms', label: 'Forms', icon: 'file' },
@@ -93,7 +95,9 @@ function isActive(href: string, url: string) {
     if (href === '/settings') return url === '/settings';
     return url === href || url.startsWith(`${href}/`) || url.startsWith(`${href}?`);
 }
-export function allowed(item: NavItem, caps: string[]) { return !item.cap || caps.includes(item.cap); }
+export function allowed(item: NavItem, caps: string[]) {
+    return (!item.cap || caps.includes(item.cap)) && (!item.capsAll || item.capsAll.every((capability) => caps.includes(capability)));
+}
 
 export default function AppShell({ title, children }: { title: string; children: ReactNode }) {
     const { auth, flash, unreadNotifications, pushConfigured } = usePage<SharedProps>().props;
@@ -237,6 +241,7 @@ export default function AppShell({ title, children }: { title: string; children:
                 <section className="portal-nav-section portal-drawer-core">
                     <p>Everyday</p>
                     {MOBILE_NAV.filter((item) => item.href !== '/more' && allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} onClick={() => setDrawer(false)} className={isActive(item.href, url) ? 'is-active' : ''} aria-current={isActive(item.href, url) ? 'page' : undefined}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
+                    <Link href="/fire-register" onClick={() => setDrawer(false)} className={isActive('/fire-register', url) ? 'is-active' : ''} aria-current={isActive('/fire-register', url) ? 'page' : undefined}><AppIcon name="shield"/><span>Fire register</span></Link>
                     <Link href="/tasks" onClick={() => setDrawer(false)}><AppIcon name="tasks"/><span>Tasks</span></Link>
                     <Link href="/more" onClick={() => setDrawer(false)}><AppIcon name="grid"/><span>All modules</span></Link>
                 </section>

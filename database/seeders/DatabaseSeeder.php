@@ -19,23 +19,32 @@ class DatabaseSeeder extends Seeder
         }
 
         // Dev credentials only — set real passwords before any production deploy.
-        User::firstOrCreate(['email' => 'ekilburn@areterra.co.uk'], [
+        $administrator = User::firstOrCreate(['email' => 'ekilburn@areterra.co.uk'], [
             'name' => 'E Kilburn',
             'password' => 'password',
             'role' => 'administrator',
         ]);
 
-        User::firstOrCreate(['email' => 'lucy@areterra.co.uk'], [
+        $lucy = User::firstOrCreate(['email' => 'lucy@areterra.co.uk'], [
             'name' => 'Lucy Mills',
             'password' => 'password',
             'role' => 'staff',
         ]);
 
-        User::firstOrCreate(['email' => 'vanessa@areterra.co.uk'], [
+        $vanessa = User::firstOrCreate(['email' => 'vanessa@areterra.co.uk'], [
             'name' => 'Vanessa Goodall',
             'password' => 'password',
             'role' => 'staff',
         ]);
+
+        // Model events are intentionally disabled while seeding, so apply the
+        // normal new-account presets explicitly instead of creating accounts
+        // that can authenticate but have no permissions.
+        foreach ([$administrator, $lucy, $vanessa] as $user) {
+            if ($user->capabilityGrants()->doesntExist()) {
+                $user->syncCapabilities(User::preset($user->role));
+            }
+        }
 
         foreach ([['Lucy Mills', 12.71], ['Vanessa Goodall', 13.36]] as [$name, $rate]) {
             $member = \App\Models\StaffRosterMember::firstOrCreate(['name' => $name], ['active' => true]);

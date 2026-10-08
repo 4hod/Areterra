@@ -8,6 +8,7 @@ use App\Models\StaffAttendance;
 use App\Models\StaffRosterMember;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class RegisterFlowTest extends TestCase
@@ -90,6 +91,38 @@ class RegisterFlowTest extends TestCase
 
         $this->actingAs($user)->get('/timeclock')->assertNotFound();
         $this->actingAs($user)->post('/timeclock/in')->assertNotFound();
+    }
+
+    public function test_every_signed_in_user_can_open_the_fire_register_without_daily_workflow_access(): void
+    {
+        $volunteer = User::factory()->create(['role' => 'volunteer']);
+        $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
+
+        Attendance::create([
+            'member_id' => $member->id,
+            'date' => today(),
+            'status' => 'present',
+            'checked_in' => true,
+            'checked_in_at' => now(),
+            'recorded_by' => $volunteer->id,
+        ]);
+        StaffAttendance::create([
+            'date' => today(),
+            'staff_type' => User::class,
+            'staff_id' => $volunteer->id,
+            'staff_name' => $volunteer->name,
+            'present' => true,
+            'recorded_by' => $volunteer->id,
+        ]);
+
+        $this->actingAs($volunteer)->get('/fire-register')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('FireRegister')
+                ->where('members.0.name', 'Amy Buckle')
+                ->where('staff.0.name', $volunteer->name));
+
+        $this->actingAs($volunteer)->get('/register')->assertForbidden();
     }
 
     public function test_end_of_day_copies_arrival_mood_and_requires_concern_detail(): void
