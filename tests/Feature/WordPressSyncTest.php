@@ -41,6 +41,7 @@ class WordPressSyncTest extends TestCase
         $member = Member::create([
             'first_name' => 'Amy',
             'last_name' => 'Buckle',
+            'wordpress_id' => 42,
         ]);
         $member->settings()->create(['attendance_days' => [2, 4, 5]]);
 

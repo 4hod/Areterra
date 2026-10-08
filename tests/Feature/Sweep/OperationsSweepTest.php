@@ -187,6 +187,9 @@ class OperationsSweepTest extends SweepTestCase
     {
         $this->get('/orders')->assertOk();
 
+        $requester = \App\Models\User::factory()->create(['role' => 'staff']);
+        $this->actingAs($requester);
+
         $this->assertWriteOk($this->post('/orders', [
             'item_name' => 'Chinchilla dust', 'quantity' => 4, 'unit' => 'bags',
             'category' => 'Animal care',
@@ -195,6 +198,8 @@ class OperationsSweepTest extends SweepTestCase
         $this->assertNotNull($o, 'order not created');
         $this->assertSame('pending', $o->status);
 
+        // A requester cannot approve their own purchase request.
+        $this->actingAs($this->admin);
         $this->assertWriteOk($this->put("/orders/{$o->id}/approve"), 'orders.approve');
         $this->assertSame('approved', DB::table('product_orders')->find($o->id)->status);
 
@@ -210,13 +215,16 @@ class OperationsSweepTest extends SweepTestCase
         $this->assertSame('delivered', DB::table('product_orders')->find($o->id)->status);
 
         // Reject + cancel on a second order
+        $this->actingAs($requester);
         $this->post('/orders', ['item_name' => 'Gold-plated hutch', 'quantity' => 1]);
         $o2 = DB::table('product_orders')->where('item_name', 'Gold-plated hutch')->first();
+        $this->actingAs($this->admin);
         $this->assertWriteOk($this->put("/orders/{$o2->id}/reject", [
             'rejection_reason' => 'Out of budget',
         ]), 'orders.reject');
         $this->assertSame('rejected', DB::table('product_orders')->find($o2->id)->status);
 
+        $this->actingAs($requester);
         $this->post('/orders', ['item_name' => 'Straw bales', 'quantity' => 10]);
         $o3 = DB::table('product_orders')->where('item_name', 'Straw bales')->first();
         $this->assertWriteOk($this->delete("/orders/{$o3->id}"), 'orders.cancel');

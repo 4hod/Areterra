@@ -67,8 +67,11 @@ class TodayChecklist
                 'key' => 'register',
                 'label' => 'Morning Register',
                 'applicable' => $memberWorkExpected,
-                'done' => ! $memberWorkExpected || $scheduledMemberIds->every(
-                    fn ($memberId) => $attendanceRecords->contains(fn ($attendance) => (int) $attendance->member_id === (int) $memberId),
+                'done' => $memberWorkExpected && $scheduledMemberIds->every(
+                    fn ($memberId) => $attendanceRecords->contains(fn ($attendance) =>
+                        (int) $attendance->member_id === (int) $memberId
+                        && ($attendance->checked_in || $attendance->status === 'absent')
+                    ),
                 ),
                 'detail' => $memberWorkExpected ? $attendees->count().' checked in; '.$attendanceRecords->where('status', 'absent')->count().' absent' : 'No members are scheduled today',
             ],

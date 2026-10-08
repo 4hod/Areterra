@@ -58,9 +58,9 @@ class LeaveCalendar
         $holidays[] = $easterSunday->subDays(2)->toDateString();
         $holidays[] = $easterSunday->addDay()->toDateString();
 
-        $holidays[] = CarbonImmutable::create($year, 5, 1)->nextOrSame(CarbonInterface::MONDAY)->toDateString();
-        $holidays[] = CarbonImmutable::create($year, 5, 31)->previousOrSame(CarbonInterface::MONDAY)->toDateString();
-        $holidays[] = CarbonImmutable::create($year, 8, 31)->previousOrSame(CarbonInterface::MONDAY)->toDateString();
+        $holidays[] = self::onOrAfter(CarbonImmutable::create($year, 5, 1), CarbonInterface::MONDAY)->toDateString();
+        $holidays[] = self::onOrBefore(CarbonImmutable::create($year, 5, 31), CarbonInterface::MONDAY)->toDateString();
+        $holidays[] = self::onOrBefore(CarbonImmutable::create($year, 8, 31), CarbonInterface::MONDAY)->toDateString();
 
         // Christmas and Boxing Day share the next two free weekdays when either
         // falls at a weekend.
@@ -95,6 +95,16 @@ class LeaveCalendar
     private static function isBankHoliday(CarbonInterface $date): bool
     {
         return in_array($date->toDateString(), self::bankHolidays($date->year), true);
+    }
+
+    private static function onOrAfter(CarbonImmutable $date, int $dayOfWeekIso): CarbonImmutable
+    {
+        return $date->addDays(($dayOfWeekIso - $date->dayOfWeekIso + 7) % 7);
+    }
+
+    private static function onOrBefore(CarbonImmutable $date, int $dayOfWeekIso): CarbonImmutable
+    {
+        return $date->subDays(($date->dayOfWeekIso - $dayOfWeekIso + 7) % 7);
     }
 
     /** @param array<int, string> $holidays */

@@ -51,11 +51,12 @@ class GovernanceTest extends TestCase
         $this->assertNotificationNotQueuedTo($staff, ConcernRaised::class);
     }
 
-    public function test_end_of_day_concern_notifies_managers_once(): void
+    public function test_end_of_day_concern_notifies_safeguarding_leads_once(): void
     {
         Queue::fake();
         $staff = User::factory()->create(['role' => 'staff']);
         $manager = User::factory()->create(['role' => 'manager']);
+        $manager->syncCapabilities([...$manager->capabilities(), 'access_safeguarding']);
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle']);
         Attendance::create(['member_id' => $member->id, 'date' => today(), 'checked_in' => true, 'arrival_mood' => 'happy']);
 

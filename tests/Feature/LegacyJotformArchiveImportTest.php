@@ -59,7 +59,7 @@ class LegacyJotformArchiveImportTest extends TestCase
         $this->assertDatabaseCount('end_of_day_records', 1);
         $this->assertDatabaseCount('attendances', 2);
         $this->assertDatabaseCount('transport_runs', 1);
-        $this->assertDatabaseCount('transport_ledger_entries', 0);
+        $this->assertDatabaseCount('transport_ledger', 0);
         $this->assertStringContainsString('First shift note', EndOfDayRecord::first()->notes);
         $this->assertStringContainsString('Second shift note', EndOfDayRecord::first()->notes);
         $this->assertSame(2, Attendance::where('status', 'present')->count());
