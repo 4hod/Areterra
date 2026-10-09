@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Mail\MicrosoftGraphTransport;
-use App\Models\Setting;
+use App\Support\MicrosoftGraphMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
@@ -19,23 +19,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Mail::extend('microsoft_graph', function (array $config) {
-            $storedSecret = Setting::get('ms_client_secret');
-            $storedRefreshToken = Setting::get('ms_mail_refresh_token');
-
-            try {
-                $storedSecret = $storedSecret ? decrypt($storedSecret) : null;
-                $storedRefreshToken = $storedRefreshToken ? decrypt($storedRefreshToken) : null;
-            } catch (\Throwable) {
-                $storedSecret = null;
-                $storedRefreshToken = null;
-            }
+            $connection = MicrosoftGraphMail::configuration($config);
 
             return new MicrosoftGraphTransport(
-                tenantId: $config['tenant_id'] ?? config('services.microsoft.tenant_id') ?? Setting::get('ms_tenant_id'),
-                clientId: $config['client_id'] ?? config('services.microsoft.client_id') ?? Setting::get('ms_client_id'),
-                clientSecret: $config['client_secret'] ?? config('services.microsoft.client_secret') ?? $storedSecret,
-                refreshToken: $storedRefreshToken,
-                sender: Setting::get('ms_mail_sender', $config['sender'] ?? config('mail.from.address')),
+                tenantId: $connection['tenant_id'],
+                clientId: $connection['client_id'],
+                clientSecret: $connection['client_secret'],
+                refreshToken: $connection['refresh_token'],
+                sender: $connection['sender'],
             );
         });
 

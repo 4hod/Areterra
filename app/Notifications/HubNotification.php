@@ -52,7 +52,7 @@ abstract class HubNotification extends Notification implements ShouldQueue
             $channels[] = WebPushChannel::class;
         }
 
-        if ($pref->email_enabled) {
+        if ($pref->email_enabled && (config('mail.default') !== 'microsoft_graph' || \App\Support\MicrosoftGraphMail::ready())) {
             $channels[] = 'mail';
         }
 

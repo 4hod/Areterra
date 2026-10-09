@@ -44,6 +44,8 @@ class TransportController extends Controller
             }
 
             $balance = TransportLedgerEntry::balanceFor($m->id);
+            $dailyRate = TransportCharges::dailyRateFor($m);
+            $legRate = $dailyRate / 2;
 
             return [
                 'id' => $m->id,
@@ -53,8 +55,10 @@ class TransportController extends Controller
                 'lng' => $m->lng ? (float) $m->lng : null,
                 'phone' => $m->phone,
                 'balance' => $balance,
-                'days_credit' => (int) floor(max(0, $balance) / TransportLedgerEntry::DAILY_RATE),
-                'legs_credit' => (int) floor(max(0, $balance) / TransportLedgerEntry::LEG_RATE),
+                'daily_rate' => $dailyRate,
+                'leg_rate' => $legRate,
+                'days_credit' => $dailyRate > 0 ? (int) floor(max(0, $balance) / $dailyRate) : 0,
+                'legs_credit' => $legRate > 0 ? (int) floor(max(0, $balance) / $legRate) : 0,
                 'morning_outcome' => optional($runs->get($m->id.':morning'))->first()?->outcome,
                 'afternoon_outcome' => optional($runs->get($m->id.':afternoon'))->first()?->outcome,
                 'morning_done' => $runs->has($m->id.':morning'),
@@ -89,8 +93,8 @@ class TransportController extends Controller
             'afternoonAvailable' => ! $today->isToday() || $this->todayChecklist->canAccess('return_transport', $today),
             'preDrive' => $this->preDriveState($today),
             'rows' => $rows,
-            'dailyRate' => TransportLedgerEntry::DAILY_RATE,
-            'legRate' => TransportLedgerEntry::LEG_RATE,
+            'dailyRate' => (float) \App\Models\Setting::get('finance_rate_transport_day', (string) TransportLedgerEntry::DAILY_RATE),
+            'legRate' => (float) \App\Models\Setting::get('finance_rate_transport_day', (string) TransportLedgerEntry::DAILY_RATE) / 2,
             'outcomes' => ['collected', 'not_collected', 'absent'],
             'suggestedAmounts' => \App\Support\TransportCredit::SUGGESTED,
             'monthly' => [

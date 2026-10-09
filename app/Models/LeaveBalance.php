@@ -12,11 +12,6 @@ class LeaveBalance extends Model
 
     protected $guarded = [];
 
-    // Mirror the DB default so freshly created rows read correctly (SPEC.md: 28 days).
-    protected $attributes = [
-        'entitlement_days' => 28,
-    ];
-
     protected function casts(): array
     {
         return [
@@ -35,6 +30,7 @@ class LeaveBalance extends Model
 
         $entitlement = (float) (static::firstOrCreate(
             ['user_id' => $user->id, 'year' => $year],
+            ['entitlement_days' => static::defaultEntitlementFor($user)],
         )->entitlement_days);
 
         $taken = LeaveRequest::where('user_id', $user->id)
@@ -64,5 +60,13 @@ class LeaveBalance extends Model
             'taken' => $taken,
             'remaining' => $entitlement - $taken,
         ];
+    }
+
+    /** Statutory-style default excluding bank holidays; managers can override it per person/year. */
+    public static function defaultEntitlementFor(User $user): float
+    {
+        $workingDays = $user->working_days ?: LeaveCalendar::DEFAULT_WORKING_DAYS;
+
+        return round(20 * (count(array_unique($workingDays)) / 5), 1);
     }
 }

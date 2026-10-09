@@ -5,6 +5,7 @@ namespace Tests\Feature\Sweep;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\LeaveBalance;
 
 class PermissionsSweepTest extends SweepTestCase
 {
@@ -30,6 +31,37 @@ class PermissionsSweepTest extends SweepTestCase
         );
         $this->assertTrue($staff->hasCapability('log_sessions'));
         $this->assertFalse($staff->hasCapability('manage_finance'));
+    }
+
+    public function test_a_deactivated_account_can_be_restored_by_readding_the_same_email(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff', 'email' => 'returning@example.test']);
+        $staff->delete();
+
+        $this->post('/settings/users', [
+            'name' => 'Returning Person',
+            'email' => 'returning@example.test',
+            'job_title' => 'Support Worker',
+            'role' => 'staff',
+            'working_days' => [1, 2, 4, 5],
+            'leave_entitlement_days' => 16,
+        ])->assertSessionHasNoErrors()->assertSessionHas('success');
+
+        $this->assertSame(1, User::withTrashed()->where('email', 'returning@example.test')->count());
+        $this->assertFalse($staff->fresh()->trashed());
+    }
+
+    public function test_manager_can_set_a_persons_leave_allowance(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+
+        $this->put("/settings/users/{$staff->id}", [
+            'job_title' => 'Support Worker',
+            'working_days' => [1, 2, 4, 5],
+            'leave_entitlement_days' => 17.5,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(17.5, (float) LeaveBalance::where('user_id', $staff->id)->where('year', now()->year)->value('entitlement_days'));
     }
 
     public function test_permissions_are_held_per_account_not_by_role(): void

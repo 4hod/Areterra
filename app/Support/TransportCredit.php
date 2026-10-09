@@ -34,7 +34,9 @@ final class TransportCredit
     {
         $balance = self::balance($memberId);
 
-        return $balance <= 0 ? 0 : (int) floor($balance / TransportLedgerEntry::LEG_RATE);
+        $legRate = TransportCharges::dailyRateFor($memberId) / 2;
+
+        return $balance <= 0 || $legRate <= 0 ? 0 : (int) floor($balance / $legRate);
     }
 
     /** Whole return journeys remaining — what staff usually think in. */
@@ -74,7 +76,7 @@ final class TransportCredit
     public static function suggestedTopUp(Member $member): float
     {
         $perWeek = self::scheduledDaysPerWeek($member) ?: 2;
-        $fortnight = $perWeek * 2 * TransportLedgerEntry::DAILY_RATE;
+        $fortnight = $perWeek * 2 * TransportCharges::dailyRateFor($member);
         $needed = $fortnight - self::balance($member->id);
 
         if ($needed <= 0) {

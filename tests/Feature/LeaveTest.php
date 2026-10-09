@@ -93,9 +93,9 @@ class LeaveTest extends TestCase
         $this->assertNotificationQueuedTo($staff, LeaveReviewed::class);
 
         $balance = LeaveBalance::remainingFor($staff, $leave->start_date->year);
-        $this->assertSame(28.0, $balance['entitlement']);
+        $this->assertSame(16.0, $balance['entitlement']);
         $this->assertSame(4.0, $balance['taken']);
-        $this->assertSame(24.0, $balance['remaining']);
+        $this->assertSame(12.0, $balance['remaining']);
     }
 
     public function test_staff_cannot_approve_leave(): void

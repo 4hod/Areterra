@@ -133,8 +133,10 @@ class MicrosoftAuthController extends Controller
                 return redirect('/settings?section=email')->with('error', 'Microsoft did not return a usable mailbox connection.');
             }
 
+            \App\Support\MicrosoftGraphMail::forgetCachedToken();
             Setting::set('ms_mail_refresh_token', encrypt($tokenData['refresh_token']));
             Setting::set('ms_mail_sender', mb_strtolower($email));
+            \App\Support\MicrosoftGraphMail::forgetCachedToken(mb_strtolower($email));
 
             return redirect('/settings?section=email')->with('success', "Microsoft mailbox {$email} connected securely.");
         }

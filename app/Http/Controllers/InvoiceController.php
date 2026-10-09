@@ -8,6 +8,7 @@ use App\Models\Member;
 use App\Models\MemberInvoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\Ledger;
 use Inertia\Inertia;
 
 class InvoiceController extends Controller
@@ -81,24 +82,39 @@ class InvoiceController extends Controller
 
     public function update(Request $request, MemberInvoice $invoice)
     {
-        $wasPaid = $invoice->status === 'paid';
-        $invoice->update($request->validate([
+        $data = $request->validate([
             'status' => ['sometimes', 'in:draft,sent,paid,overdue,cancelled'],
             'due_date' => ['nullable', 'date'],
             'qb_url' => ['nullable', 'url', 'max:500'],
-        ]));
+        ]);
+        $wasPaid = $invoice->status === 'paid';
 
-        if (! $wasPaid && $invoice->status === 'paid') {
-            $invoice->update(['paid_date' => $invoice->paid_date ?? today()]);
-            InvoicePaid::dispatch($invoice->fresh());
-        }
+        DB::transaction(function () use ($invoice, $data, $wasPaid) {
+            $invoice->update($data);
+
+            if ($wasPaid && $invoice->status !== 'paid') {
+                $this->reverseInvoiceIncome($invoice, "Invoice {$invoice->qb_reference} changed from paid to {$invoice->status}.");
+                $invoice->update(['paid_date' => null]);
+            }
+
+            if (! $wasPaid && $invoice->status === 'paid') {
+                $invoice->update(['paid_date' => $invoice->paid_date ?? today()]);
+                InvoicePaid::dispatch($invoice->fresh());
+            }
+        });
 
         return back()->with('success', 'Invoice updated.');
     }
 
     public function destroy(MemberInvoice $invoice)
     {
-        $invoice->delete();
+        DB::transaction(function () use ($invoice) {
+            if ($invoice->status === 'paid') {
+                $this->reverseInvoiceIncome($invoice, "Paid invoice {$invoice->qb_reference} was deleted.");
+            }
+
+            $invoice->delete();
+        });
 
         return back()->with('success', "{$invoice->qb_reference} removed.");
     }
@@ -111,5 +127,14 @@ class InvoiceController extends Controller
 
         $invoice->update(['status' => 'paid', 'paid_date' => today()]);
         InvoicePaid::dispatch($invoice->fresh());
+    }
+
+    private function reverseInvoiceIncome(MemberInvoice $invoice, string $reason): void
+    {
+        $entry = $invoice->ledgerEntries()->where('category', 'member_fees')->effective()->first();
+
+        if ($entry) {
+            Ledger::reverse($entry, $reason);
+        }
     }
 }

@@ -357,6 +357,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
             ->name('users.update');
         Route::delete('/settings/users/{user}', [App\Http\Controllers\PermissionsController::class, 'destroyUser'])
             ->name('users.destroy');
+        Route::post('/settings/users/{user}/restore', [App\Http\Controllers\PermissionsController::class, 'restoreUser'])
+            ->name('users.restore');
     });
     Route::post('/settings/wordpress/sync', [App\Http\Controllers\WordPressSyncController::class, 'sync'])
         ->middleware('can:manage_settings')->name('settings.wordpress.sync');

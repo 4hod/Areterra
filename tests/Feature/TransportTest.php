@@ -141,4 +141,22 @@ class TransportTest extends TestCase
         $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'morning']);
         $this->assertSame(7.5, TransportLedgerEntry::balanceFor($this->member->id));
     }
+
+    public function test_credit_and_charges_use_the_members_custom_transport_rate(): void
+    {
+        $this->member->financeProfile()->create([
+            'charge_transport' => true,
+            'custom_transport_rate' => 8,
+        ]);
+        $this->actingAs($this->user)->post("/transport/{$this->member->id}/pay", ['amount' => 16]);
+
+        $this->assertSame(4, \App\Support\TransportCredit::legsRemaining($this->member->id));
+        $this->actingAs($this->user)->post("/transport/{$this->member->id}/complete", ['phase' => 'morning']);
+        $this->assertSame(12.0, TransportLedgerEntry::balanceFor($this->member->id));
+
+        $row = collect($this->actingAs($this->user)->get('/transport')->viewData('page')['props']['rows'])->firstWhere('id', $this->member->id);
+        $this->assertSame(8.0, $row['daily_rate']);
+        $this->assertSame(4.0, $row['leg_rate']);
+        $this->assertSame(3, $row['legs_credit']);
+    }
 }

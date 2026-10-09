@@ -44,6 +44,9 @@ class EmailComposerController extends Controller
         // from the organisation's connected mailbox is a separate permission.
         if (! ($data['log_only'] ?? false)) {
             Gate::authorize('manage_member_communications');
+            if (config('mail.default') === 'microsoft_graph' && ! \App\Support\MicrosoftGraphMail::ready()) {
+                return back()->withInput()->with('error', 'The Microsoft sending mailbox is not connected. Ask an administrator to finish setup in Settings → Email.');
+            }
         }
 
         if (($data['save_template'] ?? false)) {
@@ -57,8 +60,14 @@ class EmailComposerController extends Controller
         $body = strtr($data['body'], $this->mergeTags($member));
 
         if (! ($data['log_only'] ?? false)) {
-            Mail::to($data['to_email'], $data['to_name'] ?? null)
-                ->send(new \App\Mail\BrandedEmail($subject, $body));
+            try {
+                Mail::to($data['to_email'], $data['to_name'] ?? null)
+                    ->send(new \App\Mail\BrandedEmail($subject, $body));
+            } catch (\Symfony\Component\Mailer\Exception\TransportExceptionInterface $exception) {
+                report($exception);
+
+                return back()->withInput()->with('error', 'The email could not be sent. Check the connected mailbox in Settings → Email and try again.');
+            }
         }
 
         // Every email — sent or logged-only — lands in the comms timeline.
