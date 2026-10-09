@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 final class MicrosoftGraphMail
 {
@@ -11,11 +12,11 @@ final class MicrosoftGraphMail
     public static function configuration(array $mailer = []): array
     {
         return [
-            'tenant_id' => self::value($mailer['tenant_id'] ?? config('services.microsoft.tenant_id') ?? Setting::get('ms_tenant_id')),
-            'client_id' => self::value($mailer['client_id'] ?? config('services.microsoft.client_id') ?? Setting::get('ms_client_id')),
+            'tenant_id' => self::value($mailer['tenant_id'] ?? config('services.microsoft.tenant_id') ?? self::setting('ms_tenant_id')),
+            'client_id' => self::value($mailer['client_id'] ?? config('services.microsoft.client_id') ?? self::setting('ms_client_id')),
             'client_secret' => self::secret($mailer['client_secret'] ?? config('services.microsoft.client_secret'), 'ms_client_secret'),
             'refresh_token' => self::secret(null, 'ms_mail_refresh_token'),
-            'sender' => self::value(Setting::get('ms_mail_sender', $mailer['sender'] ?? config('mail.from.address'))),
+            'sender' => self::value(self::setting('ms_mail_sender') ?? $mailer['sender'] ?? config('mail.from.address')),
         ];
     }
 
@@ -53,7 +54,7 @@ final class MicrosoftGraphMail
             return $value;
         }
 
-        $stored = Setting::get($setting);
+        $stored = self::setting($setting);
         if (! is_string($stored) || $stored === '') {
             return null;
         }
@@ -68,5 +69,16 @@ final class MicrosoftGraphMail
     private static function value(mixed $value): ?string
     {
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
+    }
+
+    private static function setting(string $key): ?string
+    {
+        try {
+            return Schema::hasTable('settings') ? Setting::get($key) : null;
+        } catch (\Throwable) {
+            // Mail can be resolved while installing or before migrations. A
+            // missing settings table means "not configured", not a crash.
+            return null;
+        }
     }
 }
