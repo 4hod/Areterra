@@ -139,9 +139,7 @@ export default function RiskAssessments({ assessments, canManage, filters, categ
                             </div>
                             {canManage && (
                                 <div className="flex flex-col gap-1 shrink-0">
-                                    <button onClick={() => open(a)} className="rounded-full bg-slate-100 text-xs font-bold px-3 py-1.5">
-                                        Edit
-                                    </button>
+                                    {!a.signed_off_by && <button onClick={() => open(a)} className="rounded-full bg-slate-100 text-xs font-bold px-3 py-1.5">Edit draft</button>}
                                     {!a.signed_off_by && (
                                         <button
                                             onClick={() => router.post(`/risk-assessments/${a.id}/sign-off`)}
@@ -150,7 +148,7 @@ export default function RiskAssessments({ assessments, canManage, filters, categ
                                             Sign off
                                         </button>
                                     )}
-                                    {a.is_current && (
+                                    {a.is_current && a.signed_off_by && (
                                         <button onClick={() => router.post(`/risk-assessments/${a.id}/new-version`)} className="rounded-full bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5">New version</button>
                                     )}
                                     {a.status === 'draft' && !a.signed_off_by && (

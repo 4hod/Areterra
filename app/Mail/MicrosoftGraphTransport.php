@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Setting;
+use App\Support\MicrosoftGraphMail;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -20,17 +21,32 @@ use Symfony\Component\Mailer\Transport\AbstractTransport;
 class MicrosoftGraphTransport extends AbstractTransport
 {
     public function __construct(
-        private readonly string $tenantId,
-        private readonly string $clientId,
-        private readonly string $clientSecret,
-        private string $refreshToken,
-        private readonly string $sender,
+        private ?string $tenantId,
+        private ?string $clientId,
+        private ?string $clientSecret,
+        private ?string $refreshToken,
+        private ?string $sender,
     ) {
         parent::__construct();
     }
 
     protected function doSend(SentMessage $message): void
     {
+        // Queue workers are long lived. Reload the mailbox connection for each
+        // message so reconnecting a different mailbox takes effect immediately.
+        $configuration = MicrosoftGraphMail::configuration();
+        if ($configuration['refresh_token'] !== null) {
+            $this->tenantId = $configuration['tenant_id'];
+            $this->clientId = $configuration['client_id'];
+            $this->clientSecret = $configuration['client_secret'];
+            $this->refreshToken = $configuration['refresh_token'];
+            $this->sender = $configuration['sender'];
+        }
+
+        if (in_array(null, [$this->tenantId, $this->clientId, $this->clientSecret, $this->refreshToken, $this->sender], true)) {
+            throw new TransportException('The Microsoft sending mailbox is not connected. An administrator must finish setup in Settings → Email.');
+        }
+
         $response = $this->sendToGraph($message, $this->accessToken());
 
         // A cached token can be revoked before its advertised expiry. Refresh
@@ -97,7 +113,7 @@ class MicrosoftGraphTransport extends AbstractTransport
 
     private function tokenCacheKey(): string
     {
-        return 'microsoft-graph-mail-token:'.hash('sha256', "{$this->tenantId}|{$this->clientId}|".mb_strtolower($this->sender));
+        return MicrosoftGraphMail::tokenCacheKey($this->tenantId, $this->clientId, $this->sender);
     }
 
     public function __toString(): string

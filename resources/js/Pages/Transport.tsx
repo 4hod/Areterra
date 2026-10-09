@@ -34,6 +34,8 @@ interface Row {
     lng: number | null;
     phone: string | null;
     balance: number;
+    daily_rate: number;
+    leg_rate: number;
     days_credit: number;
     legs_credit: number;
     legs_remaining: number;
@@ -288,7 +290,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                     <div className="mt-1 text-xs opacity-80">
                         Today so far: {gbp(next.todays_charge)}
                         {next.todays_charge === 0 && ' — nothing charged yet'}
-                        {' · '}{gbp(legRate)} a journey
+                        {' · '}{gbp(next.leg_rate)} a journey
                     </div>
                     <div className="flex flex-wrap gap-2 mt-4">
                         <button
@@ -311,7 +313,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                             Absent all day
                         </button>
                         <button
-                            onClick={() => { setPaying(next); setAmount(next.suggested_top_up || dailyRate); }}
+                            onClick={() => { setPaying(next); setAmount(next.suggested_top_up || next.daily_rate); }}
                             className="rounded-full bg-accent text-brand-dark font-bold px-4 py-2.5"
                         >
                             💷 Take Payment
@@ -433,7 +435,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                                     </div>
                                     <div className="flex gap-1">
                                         <button
-                                            onClick={() => { setPaying(r); setAmount(r.suggested_top_up || dailyRate); }}
+                                            onClick={() => { setPaying(r); setAmount(r.suggested_top_up || r.daily_rate); }}
                                             className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs px-3 py-2"
                                         >
                                             💷 Payment
@@ -475,7 +477,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                         {rows.map((r) => (
                             <button
                                 key={r.id}
-                                onClick={() => { setPaying(r); setAmount(r.suggested_top_up || dailyRate); }}
+                                onClick={() => { setPaying(r); setAmount(r.suggested_top_up || r.daily_rate); }}
                                 className="rounded-full border border-slate-200 text-xs font-semibold px-3 py-1.5 hover:bg-slate-50"
                             >
                                 {r.name.split(' ')[0]} · <FeeStatus row={r} />
@@ -536,7 +538,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
             <Modal open={paying !== null} title={`Payment — ${paying?.name ?? ''}`} onClose={() => setPaying(null)}>
                 <div className="space-y-4">
                     <p className="text-sm text-slate-500">
-                        £{dailyRate.toFixed(2)}/day, cash. £{(dailyRate * 2).toFixed(2)} = 2 days credit.
+                        £{(paying?.daily_rate ?? dailyRate).toFixed(2)}/day, cash. £{((paying?.daily_rate ?? dailyRate) * 2).toFixed(2)} = 2 days credit.
                         {paying && (
                             <>
                                 {' '}Current balance:{' '}
@@ -573,8 +575,8 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                             className="mt-1 w-full rounded-lg border border-slate-300 px-3"
                         />
                         <span className="text-xs font-bold text-brand">
-                            = {Math.floor(amount / legRate)} journey{Math.floor(amount / legRate) === 1 ? '' : 's'}
-                            {' · '}{Math.floor(amount / dailyRate)} full day{Math.floor(amount / dailyRate) === 1 ? '' : 's'}
+                            = {Math.floor(amount / (paying?.leg_rate ?? legRate))} journey{Math.floor(amount / (paying?.leg_rate ?? legRate)) === 1 ? '' : 's'}
+                            {' · '}{Math.floor(amount / (paying?.daily_rate ?? dailyRate))} full day{Math.floor(amount / (paying?.daily_rate ?? dailyRate)) === 1 ? '' : 's'}
                         </span>
                     </label>
                     <div className="grid grid-cols-2 gap-3">

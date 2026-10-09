@@ -95,14 +95,16 @@ class RiskAssessmentController extends Controller
 
     public function update(Request $request, RiskAssessment $riskAssessment)
     {
+        abort_if(
+            $riskAssessment->signed_off_at !== null || $riskAssessment->status === 'active',
+            422,
+            'A signed risk assessment is a permanent record. Create a new version to make changes.',
+        );
+
         $data = $this->validated($request);
         $riskAssessment->update([
             ...$data,
-            // Editing a signed assessment invalidates the old approval. It
-            // must be signed off again before it is active.
             'status' => 'draft',
-            'signed_off_by' => null,
-            'signed_off_at' => null,
         ]);
 
         return back()->with('success', 'Risk assessment saved.');

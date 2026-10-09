@@ -97,6 +97,24 @@ class ConnectedRecordsAndDeletionTest extends TestCase
         $this->assertDatabaseHas('risk_assessments', ['id' => $active->id, 'deleted_at' => null]);
     }
 
+    public function test_a_signed_risk_assessment_must_be_revised_as_a_new_version(): void
+    {
+        $active = RiskAssessment::create([
+            'title' => 'Signed', 'category' => 'site', 'likelihood' => 2, 'severity' => 2,
+            'status' => 'active', 'is_current' => true,
+            'signed_off_by' => $this->admin->id, 'signed_off_at' => now(),
+            'created_by' => $this->admin->id,
+        ]);
+
+        $this->put("/risk-assessments/{$active->id}", [
+            'title' => 'Changed', 'category' => 'site', 'likelihood' => 1, 'severity' => 1,
+        ])->assertStatus(422);
+        $this->assertSame('Signed', $active->fresh()->title);
+
+        $this->post("/risk-assessments/{$active->id}/new-version")->assertSessionHas('success');
+        $this->assertDatabaseHas('risk_assessments', ['supersedes_id' => $active->id, 'version' => 2, 'status' => 'draft']);
+    }
+
     public function test_tasks_and_incidents_are_attached_to_their_real_records(): void
     {
         $member = Member::create(['first_name' => 'Amy', 'last_name' => 'Buckle', 'status' => 'active']);

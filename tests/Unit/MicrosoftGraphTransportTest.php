@@ -7,6 +7,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mailer\Exception\TransportException;
 use Tests\TestCase;
 
 class MicrosoftGraphTransportTest extends TestCase
@@ -95,5 +96,17 @@ class MicrosoftGraphTransportTest extends TestCase
 
         Http::assertSentCount(3);
         Http::assertSent(fn (Request $request) => str_contains($request->url(), '/oauth2/v2.0/token'));
+    }
+
+    public function test_incomplete_configuration_fails_with_a_clear_setup_message(): void
+    {
+        $transport = new MicrosoftGraphTransport(null, null, null, null, null);
+
+        $this->expectException(TransportException::class);
+        $this->expectExceptionMessage('mailbox is not connected');
+
+        $transport->send(
+            (new Email)->from('team@areterra.co.uk')->to('recipient@example.com')->subject('Test')->text('Test'),
+        );
     }
 }

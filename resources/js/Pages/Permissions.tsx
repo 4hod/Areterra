@@ -18,6 +18,8 @@ interface PersonRow {
     role: string;
     capabilities: string[];
     working_days: number[];
+    active: boolean;
+    leave_entitlement_days: number;
 }
 
 interface Props {
@@ -27,12 +29,13 @@ interface Props {
 }
 
 export default function Permissions({ catalogue, presets, users }: Props) {
-    const accountForm = useForm({ name: '', email: '', job_title: '', role: 'staff', working_days: [1, 2, 4, 5] as number[] });
+    const accountForm = useForm({ name: '', email: '', job_title: '', role: 'staff', working_days: [1, 2, 4, 5] as number[], leave_entitlement_days: 16 });
     const [selectedId, setSelectedId] = useState<number | null>(users[0]?.id ?? null);
     const [draft, setDraft] = useState<string[]>(users[0]?.capabilities ?? []);
     const [saving, setSaving] = useState(false);
     const [customising, setCustomising] = useState(false);
     const [workingDays, setWorkingDays] = useState<number[]>(users[0]?.working_days ?? [1, 2, 4, 5]);
+    const [leaveEntitlement, setLeaveEntitlement] = useState<number>(users[0]?.leave_entitlement_days ?? 16);
 
     const { errors } = usePage().props as unknown as { errors: Record<string, string> };
     const selected = users.find((u) => u.id === selectedId) ?? null;
@@ -49,6 +52,7 @@ export default function Permissions({ catalogue, presets, users }: Props) {
         setDraft(person.capabilities);
         setCustomising(false);
         setWorkingDays(person.working_days);
+        setLeaveEntitlement(person.leave_entitlement_days);
     }
 
     function toggle(capability: string) {
@@ -101,7 +105,8 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                     <label className="text-sm font-medium">Microsoft email<input required type="email" value={accountForm.data.email} onChange={(e) => accountForm.setData('email', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" /></label>
                     <label className="text-sm font-medium">Job title<input value={accountForm.data.job_title} onChange={(e) => accountForm.setData('job_title', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3" /></label>
                     <label className="text-sm font-medium">Starting role<select value={accountForm.data.role} onChange={(e) => accountForm.setData('role', e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3">{presets.map((preset) => <option key={preset.role} value={preset.role}>{preset.label}</option>)}</select></label>
-                    <fieldset className="sm:col-span-2 lg:col-span-4"><legend className="text-sm font-medium">Normal working days</legend><div className="mt-1 flex flex-wrap gap-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => { const value = index + 1; return <label key={day} className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"><input type="checkbox" checked={accountForm.data.working_days.includes(value)} onChange={(e) => accountForm.setData('working_days', e.target.checked ? [...accountForm.data.working_days, value].sort() : accountForm.data.working_days.filter((item) => item !== value))} />{day}</label>; })}</div></fieldset>
+                    <fieldset className="sm:col-span-2 lg:col-span-4"><legend className="text-sm font-medium">Normal working days</legend><div className="mt-1 flex flex-wrap gap-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => { const value = index + 1; return <label key={day} className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"><input type="checkbox" checked={accountForm.data.working_days.includes(value)} onChange={(e) => { const days = e.target.checked ? [...accountForm.data.working_days, value].sort() : accountForm.data.working_days.filter((item) => item !== value); accountForm.setData((current) => ({ ...current, working_days: days, leave_entitlement_days: Number((20 * days.length / 5).toFixed(1)) })); }} />{day}</label>; })}</div></fieldset>
+                    <label className="text-sm font-medium sm:col-span-2">Annual leave allowance (days, excluding bank holidays)<input required type="number" min="0" max="100" step="0.5" value={accountForm.data.leave_entitlement_days} onChange={(e) => accountForm.setData('leave_entitlement_days', Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 px-3" /><span className="mt-1 block text-xs font-normal text-slate-500">Default is 20 days for five working days, pro-rata. Confirm each contract with HR.</span></label>
                     <button disabled={accountForm.processing} className="rounded-lg bg-brand px-4 py-2 font-bold text-white sm:col-span-2 lg:col-span-4 disabled:opacity-50">Create account</button>
                 </form>
             </Card>
@@ -125,7 +130,7 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                                     >
                                         <span className="block text-sm font-medium">{person.name}</span>
                                         <span className={`block text-xs ${active ? 'text-slate-300' : 'text-slate-500'}`}>
-                                            {person.job_title || person.email}
+                                            {person.job_title || person.email}{!person.active && ' · deactivated'}
                                         </span>
                                         <span className={`block text-xs ${active ? 'text-slate-400' : 'text-slate-400'}`}>
                                             {person.capabilities.length} of {Object.values(catalogue).reduce((n, g) => n + Object.keys(g).length, 0)} permissions
@@ -152,7 +157,7 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                                 </button>
                             }
                         >
-                            <button type="button" onClick={() => window.confirm(`Deactivate ${selected.name}'s Hub account?`) && router.delete(`/settings/users/${selected.id}`)} className="float-right ml-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">Deactivate account</button>
+                            {selected.active ? <button type="button" onClick={() => window.confirm(`Deactivate ${selected.name}'s Hub account?`) && router.delete(`/settings/users/${selected.id}`)} className="float-right ml-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">Deactivate account</button> : <button type="button" onClick={() => router.post(`/settings/users/${selected.id}/restore`)} className="float-right ml-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Restore account</button>}
                             {errors?.capabilities && (
                                 <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
                                     {errors.capabilities}
@@ -166,9 +171,10 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                             <div className="mt-4 rounded-xl border border-slate-200 p-3">
                                 <div className="flex items-center justify-between gap-3">
                                     <div><div className="text-sm font-bold">Normal working days</div><div className="text-xs text-slate-500">Used to calculate leave correctly.</div></div>
-                                    <button type="button" onClick={() => router.put(`/settings/users/${selected.id}`, { job_title: selected.job_title, working_days: workingDays }, { preserveScroll: true })} disabled={workingDays.length === 0} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold disabled:opacity-40">Save days</button>
+                                    <button type="button" onClick={() => router.put(`/settings/users/${selected.id}`, { job_title: selected.job_title, working_days: workingDays, leave_entitlement_days: leaveEntitlement }, { preserveScroll: true })} disabled={workingDays.length === 0 || leaveEntitlement < 0} className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold disabled:opacity-40">Save HR details</button>
                                 </div>
                                 <div className="mt-3 flex flex-wrap gap-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => { const value = index + 1; return <label key={day} className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs"><input type="checkbox" checked={workingDays.includes(value)} onChange={(e) => setWorkingDays((current) => e.target.checked ? [...current, value].sort() : current.filter((item) => item !== value))} />{day}</label>; })}</div>
+                                <label className="mt-3 block text-sm font-bold">Annual leave allowance for {new Date().getFullYear()}<input type="number" min="0" max="100" step="0.5" value={leaveEntitlement} onChange={(e) => setLeaveEntitlement(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 px-3" /><span className="mt-1 block text-xs font-normal text-slate-500">Days excluding bank holidays. This is editable for the person’s contract.</span></label>
                             </div>
 
                             <div className="permissions-presets-4a">

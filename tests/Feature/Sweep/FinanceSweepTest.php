@@ -118,6 +118,14 @@ class FinanceSweepTest extends SweepTestCase
             'paid invoice did not post income to the ledger'
         );
 
+        $this->put("/invoices/{$inv->id}", ['status' => 'cancelled'])->assertSessionHasNoErrors();
+        $this->assertSame(0.0, (float) \App\Models\LedgerEntry::effective()->where('category', 'member_fees')->where('source_id', $inv->id)->sum('amount'));
+
+        // Paying it again creates a new effective income entry rather than
+        // reviving the historical entry that has already been reversed.
+        $this->put("/invoices/{$inv->id}", ['status' => 'paid'])->assertSessionHasNoErrors();
+        $this->assertSame(425.0, (float) \App\Models\LedgerEntry::effective()->where('category', 'member_fees')->where('source_id', $inv->id)->sum('amount'));
+
         // Bulk route must resolve before /invoices/{invoice}/paid.
         $this->post('/invoices', [
             'member_id' => $m->id, 'qb_reference' => 'INV-1002', 'amount' => 100,
@@ -129,6 +137,7 @@ class FinanceSweepTest extends SweepTestCase
 
         $this->assertWriteOk($this->delete("/invoices/{$inv2->id}"), 'invoices.destroy');
         $this->assertGone('member_invoices', $inv2->id, 'invoices.destroy');
+        $this->assertSame(0.0, (float) \App\Models\LedgerEntry::effective()->where('category', 'member_fees')->where('source_id', $inv2->id)->sum('amount'));
     }
 
     public function test_payroll_period_entries_approval_and_deletion(): void

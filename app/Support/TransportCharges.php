@@ -100,10 +100,19 @@ final class TransportCharges
             ->whereIn('outcome', self::CHARGEABLE)
             ->count();
 
-        $dailyRate = (float) ($profile?->custom_transport_rate
-            ?? Setting::get('finance_rate_transport_day', (string) TransportLedgerEntry::DAILY_RATE));
+        $dailyRate = self::dailyRateFor($member);
 
         return round($legs * ($dailyRate / 2), 2);
+    }
+
+    public static function dailyRateFor(Member|int $member): float
+    {
+        $member = $member instanceof Member
+            ? $member->loadMissing('financeProfile')
+            : Member::with('financeProfile')->findOrFail($member);
+
+        return (float) ($member->financeProfile?->custom_transport_rate
+            ?? Setting::get('finance_rate_transport_day', (string) TransportLedgerEntry::DAILY_RATE));
     }
 
     public static function currentCharge(int $memberId, CarbonInterface $date): ?TransportLedgerEntry

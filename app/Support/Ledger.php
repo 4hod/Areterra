@@ -32,6 +32,7 @@ final class Ledger
             ->where('source_type', $source->getMorphClass())
             ->where('source_id', $source->getKey())
             ->where('category', $category)
+            ->effective()
             ->first();
 
         if ($existing) {
