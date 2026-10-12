@@ -256,6 +256,7 @@ export default function AppShell({ title, children }: { title: string; children:
                 <button className="portal-search" onClick={() => setSearching(true)}><AppIcon name="search"/><span>Search members, animals, records…</span><kbd>Ctrl K</kbd></button>
                 <button className="portal-mobile-search" onClick={() => setSearching(true)} aria-label="Search"><AppIcon name="search"/></button>
                 <div className="portal-topbar-actions">
+                    {recordActions.length > 0 && <button type="button" className="portal-desktop-record" onClick={() => setRecording(true)} aria-haspopup="dialog"><AppIcon name="plus"/><span>Record</span></button>}
                     <span className="portal-date hidden lg:inline-flex"><AppIcon name="today"/>{today}</span>
                     <NotificationBell unreadCount={unreadNotifications}/>
                     <AccountMenu name={auth.user?.name ?? ''} role={auth.user?.role ?? ''} canManageSettings={caps.includes('manage_settings')}/>
@@ -272,7 +273,7 @@ export default function AppShell({ title, children }: { title: string; children:
             <Link href={mobileMore.href} className={isActive(mobileMore.href, url) ? 'is-active' : ''}><AppIcon name={mobileMore.icon}/><span>{mobileMore.label}</span></Link>
         </nav>
 
-        {recording && <div className="portal-action-sheet-backdrop md:hidden" onClick={() => setRecording(false)}>
+        {recording && <div className="portal-action-sheet-backdrop" onClick={() => setRecording(false)}>
             <section className="portal-action-sheet" role="dialog" aria-modal="true" aria-label="Create a record" onClick={(event) => event.stopPropagation()}>
                 <header><div><span>QUICK RECORD</span><h2>What are you recording?</h2><p>Choose a job and the Hub will take you straight to the right place.</p></div><button type="button" onClick={() => setRecording(false)} aria-label="Close">×</button></header>
                 <div>{recordActions.map((action) => <Link href={action.href} key={action.href} onClick={() => setRecording(false)} className={`is-${action.tone}`}><i><AppIcon name={action.icon}/></i><span><b>{action.label}</b><small>{action.detail}</small></span><AppIcon name="arrow"/></Link>)}</div>
