@@ -34,6 +34,13 @@ interface Summary {
     monitored: number;
     concerns: number;
     vet_due: number;
+    enclosures: number;
+    clean_due: number;
+}
+
+interface SpeciesCare {
+    last_cleaned: string | null;
+    clean_due: boolean;
 }
 
 type CareFilter = 'all' | 'outstanding' | 'concerns' | 'complete';
@@ -52,10 +59,13 @@ function blankCheck(animal_id: number): AnimalCheck {
     return { animal_id, concern: false, status: 'amber', notes: '', fed: true, treats_given: false, treats_notes: '' };
 }
 
-export default function Index({ species, bySpecies, summary, canEdit }: { species: string[]; bySpecies: Record<string, AnimalRow[]>; summary: Summary; canEdit: boolean }) {
+const blankEnclosureCare = () => ({ pellets_given: false, greenery_given: false, fresh_water: false, hay_topped_up: false, enclosure_cleaned: false });
+
+export default function Index({ species, bySpecies, speciesCare, summary, canEdit }: { species: string[]; bySpecies: Record<string, AnimalRow[]>; speciesCare: Record<string, SpeciesCare>; summary: Summary; canEdit: boolean }) {
     const [checking, setChecking] = useState<string | null>(null);
     const [checks, setChecks] = useState<Record<number, AnimalCheck>>({});
     const [verificationConfirmed, setVerificationConfirmed] = useState(false);
+    const [enclosureCare, setEnclosureCare] = useState(blankEnclosureCare());
     const [adding, setAdding] = useState(false);
     const [filter, setFilter] = useState<CareFilter>('all');
     const [search, setSearch] = useState('');
@@ -65,9 +75,9 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
         .map(([speciesName, animals]) => [speciesName, animals.filter((animal) => {
             const matchesSearch = !search.trim() || `${animal.name} ${animal.species}`.toLowerCase().includes(search.trim().toLowerCase());
             const matchesFilter = filter === 'all'
-                || (filter === 'outstanding' && (!animal.checked_today || !animal.monitored_today))
+                || (filter === 'outstanding' && !animal.checked_today)
                 || (filter === 'concerns' && (animal.concern_today || animal.welfare_status !== 'green'))
-                || (filter === 'complete' && animal.checked_today && animal.monitored_today && !animal.concern_today);
+                || (filter === 'complete' && animal.checked_today && !animal.concern_today);
 
             return matchesSearch && matchesFilter;
         })] as const)
@@ -75,11 +85,11 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
 
     const firstOutstandingSpecies = Object.entries(bySpecies).find(([, animals]) => animals.some((animal) => !animal.checked_today))?.[0] ?? null;
     const welfarePct = summary.total ? Math.round((summary.checked / summary.total) * 100) : 100;
-    const monitoringPct = summary.total ? Math.round((summary.monitored / summary.total) * 100) : 100;
 
     function openSpeciesCheck(speciesName: string) {
         setChecking(speciesName);
         setChecks({});
+        setEnclosureCare(blankEnclosureCare());
         setVerificationConfirmed(false);
     }
 
@@ -124,6 +134,7 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
             {
                 species: checking,
                 verification_confirmed: verificationConfirmed,
+                ...enclosureCare,
                 checks: animals.map((a) => {
                     const c = getCheck(a.id);
                     return {
@@ -140,6 +151,7 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
                 onSuccess: () => {
                     setChecking(null);
                     setChecks({});
+                    setEnclosureCare(blankEnclosureCare());
                     setVerificationConfirmed(false);
                 },
             },
@@ -163,17 +175,17 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
                 <div className="animal-care-board-head-5a">
                     <div>
                         <span>DAILY CARE BOARD</span>
-                        <h2>{summary.checked === summary.total && summary.monitored === summary.total ? 'Today’s care is complete' : 'Keep today’s care moving'}</h2>
-                        <p>{summary.total} active animal{summary.total === 1 ? '' : 's'} · updates appear here as staff record them</p>
+                        <h2>{summary.checked === summary.total && summary.clean_due === 0 ? 'Today’s animal care is complete' : 'Keep today’s animal care moving'}</h2>
+                        <p>{summary.enclosures} enclosure{summary.enclosures === 1 ? '' : 's'} · daily food, water, hay and welfare checks</p>
                     </div>
                     <div className="animal-care-board-actions-5a">
-                        {firstOutstandingSpecies && <button onClick={() => openSpeciesCheck(firstOutstandingSpecies)}>Continue welfare checks</button>}
-                        <Link href="/monitoring">Open daily monitoring</Link>
+                        {firstOutstandingSpecies && <button onClick={() => openSpeciesCheck(firstOutstandingSpecies)}>Continue animal care</button>}
+                        <Link href="/monitoring">Detailed monitoring</Link>
                     </div>
                 </div>
                 <div className="animal-care-progress-5a">
-                    <div><span><b>Welfare & feeding</b><em>{summary.checked}/{summary.total}</em></span><i><u style={{ width: `${welfarePct}%` }} /></i><small>{summary.total - summary.checked === 0 ? 'All recorded' : `${summary.total - summary.checked} outstanding`}</small></div>
-                    <div><span><b>Daily monitoring</b><em>{summary.monitored}/{summary.total}</em></span><i><u style={{ width: `${monitoringPct}%` }} /></i><small>{summary.total - summary.monitored === 0 ? 'All recorded' : `${summary.total - summary.monitored} outstanding`}</small></div>
+                    <div><span><b>Daily enclosure care</b><em>{summary.checked}/{summary.total}</em></span><i><u style={{ width: `${welfarePct}%` }} /></i><small>{summary.total - summary.checked === 0 ? 'Food, water, hay and checks recorded' : `${summary.total - summary.checked} animals outstanding`}</small></div>
+                    <div className={summary.clean_due ? 'has-due' : ''}><span><b>Weekly full cleans</b><em>{summary.clean_due}</em></span><p>{summary.clean_due ? `${summary.clean_due} enclosure${summary.clean_due === 1 ? '' : 's'} due now` : 'Every enclosure cleaned within 7 days'}</p></div>
                     <div className={summary.concerns ? 'has-alert' : ''}><span><b>Needs attention</b><em>{summary.concerns}</em></span><p>{summary.concerns ? 'Open the highlighted animal records' : 'No concerns recorded today'}</p></div>
                     <div className={summary.vet_due ? 'has-due' : ''}><span><b>Vet care due</b><em>{summary.vet_due}</em></span><p>{summary.vet_due ? 'Due or coming up within 30 days' : 'Nothing due in the next 30 days'}</p></div>
                 </div>
@@ -194,6 +206,7 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
             <div className="space-y-4">
                 {visibleSpecies.map(([species, animals]) => {
                     const allChecked = animals.every((a) => a.checked_today);
+                    const care = speciesCare[species];
                     return (
                         <Card
                             key={species}
@@ -209,6 +222,10 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
                                 </button>
                             }
                         >
+                            <div className={`enclosure-clean-status-6a ${care?.clean_due ? 'is-due' : 'is-current'}`}>
+                                <span>{care?.clean_due ? '🧹 Full clean due' : '✓ Weekly clean current'}</span>
+                                <small>{care?.last_cleaned ? `Last fully cleaned ${new Date(care.last_cleaned).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'No full clean recorded yet'}</small>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {animals.map((a) => (
                                     <Link
@@ -218,8 +235,7 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
                                     >
                                         <span className="animal-care-row-main-5a"><strong>{a.name}</strong><small>{a.next_vet_due ? `Next vet care ${new Date(a.next_vet_due).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'No upcoming vet care recorded'}</small></span>
                                         <span className="animal-care-row-statuses-5a">
-                                            <small className={a.checked_today ? 'is-done' : 'is-pending'}>{a.checked_today ? '✓ Welfare recorded' : 'Welfare due'}</small>
-                                            <small className={a.monitored_today ? 'is-done' : 'is-pending'}>{a.monitored_today ? '✓ Monitoring recorded' : 'Monitoring due'}</small>
+                                            <small className={a.checked_today ? 'is-done' : 'is-pending'}>{a.checked_today ? '✓ Daily care recorded' : 'Food, water, hay & check due'}</small>
                                         </span>
                                         <em className={`is-${a.welfare_status}`}>{welfareStatusLabel(a.welfare_status)}</em>
                                     </Link>
@@ -273,8 +289,26 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
 
             <Modal open={checking !== null} title={`${checking} daily check`} onClose={() => setChecking(null)}>
                 <p className="text-sm text-slate-500 mb-4">
-                    Review every animal below. The form starts at healthy and fed, but nothing is saved until you confirm you personally checked the full group.
+                    Complete the enclosure jobs once, then quickly check every animal in the group.
                 </p>
+                <section className="enclosure-care-checklist-6a">
+                    <h3>Daily enclosure jobs</h3>
+                    <p>Tap each job as you complete it.</p>
+                    {([
+                        ['pellets_given', '🥣', 'Pellets added'],
+                        ['greenery_given', '🥬', 'Fresh greenery added'],
+                        ['fresh_water', '💧', 'Fresh water provided'],
+                        ['hay_topped_up', '🌾', 'Hay topped up'],
+                    ] as const).map(([key, icon, label]) => (
+                        <button key={key} onClick={() => setEnclosureCare((current) => ({ ...current, [key]: !current[key] }))} className={enclosureCare[key] ? 'is-done' : ''}>
+                            <span>{icon}</span><b>{label}</b><em>{enclosureCare[key] ? '✓' : 'Tap when done'}</em>
+                        </button>
+                    ))}
+                    <button onClick={() => setEnclosureCare((current) => ({ ...current, enclosure_cleaned: !current.enclosure_cleaned }))} className={`${enclosureCare.enclosure_cleaned ? 'is-done' : ''} ${speciesCare[checking ?? '']?.clean_due ? 'is-required' : ''}`}>
+                        <span>🧹</span><b>Pen fully cleaned out</b><em>{enclosureCare.enclosure_cleaned ? '✓' : speciesCare[checking ?? '']?.clean_due ? 'Due this week — required' : 'Optional today'}</em>
+                    </button>
+                </section>
+                <h3 className="mt-5 mb-2 text-sm font-bold text-ink">Quick welfare check</h3>
                 <div className="space-y-3">
                     {(bySpecies[checking ?? ''] ?? []).map((a) => {
                         const c = getCheck(a.id);
@@ -357,8 +391,8 @@ export default function Index({ species, bySpecies, summary, canEdit }: { specie
                     <input type="checkbox" checked={verificationConfirmed} onChange={(e) => setVerificationConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4" />
                     <span>I confirm I personally checked every animal listed above and the feeding status shown is accurate.</span>
                 </label>
-                <button disabled={!verificationConfirmed} onClick={submitGroup} className="mt-3 w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
-                    {exceptionCount() === 0 ? 'All healthy & fed ✓' : `Save (${exceptionCount()} noted)`}
+                <button disabled={!verificationConfirmed || !enclosureCare.pellets_given || !enclosureCare.greenery_given || !enclosureCare.fresh_water || !enclosureCare.hay_topped_up || Boolean(speciesCare[checking ?? '']?.clean_due && !enclosureCare.enclosure_cleaned)} onClick={submitGroup} className="mt-3 w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
+                    {exceptionCount() === 0 ? 'Save completed care ✓' : `Save care (${exceptionCount()} noted)`}
                 </button>
             </Modal>
         </AppShell>

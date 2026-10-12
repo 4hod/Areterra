@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Animal;
+use App\Models\WelfareCheck;
 use App\Support\AnimalWelfareBaseline;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -27,7 +28,11 @@ class AnimalController extends Controller
                 'species' => $a->species,
                 'welfare_status' => $a->welfare_status,
                 'photo_path' => $a->photo_path,
-                'checked_today' => $a->welfareChecks->isNotEmpty(),
+                'checked_today' => $a->welfareChecks->contains(fn ($check) => $check->fed
+                    && $check->pellets_given
+                    && $check->greenery_given
+                    && $check->fresh_water
+                    && $check->hay_topped_up),
                 'monitored_today' => $a->dailyMonitoring->isNotEmpty(),
                 'concern_today' => $a->welfareChecks->contains('concern', true)
                     || $a->dailyMonitoring->contains('concern', true),
@@ -35,10 +40,25 @@ class AnimalController extends Controller
             ]);
 
         $nextThirtyDays = $today->copy()->addDays(30);
+        $activeSpecies = $animals->pluck('species')->unique()->values();
+        $speciesCare = $activeSpecies->mapWithKeys(function (string $speciesName) {
+            $lastCleanedAt = WelfareCheck::query()
+                ->where('enclosure_cleaned', true)
+                ->whereHas('animal', fn ($query) => $query->where('species', $speciesName))
+                ->latest('created_at')
+                ->value('created_at');
+            $lastCleaned = $lastCleanedAt ? \Illuminate\Support\Carbon::parse($lastCleanedAt) : null;
+
+            return [$speciesName => [
+                'last_cleaned' => $lastCleaned?->toIso8601String(),
+                'clean_due' => ! $lastCleaned || $lastCleaned->lte(now()->subDays(7)),
+            ]];
+        });
 
         return Inertia::render('Animals/Index', [
             'species' => Animal::SPECIES,
             'bySpecies' => $animals->groupBy('species'),
+            'speciesCare' => $speciesCare,
             'summary' => [
                 'total' => $animals->count(),
                 'checked' => $animals->where('checked_today', true)->count(),
@@ -46,6 +66,8 @@ class AnimalController extends Controller
                 'concerns' => $animals->filter(fn ($animal) => $animal['concern_today'] || $animal['welfare_status'] !== 'green')->count(),
                 'vet_due' => $animals->filter(fn ($animal) => $animal['next_vet_due']
                     && $animal['next_vet_due'] <= $nextThirtyDays->toDateString())->count(),
+                'enclosures' => $activeSpecies->count(),
+                'clean_due' => $speciesCare->where('clean_due', true)->count(),
             ],
             'canEdit' => Gate::allows('edit_animals'),
         ]);
@@ -63,6 +85,7 @@ class AnimalController extends Controller
                 ->orderByDesc('created_at')->limit(20)->get([
                     'id', 'animal_id', 'user_id', 'status', 'notes', 'concern',
                     'fed', 'treats_given', 'treats_notes', 'created_at',
+                    'pellets_given', 'greenery_given', 'fresh_water', 'hay_topped_up', 'enclosure_cleaned',
                 ]),
             'monitoring' => $animal->dailyMonitoring()->orderByDesc('monitor_date')->limit(20)->get(),
             'vetRecords' => $animal->vetRecords()->orderByDesc('visit_date')->limit(20)->get(),

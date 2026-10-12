@@ -167,6 +167,11 @@ class CoreRecordsSweepTest extends SweepTestCase
         $r = $this->post('/welfare-checks/species', [
             'species' => 'Chinchilla',
             'verification_confirmed' => true,
+            'pellets_given' => true,
+            'greenery_given' => true,
+            'fresh_water' => true,
+            'hay_topped_up' => true,
+            'enclosure_cleaned' => true,
             'checks' => [['animal_id' => $a->id, 'status' => 'amber', 'notes' => 'Eating less', 'fed' => true, 'treats_given' => false]],
         ]);
         $this->assertWriteOk($r, 'welfare.species');

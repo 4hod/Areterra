@@ -226,7 +226,7 @@ export default function AppShell({ title, children }: { title: string; children:
     const recordActions = [
         { href: '/register', label: 'Take the register', detail: 'Record who is on site', icon: 'register', caps: ['view_member_details', 'log_sessions'], tone: 'blue' },
         { href: '/end-of-day', label: 'Member daily story', detail: 'Record progress, choices and photos', icon: 'activity', caps: ['view_member_details', 'log_sessions'], tone: 'purple' },
-        { href: '/animals', label: 'Animal welfare check', detail: 'Record feeding and welfare', icon: 'paw', caps: ['view_animals'], tone: 'green' },
+        { href: '/animals', label: 'Animal care', detail: 'Food, water, hay and welfare', icon: 'paw', caps: ['view_animals'], tone: 'green' },
         { href: '/incidents', label: 'Report an incident', detail: 'Capture an event or near miss', icon: 'alert', caps: ['report_incidents'], tone: 'red' },
         { href: '/members', label: 'Member progress', detail: 'Add outcome evidence or an achievement', icon: 'users', caps: ['view_member_details'], tone: 'yellow' },
     ].filter((action) => action.caps.every((capability) => caps.includes(capability)));

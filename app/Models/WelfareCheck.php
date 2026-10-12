@@ -15,6 +15,13 @@ class WelfareCheck extends Model
     {
         return [
             'concern' => 'boolean',
+            'fed' => 'boolean',
+            'pellets_given' => 'boolean',
+            'greenery_given' => 'boolean',
+            'fresh_water' => 'boolean',
+            'hay_topped_up' => 'boolean',
+            'enclosure_cleaned' => 'boolean',
+            'treats_given' => 'boolean',
         ];
     }
 

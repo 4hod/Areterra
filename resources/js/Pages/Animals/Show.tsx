@@ -57,6 +57,11 @@ interface Props {
         notes: string | null;
         concern: boolean;
         fed: boolean;
+        pellets_given: boolean;
+        greenery_given: boolean;
+        fresh_water: boolean;
+        hay_topped_up: boolean;
+        enclosure_cleaned: boolean;
         treats_given: boolean;
         treats_notes: string | null;
         created_at: string;
@@ -113,6 +118,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     const [checkStatus, setCheckStatus] = useState<WelfareStatus>('green');
     const [checkNotes, setCheckNotes] = useState('');
     const [checkFed, setCheckFed] = useState<boolean | null>(null);
+    const [checkCare, setCheckCare] = useState({ pellets_given: false, greenery_given: false, fresh_water: false, hay_topped_up: false, enclosure_cleaned: false });
     const [checkTreats, setCheckTreats] = useState(false);
     const [monitorOpen, setMonitorOpen] = useState(false);
     const [m, setM] = useState<Monitoring>(todayMonitoring ?? emptyMonitoring());
@@ -122,11 +128,12 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     function saveCheck() {
         router.post(
             `/animals/${animal.id}/welfare-checks`,
-            { status: checkStatus, notes: checkNotes, concern: checkStatus !== 'green', fed: checkFed, treats_given: checkTreats },
+            { status: checkStatus, notes: checkNotes, concern: checkStatus !== 'green', fed: checkFed, ...checkCare, treats_given: checkTreats },
             {
                 onSuccess: () => {
                     setCheckOpen(false);
                     setCheckFed(null);
+                    setCheckCare({ pellets_given: false, greenery_given: false, fresh_water: false, hay_topped_up: false, enclosure_cleaned: false });
                     setCheckTreats(false);
                     setCheckNotes('');
                     setCheckStatus('green');
@@ -246,6 +253,9 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                                     {Boolean(c.treats_given) && (
                                         <span className="text-amber-700">🍪 Treats{c.treats_notes && `: ${c.treats_notes}`}</span>
                                     )}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                    {[c.pellets_given && 'pellets', c.greenery_given && 'greenery', c.fresh_water && 'fresh water', c.hay_topped_up && 'hay', c.enclosure_cleaned && 'full clean'].filter(Boolean).join(' · ') || 'No enclosure-care details recorded'}
                                 </div>
                             </li>
                         ))}
@@ -383,10 +393,26 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
                         <button onClick={() => setCheckFed(true)} className={`rounded-lg py-3 text-sm font-bold ${checkFed === true ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>🍽️ Fed</button>
                         <button onClick={() => setCheckFed(false)} className={`rounded-lg py-3 text-sm font-bold ${checkFed === false ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-500'}`}>🚫 Not fed</button>
                     </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <h3 className="mb-2 text-sm font-bold">Enclosure care completed</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            {([
+                                ['pellets_given', 'Pellets'],
+                                ['greenery_given', 'Greenery'],
+                                ['fresh_water', 'Fresh water'],
+                                ['hay_topped_up', 'Hay topped up'],
+                                ['enclosure_cleaned', 'Full clean'],
+                            ] as const).map(([key, label]) => (
+                                <button key={key} onClick={() => setCheckCare((current) => ({ ...current, [key]: !current[key] }))} className={`rounded-lg border px-2 py-3 text-sm font-bold ${checkCare[key] ? 'border-emerald-500 bg-emerald-100 text-emerald-800' : 'border-slate-200 bg-white text-slate-500'}`}>
+                                    {checkCare[key] ? '✓ ' : ''}{label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <label className="flex items-center gap-2 text-sm font-medium">
                         <input type="checkbox" checked={checkTreats} onChange={(e) => setCheckTreats(e.target.checked)} /> Treats given
                     </label>
-                    <button disabled={checkFed === null} onClick={saveCheck} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
+                    <button disabled={checkFed === null || !checkCare.pellets_given || !checkCare.greenery_given || !checkCare.fresh_water || !checkCare.hay_topped_up} onClick={saveCheck} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
                         Save check
                     </button>
                 </div>

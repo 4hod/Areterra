@@ -39,7 +39,11 @@ class TodayChecklist
         $checkedAnimals = Animal::active()
             ->whereHas('welfareChecks', fn ($q) => $q
                 ->whereDate('created_at', $date)
-                ->where('fed', true))
+                ->where('fed', true)
+                ->where('pellets_given', true)
+                ->where('greenery_given', true)
+                ->where('fresh_water', true)
+                ->where('hay_topped_up', true))
             ->count();
 
         $eodCount = EndOfDayRecord::whereDate('date', $date)
@@ -49,10 +53,10 @@ class TodayChecklist
         $items = [
             [
                 'key' => 'welfare',
-                'label' => 'Animal Welfare & Feeding',
+                'label' => 'Animal Care',
                 'applicable' => true,
                 'done' => $activeAnimals === 0 || $checkedAnimals >= $activeAnimals,
-                'detail' => $checkedAnimals.' of '.$activeAnimals.' animals checked and fed',
+                'detail' => $checkedAnimals.' of '.$activeAnimals.' animals fed, watered, given hay and checked',
             ],
             [
                 'key' => 'transport',

@@ -59,7 +59,7 @@ export default function Dashboard(props: Props) {
     const openTasks = props.checklist.length - completed;
     const reviewNotices = props.needsAttention.filter((notice) => notice.kind.toLowerCase().includes('review'));
     const priorities = [
-        ...(props.stats.animalsNeedingChecks > 0 ? [{ kind: 'welfare', message: `${props.stats.animalsNeedingChecks} animal welfare check${props.stats.animalsNeedingChecks === 1 ? '' : 's'} still need recording.`, due_on: null, overdue: false }] : []),
+        ...(props.stats.animalsNeedingChecks > 0 ? [{ kind: 'welfare', message: `${props.stats.animalsNeedingChecks} animal care record${props.stats.animalsNeedingChecks === 1 ? '' : 's'} still need completing.`, due_on: null, overdue: false }] : []),
         ...props.needsAttention,
         ...(openTasks > 0 ? [{ kind: 'workflow', message: `${openTasks} step${openTasks === 1 ? '' : 's'} in today’s workflow remain open.`, due_on: null, overdue: false }] : []),
     ].slice(0, 4);
@@ -81,7 +81,7 @@ export default function Dashboard(props: Props) {
 
             <section className="overview-metrics">
                 <Metric icon="users" label="Member records" value={props.stats.memberRecords} detail="Support at a glance"/>
-                <Metric icon="paw" label="Welfare checks" value={`${props.stats.animalsChecked} / ${props.stats.animalsTotal}`} detail={props.stats.animalsNeedingChecks ? `${props.stats.animalsNeedingChecks} checks outstanding` : 'All checks recorded'} tone="yellow"/>
+                <Metric icon="paw" label="Animal care" value={`${props.stats.animalsChecked} / ${props.stats.animalsTotal}`} detail={props.stats.animalsNeedingChecks ? `${props.stats.animalsNeedingChecks} care records outstanding` : 'All daily care recorded'} tone="yellow"/>
                 <Metric icon="tasks" label="Daily workflow" value={`${completed} / ${props.checklist.length}`} detail={openTasks ? `${openTasks} actions remaining` : 'Everything complete'}/>
                 <Metric icon="shield" label="Staff on site" value={props.staffAvatars.length} detail="From the morning register"/>
             </section>
@@ -118,7 +118,7 @@ export default function Dashboard(props: Props) {
                     <PanelTitle icon="paw" title="Animal welfare" href="/animals" action="Open animals"/>
                     <div className="overview-welfare-progress"><div><b>Daily checks</b><strong>{props.stats.animalsChecked} of {props.stats.animalsTotal} recorded</strong></div><div><i style={{ width: `${props.stats.animalsTotal ? Math.round((props.stats.animalsChecked / props.stats.animalsTotal) * 100) : 0}%` }}/></div></div>
                     <div className="overview-welfare-stats"><div><span>Checks complete</span><b>{props.stats.animalsChecked}</b></div><div><span>Outstanding</span><b>{props.stats.animalsNeedingChecks}</b></div><div><span>Welfare alerts</span><b>{props.welfareAlerts.length}</b></div></div>
-                    <footer><span className={props.stats.animalsNeedingChecks ? '' : 'is-clear'}>{props.stats.animalsNeedingChecks ? `${props.stats.animalsNeedingChecks} checks outstanding` : 'All checks complete'}</span><Link href="/animals"><AppIcon name="plus"/> Record welfare check</Link></footer>
+                    <footer><span className={props.stats.animalsNeedingChecks ? '' : 'is-clear'}>{props.stats.animalsNeedingChecks ? `${props.stats.animalsNeedingChecks} care records outstanding` : 'All animal care complete'}</span><Link href="/animals"><AppIcon name="plus"/> Record animal care</Link></footer>
                 </article>
             </section>
 

@@ -18,6 +18,11 @@ class WelfareCheckController extends Controller
             'notes' => ['nullable', 'string'],
             'concern' => ['boolean'],
             'fed' => ['required', 'boolean'],
+            'pellets_given' => ['sometimes', 'accepted'],
+            'greenery_given' => ['sometimes', 'accepted'],
+            'fresh_water' => ['sometimes', 'accepted'],
+            'hay_topped_up' => ['sometimes', 'accepted'],
+            'enclosure_cleaned' => ['sometimes', 'boolean'],
             'treats_given' => ['required', 'boolean'],
             'treats_notes' => ['nullable', 'string'],
         ]);
@@ -27,13 +32,18 @@ class WelfareCheckController extends Controller
         return back()->with('success', "Welfare check logged for {$animal->name}.");
     }
 
-    // Species group check: everyone healthy and fed by default, except
-    // whatever's explicitly noted per animal (concern, not fed, treats given).
+    // One enclosure-care round per species, with a quick result for every
+    // animal in that enclosure and explicit exceptions where needed.
     public function storeSpecies(Request $request)
     {
         $data = $request->validate([
             'species' => ['required', 'in:'.implode(',', Animal::SPECIES)],
             'verification_confirmed' => ['accepted'],
+            'pellets_given' => ['required', 'accepted'],
+            'greenery_given' => ['required', 'accepted'],
+            'fresh_water' => ['required', 'accepted'],
+            'hay_topped_up' => ['required', 'accepted'],
+            'enclosure_cleaned' => ['required', 'boolean'],
             'checks' => ['required', 'array'],
             'checks.*.animal_id' => ['required', 'exists:animals,id'],
             'checks.*.status' => ['nullable', 'in:amber,red'],
@@ -53,10 +63,23 @@ class WelfareCheckController extends Controller
             ]);
         }
 
+        $lastClean = \App\Models\WelfareCheck::query()
+            ->where('enclosure_cleaned', true)
+            ->whereHas('animal', fn ($query) => $query->where('species', $data['species']))
+            ->latest('created_at')
+            ->value('created_at');
+        $cleanDue = ! $lastClean || \Illuminate\Support\Carbon::parse($lastClean)->lte(now()->subDays(7));
+
+        if ($cleanDue && ! $data['enclosure_cleaned']) {
+            throw ValidationException::withMessages([
+                'enclosure_cleaned' => "The {$data['species']} enclosure is due its weekly full clean.",
+            ]);
+        }
+
         $overrides = collect($data['checks'])->keyBy('animal_id');
 
-        DB::transaction(function () use ($animals, $overrides, $request) {
-            $animals->each(function (Animal $animal) use ($overrides, $request) {
+        DB::transaction(function () use ($animals, $overrides, $data, $request) {
+            $animals->each(function (Animal $animal) use ($overrides, $data, $request) {
                     $o = $overrides->get($animal->id);
                     $hasConcern = ! empty($o['status']);
 
@@ -65,6 +88,11 @@ class WelfareCheckController extends Controller
                         'notes' => $o['notes'] ?? null,
                         'concern' => $hasConcern,
                         'fed' => $o['fed'],
+                        'pellets_given' => $data['pellets_given'],
+                        'greenery_given' => $data['greenery_given'],
+                        'fresh_water' => $data['fresh_water'],
+                        'hay_topped_up' => $data['hay_topped_up'],
+                        'enclosure_cleaned' => $data['enclosure_cleaned'],
                         'treats_given' => $o['treats_given'],
                         'treats_notes' => $o['treats_notes'] ?? null,
                     ], $request->user()->id);
@@ -82,6 +110,11 @@ class WelfareCheckController extends Controller
             'notes' => $data['notes'] ?? null,
             'concern' => $data['concern'] ?? false,
             'fed' => $data['fed'] ?? true,
+            'pellets_given' => $data['pellets_given'] ?? false,
+            'greenery_given' => $data['greenery_given'] ?? false,
+            'fresh_water' => $data['fresh_water'] ?? false,
+            'hay_topped_up' => $data['hay_topped_up'] ?? false,
+            'enclosure_cleaned' => $data['enclosure_cleaned'] ?? false,
             'treats_given' => $data['treats_given'] ?? false,
             'treats_notes' => $data['treats_notes'] ?? null,
         ]);

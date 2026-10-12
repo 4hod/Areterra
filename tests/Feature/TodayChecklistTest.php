@@ -87,11 +87,11 @@ class TodayChecklistTest extends TestCase
         $this->assertFalse($this->checklist()['welfare']);
 
         // Checking the other animal is not enough while Demon is still unfed.
-        $angel->welfareChecks()->create(['user_id' => $user->id, 'status' => 'green', 'fed' => true]);
+        $angel->welfareChecks()->create(['user_id' => $user->id, 'status' => 'green', 'fed' => true, 'pellets_given' => true, 'greenery_given' => true, 'fresh_water' => true, 'hay_topped_up' => true]);
 
         $this->assertFalse($this->checklist()['welfare']);
 
-        $demonCheck->update(['fed' => true]);
+        $demonCheck->update(['fed' => true, 'pellets_given' => true, 'greenery_given' => true, 'fresh_water' => true, 'hay_topped_up' => true]);
 
         $this->assertTrue($this->checklist()['welfare']);
     }
