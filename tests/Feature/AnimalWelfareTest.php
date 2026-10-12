@@ -74,4 +74,41 @@ class AnimalWelfareTest extends TestCase
 
         $this->assertSame('red', $animal->fresh()->welfare_status);
     }
+
+    public function test_animal_care_board_summarises_todays_work_and_upcoming_vet_care(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager']);
+        $checked = Animal::create(['name' => 'Rico', 'species' => 'Macaw']);
+        $outstanding = Animal::create(['name' => 'Lily', 'species' => 'Chinchilla', 'welfare_status' => 'amber']);
+
+        $checked->welfareChecks()->create([
+            'user_id' => $manager->id,
+            'status' => 'green',
+            'fed' => true,
+            'concern' => false,
+        ]);
+        $checked->dailyMonitoring()->create([
+            'user_id' => $manager->id,
+            'monitor_date' => today(),
+            'concern' => false,
+        ]);
+        $outstanding->vetRecords()->create([
+            'visit_date' => today()->subMonth(),
+            'next_due_date' => today()->addWeek(),
+            'reason' => 'Follow-up',
+        ]);
+
+        $props = $this->actingAs($manager)->get('/animals')->assertOk()->viewData('page')['props'];
+
+        $this->assertSame([
+            'total' => 2,
+            'checked' => 1,
+            'monitored' => 1,
+            'concerns' => 1,
+            'vet_due' => 1,
+        ], $props['summary']);
+        $this->assertTrue($props['bySpecies']['Macaw'][0]['checked_today']);
+        $this->assertFalse($props['bySpecies']['Chinchilla'][0]['monitored_today']);
+        $this->assertSame(today()->addWeek()->toDateString(), $props['bySpecies']['Chinchilla'][0]['next_vet_due']);
+    }
 }
