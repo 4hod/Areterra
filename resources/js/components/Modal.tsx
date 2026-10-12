@@ -7,7 +7,12 @@ export default function Modal({ open, title, onClose, children }: { open: boolea
         document.addEventListener('keydown', onKeyDown);
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
-        return () => { document.removeEventListener('keydown', onKeyDown); document.body.style.overflow = previousOverflow; };
+        document.body.classList.add('hub-modal-open');
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            document.body.style.overflow = previousOverflow;
+            document.body.classList.remove('hub-modal-open');
+        };
     }, [open, onClose]);
     if (!open) return null;
     return <div className="hub-modal-backdrop" onClick={onClose}>
