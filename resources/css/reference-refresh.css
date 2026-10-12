@@ -64,6 +64,14 @@
 .member-more-actions-4a > div { position:absolute; z-index:12; right:0; top:calc(100% + 6px); min-width:180px; overflow:hidden; padding:5px; border:1px solid #dbe4e9; border-radius:11px; background:#fff; box-shadow:0 18px 38px rgba(5,45,74,.16); }
 .member-more-actions-4a a,.member-more-actions-4a button { width:100%; min-height:38px; display:flex; align-items:center; padding:0 10px; border:0; border-radius:7px; background:transparent; color:#31566d; font-size:10px; font-weight:700; text-align:left; }
 .member-more-actions-4a a:hover,.member-more-actions-4a button:hover { background:#eef6fa; }
+.member-more-actions-button-7a { display:grid; min-height:40px; place-items:center; padding:0 13px; border:1px solid #dce5ea; border-radius:9px; background:#f7f9fa; color:#476274; font-size:10px; font-weight:800; }
+.member-photo-button-7a { position:absolute !important; right:-5px; bottom:-5px; z-index:3 !important; display:grid !important; width:30px !important; min-height:30px !important; height:30px !important; place-items:center; padding:0 !important; border:3px solid #fff !important; border-radius:999px !important; background:#ffd400 !important; color:#082d46 !important; box-shadow:0 4px 12px rgba(8,45,70,.2); font-size:13px !important; }
+.member-actions-sheet-7a { display:grid; gap:8px; }
+.member-actions-sheet-7a > a,.member-actions-sheet-7a > button { display:grid; grid-template-columns:40px 1fr; gap:1px 10px; min-height:62px; align-items:center; width:100%; padding:10px 12px; border:1px solid #dce6ec; border-radius:13px; background:#fff; color:#173e56; text-align:left; }
+.member-actions-sheet-7a > a > span,.member-actions-sheet-7a > button > span { grid-row:1 / span 2; display:grid; width:40px; height:40px; place-items:center; border-radius:11px; background:#eef7fb; font-size:17px; }
+.member-actions-sheet-7a b { align-self:end; font-size:12px; }
+.member-actions-sheet-7a small { align-self:start; color:#758894; font-size:9px; }
+.animal-care-save-7a { position:sticky; bottom:-16px; z-index:4; min-height:52px !important; margin-right:-4px; margin-left:-4px; box-shadow:0 -10px 24px rgba(255,255,255,.96),0 9px 22px rgba(0,74,105,.2); }
 .member-connected-records-4a { margin:8px 0 12px; border:1px solid var(--portal-line); border-radius:12px; background:#fff; }
 .member-connected-records-4a > summary { min-height:48px; display:flex; align-items:center; gap:10px; padding:0 14px; color:#274f67; cursor:pointer; font-size:11px; font-weight:850; }
 .member-connected-records-4a > summary span { color:#84929c; font-size:9px; font-weight:500; }

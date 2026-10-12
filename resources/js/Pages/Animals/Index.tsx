@@ -50,13 +50,12 @@ interface AnimalCheck {
     concern: boolean;
     status: 'amber' | 'red';
     notes: string;
-    fed: boolean;
     treats_given: boolean;
     treats_notes: string;
 }
 
 function blankCheck(animal_id: number): AnimalCheck {
-    return { animal_id, concern: false, status: 'amber', notes: '', fed: true, treats_given: false, treats_notes: '' };
+    return { animal_id, concern: false, status: 'amber', notes: '', treats_given: false, treats_notes: '' };
 }
 
 const blankEnclosureCare = () => ({ pellets_given: false, greenery_given: false, fresh_water: false, hay_topped_up: false, enclosure_cleaned: false });
@@ -114,16 +113,12 @@ export default function Index({ species, bySpecies, speciesCare, summary, canEdi
         updateCheck(id, { concern: !getCheck(id).concern });
     }
 
-    function toggleNotFed(id: number) {
-        updateCheck(id, { fed: !getCheck(id).fed });
-    }
-
     function toggleTreats(id: number) {
         updateCheck(id, { treats_given: !getCheck(id).treats_given });
     }
 
     function exceptionCount() {
-        return Object.values(checks).filter((c) => c.concern || !c.fed || c.treats_given).length;
+        return Object.values(checks).filter((c) => c.concern || c.treats_given).length;
     }
 
     function submitGroup() {
@@ -141,7 +136,7 @@ export default function Index({ species, bySpecies, speciesCare, summary, canEdi
                         animal_id: a.id,
                         status: c.concern ? c.status : null,
                         notes: c.concern ? c.notes : null,
-                        fed: c.fed,
+                        fed: true,
                         treats_given: c.treats_given,
                         treats_notes: c.treats_given ? c.treats_notes : null,
                     };
@@ -312,7 +307,7 @@ export default function Index({ species, bySpecies, speciesCare, summary, canEdi
                 <div className="space-y-3">
                     {(bySpecies[checking ?? ''] ?? []).map((a) => {
                         const c = getCheck(a.id);
-                        const hasException = c.concern || !c.fed || c.treats_given;
+                        const hasException = c.concern || c.treats_given;
                         return (
                             <div key={a.id} className={`rounded-lg border p-3 ${hasException ? 'border-amber-300 bg-amber-50' : 'border-slate-200'}`}>
                                 <div className="flex items-center justify-between mb-2">
@@ -327,14 +322,6 @@ export default function Index({ species, bySpecies, speciesCare, summary, canEdi
                                         }`}
                                     >
                                         {c.concern ? '⚠ Flagged' : 'Flag concern'}
-                                    </button>
-                                    <button
-                                        onClick={() => toggleNotFed(a.id)}
-                                        className={`text-xs font-bold rounded-full px-3 py-1.5 ${
-                                            !c.fed ? 'bg-red-200 text-red-900' : 'bg-slate-100 text-slate-500'
-                                        }`}
-                                    >
-                                        {c.fed ? '🍽️ Fed' : '🚫 Not fed'}
                                     </button>
                                     <button
                                         onClick={() => toggleTreats(a.id)}
@@ -389,9 +376,9 @@ export default function Index({ species, bySpecies, speciesCare, summary, canEdi
                 </div>
                 <label className="mt-4 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-medium">
                     <input type="checkbox" checked={verificationConfirmed} onChange={(e) => setVerificationConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4" />
-                    <span>I confirm I personally checked every animal listed above and the feeding status shown is accurate.</span>
+                    <span>I confirm I personally checked every animal listed above and recorded any concerns.</span>
                 </label>
-                <button disabled={!verificationConfirmed || !enclosureCare.pellets_given || !enclosureCare.greenery_given || !enclosureCare.fresh_water || !enclosureCare.hay_topped_up || Boolean(speciesCare[checking ?? '']?.clean_due && !enclosureCare.enclosure_cleaned)} onClick={submitGroup} className="mt-3 w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
+                <button disabled={!verificationConfirmed || !enclosureCare.pellets_given || !enclosureCare.greenery_given || !enclosureCare.fresh_water || !enclosureCare.hay_topped_up || Boolean(speciesCare[checking ?? '']?.clean_due && !enclosureCare.enclosure_cleaned)} onClick={submitGroup} className="animal-care-save-7a mt-3 w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-50">
                     {exceptionCount() === 0 ? 'Save completed care ✓' : `Save care (${exceptionCount()} noted)`}
                 </button>
             </Modal>

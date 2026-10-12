@@ -126,6 +126,7 @@ export default function Show(props: Props) {
         }
     });
     const photoInput = useRef<HTMLInputElement>(null);
+    const [moreActionsOpen, setMoreActionsOpen] = useState(false);
     const staffNotes = memberNotes.filter((note) => note.note_type !== 'end_of_day');
 
     useEffect(() => {
@@ -283,13 +284,16 @@ export default function Show(props: Props) {
                         </div>
                     )}
                     {canEdit && (
-                        <input
-                            ref={photoInput}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
-                        />
+                        <>
+                            <input
+                                ref={photoInput}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
+                            />
+                            <button type="button" onClick={() => photoInput.current?.click()} className="member-photo-button-7a" aria-label={`Change ${member.name}'s profile photo`} title="Change profile photo">📷</button>
+                        </>
                     )}
                 </div>
                 <div className="member-record-identity-4a">
@@ -313,19 +317,20 @@ export default function Show(props: Props) {
                     <Link href={`/members/${member.id}/portfolio`} className="rounded-full bg-amber-100 text-amber-900 text-xs font-bold px-3 py-2">
                         My Areterra
                     </Link>
-                    <details className="member-more-actions-4a">
-                        <summary>More actions</summary>
-                        <div>
-                            <a href={`/members/${member.id}/care-plan`} target="_blank" aria-label={`Open ${member.name}'s care plan`}>Care plan</a>
-                            <Link href={`/members/${member.id}/history`} aria-label={`Open ${member.name}'s full history`}>Full history</Link>
-                            <button onClick={() => window.print()} aria-label={`Print ${member.name}'s profile`}>Print profile</button>
-                            {canEdit && <a href={`/members/${member.id}/sar`} target="_blank" aria-label={`Open SAR tools for ${member.name}`}>SAR tools</a>}
-                            {canEdit && <button onClick={() => setEditing(true)} aria-label={`Edit ${member.name}'s profile`}>Edit profile</button>}
-                            {canEdit && <button onClick={() => photoInput.current?.click()} aria-label={`Change ${member.name}'s photo`}>Change photo</button>}
-                        </div>
-                    </details>
+                    <button type="button" className="member-more-actions-button-7a" onClick={() => setMoreActionsOpen(true)}>More actions</button>
                 </div>
             </div>
+
+            <Modal open={moreActionsOpen} title={`${member.name} actions`} onClose={() => setMoreActionsOpen(false)}>
+                <nav className="member-actions-sheet-7a" aria-label={`${member.name} profile actions`}>
+                    {canEdit && <button type="button" onClick={() => { setMoreActionsOpen(false); photoInput.current?.click(); }}><span>📷</span><b>Change profile photo</b><small>Take a photo or choose one from this phone</small></button>}
+                    {canEdit && <button type="button" onClick={() => { setMoreActionsOpen(false); setEditing(true); }}><span>✏️</span><b>Edit profile</b><small>Update personal, contact and support information</small></button>}
+                    <a href={`/members/${member.id}/care-plan`} target="_blank" rel="noreferrer"><span>📘</span><b>Care plan</b><small>Open the member's current care plan</small></a>
+                    <Link href={`/members/${member.id}/history`} onClick={() => setMoreActionsOpen(false)}><span>🕘</span><b>Full history</b><small>View the complete record timeline</small></Link>
+                    <button type="button" onClick={() => { setMoreActionsOpen(false); window.print(); }}><span>🖨️</span><b>Print profile</b><small>Print or save the profile as a PDF</small></button>
+                    {canEdit && <a href={`/members/${member.id}/sar`} target="_blank" rel="noreferrer"><span>🛡️</span><b>SAR tools</b><small>Prepare a subject access record</small></a>}
+                </nav>
+            </Modal>
 
             {/* Alerts banner */}
             {alerts.length > 0 && (
