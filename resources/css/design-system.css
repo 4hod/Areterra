@@ -216,7 +216,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
     .member-record-identity-4a > div:first-child { font-size: 24px; }
     .animal-record-hero { display: grid; grid-template-columns: 1fr; gap: 10px; }
     .animal-record-hero > p { max-width: none; }
-    .animal-record-hero > div.ml-auto { width: 100%; margin-left: 0; }
+    .animal-record-hero > div.ml-auto { position: static; width: 100%; margin-left: 0; display: flex; flex-wrap: wrap; justify-content: space-between; justify-items: initial; }
     .hub-card-header, .hub-card-body { padding: 14px; }
     .hub-tab-bar button { min-height: 42px; font-size: 12px; }
     .hub-modal-backdrop, .portal-action-sheet-backdrop { align-items: flex-end; padding: 0; }
