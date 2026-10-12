@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Activity;
 use App\Models\Certificate;
 use App\Models\Member;
 use App\Models\PortfolioItem;
@@ -58,6 +59,17 @@ class MemberPortfolioController extends Controller
                 'description' => $goal->description,
                 'date' => $goal->achieved_at?->toDateString(),
             ]),
+            'upcomingActivities' => Activity::query()
+                ->whereBetween('activity_date', [today(), today()->addMonths(3)])
+                ->whereHas('participants', fn ($participants) => $participants->where('member_id', $member->id))
+                ->orderBy('activity_date')
+                ->limit(8)
+                ->get(['id', 'title', 'activity_date'])
+                ->map(fn ($activity) => [
+                    'id' => $activity->id,
+                    'title' => $activity->title,
+                    'date' => $activity->activity_date->toDateString(),
+                ]),
             'canEdit' => Gate::allows('edit_members') && $member->status !== 'archived',
         ]);
     }

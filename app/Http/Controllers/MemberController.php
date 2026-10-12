@@ -92,12 +92,13 @@ class MemberController extends Controller
                     ])
                 : [],
             'recentAttendance' => $member->attendances()->orderByDesc('date')->limit(10)
-                ->get(['id', 'date', 'checked_in', 'arrival_mood', 'notes']),
+                ->get(['id', 'date', 'checked_in', 'arrival_mood', 'notes', 'updated_at']),
             'recentEndOfDay' => $member->endOfDayRecords()->with('user:id,name')->orderByDesc('date')->limit(10)
                 ->get()
                 ->map(fn ($record) => [
                     'id' => $record->id,
                     'date' => $record->date->toDateString(),
+                    'updated_at' => $record->updated_at->toIso8601String(),
                     'arrival_mood' => $record->arrival_mood,
                     'end_mood' => $record->end_mood,
                     'session_type' => $record->session_type,
@@ -105,6 +106,7 @@ class MemberController extends Controller
                     'participation_level' => $record->participation_level,
                     'achievement' => $record->achievement,
                     'support_notes' => $record->support_notes,
+                    'photos' => PrivateMedia::endOfDayPhotoUrls($member, $record),
                     'notes' => $record->notes,
                     'concern' => $record->concern,
                     'incident' => $record->incident,
@@ -150,7 +152,7 @@ class MemberController extends Controller
             'contacts' => $detailed
                 ? $member->contacts()->get(['id', 'name', 'role', 'organisation', 'email', 'phone', 'notes'])
                 : [],
-            'goals' => $member->goals()->with('outcomes')->orderByDesc('created_at')->get()
+            'goals' => $member->goals()->withCount(['outcomes', 'impactEntries'])->orderByDesc('created_at')->get()
                 ->map(fn ($g) => [
                     'id' => $g->id,
                     'title' => $g->title,
@@ -158,11 +160,13 @@ class MemberController extends Controller
                     'status' => $g->status,
                     'target_date' => $g->target_date?->toDateString(),
                     'achieved_at' => $g->achieved_at?->toDateString(),
+                    'evidence_count' => $g->outcomes_count + $g->impact_entries_count,
                 ]),
             'outcomes' => $member->outcomes()->with(['goal:id,title', 'user:id,name'])->orderByDesc('date')->limit(20)->get()
                 ->map(fn ($o) => [
                     'id' => $o->id,
                     'date' => $o->date->toDateString(),
+                    'updated_at' => $o->updated_at->toIso8601String(),
                     'outcome' => $o->outcome,
                     'goal' => $o->goal?->title,
                     'user' => $o->user->name,

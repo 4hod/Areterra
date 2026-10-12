@@ -40,7 +40,7 @@ const PRIORITY_STYLE: Record<Priority, string> = {
 };
 
 const ABOUT_ICON: Record<string, string> = {
-    member: '🧑', animal: '🦜', vehicle: '🚐', activity: '📅', grant: '🎁', incident: '⚠️',
+    member: '🧑', goal: '🎯', animal: '🦜', vehicle: '🚐', activity: '📅', grant: '🎁', incident: '⚠️',
 };
 
 function dueLabel(task: Task) {
@@ -106,7 +106,7 @@ export default function Tasks({ tasks, show, mine, staff, counts, canManage, rel
             <ModuleHero
                 eyebrow="Across every record"
                 title="Tasks"
-                description="Follow-ups attached to the member, animal, vehicle or grant they belong to."
+                description="Follow-ups stay attached to the member, goal, animal, vehicle or project they belong to."
                 icon="☑️"
                 tone="blue"
             />

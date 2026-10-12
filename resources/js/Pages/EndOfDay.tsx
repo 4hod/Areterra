@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
@@ -106,6 +106,7 @@ function ParticipationPicker({ value, onChange }: { value: Participation | null;
 
 export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) {
     const [editing, setEditing] = useState<Row | null>(null);
+    const [step, setStep] = useState(1);
     const [form, setForm] = useState<Record>(BLANK);
     const [newPhotos, setNewPhotos] = useState<File[]>([]);
     const [removePhotos, setRemovePhotos] = useState<string[]>([]);
@@ -114,14 +115,32 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
 
     const doneCount = rows.filter((r) => r.record).length;
 
+    useEffect(() => {
+        if (!editing) return;
+        const timer = window.setTimeout(() => {
+            try {
+                sessionStorage.setItem(`areterra:eod-draft:${date}:${editing.id}`, JSON.stringify({ form: { ...form, photos: [] }, toiletingIssue, step }));
+            } catch {
+                // Storage can be unavailable in strict privacy modes; recording still works normally.
+            }
+        }, 350);
+        return () => window.clearTimeout(timer);
+    }, [date, editing, form, toiletingIssue, step]);
+
     function open(row: Row) {
         setEditing(row);
         setNewPhotos([]);
         setRemovePhotos([]);
-        setToiletingIssue(Boolean(row.record?.toileting_notes));
+        let stored: string | null = null;
+        try { stored = sessionStorage.getItem(`areterra:eod-draft:${date}:${row.id}`); } catch { /* draft restore is optional */ }
+        let draft: { form?: Partial<Record>; toiletingIssue?: boolean; step?: number } | null = null;
+        try { draft = stored ? JSON.parse(stored) : null; } catch { try { sessionStorage.removeItem(`areterra:eod-draft:${date}:${row.id}`); } catch { /* optional */ } }
+        setStep(draft?.step ?? 1);
+        setToiletingIssue(draft?.toiletingIssue ?? Boolean(row.record?.toileting_notes));
         setForm({
             ...BLANK,
             ...row.record,
+            ...draft?.form,
             photos: row.record?.photos ?? [],
         });
     }
@@ -131,7 +150,7 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
         router.post(
             `/end-of-day/${editing.id}`,
             { ...form, toileting_issue: toiletingIssue, toileting_notes: toiletingIssue ? form.toileting_notes : '', photos: newPhotos, remove_photos: removePhotos },
-            { forceFormData: true, onSuccess: () => setEditing(null) },
+            { forceFormData: true, onSuccess: () => { try { sessionStorage.removeItem(`areterra:eod-draft:${date}:${editing.id}`); } catch { /* optional */ } setEditing(null); } },
         );
     }
 
@@ -210,8 +229,13 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
             <Modal open={editing !== null} title={`End of day — ${editing?.name ?? ''}`} onClose={() => setEditing(null)}>
                 <div className="space-y-4">
                     <p className="rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
-                        Record the useful story of their day: what they joined in with, what went well, the support they needed and anything to hand over.
+                        Record the useful story of their day: what they joined in with, what went well, the support they needed and anything important to know.
                     </p>
+                    <div className="eod-form-progress-4a" aria-label={`Step ${step} of 3`}>
+                        {['Their day', 'Progress & wellbeing', 'Check & save'].map((label, index) => <div key={label} className={step >= index + 1 ? 'is-active' : ''}><i>{step > index + 1 ? '✓' : index + 1}</i><span>{label}</span></div>)}
+                    </div>
+                    <p className="eod-draft-note-4a">Draft changes are kept on this device until you save.</p>
+                    {step === 1 && <>
                     <div>
                         <div className="text-sm font-medium mb-2">Mood at end of day</div>
                         <MoodPicker value={form.end_mood} onChange={(m) => setForm({ ...form, end_mood: m })} />
@@ -237,6 +261,10 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                             rows={2}
                         />
                     </div>
+
+                    </>}
+
+                    {step === 2 && <>
 
                     <div>
                         <div className="text-sm font-medium mb-1">Participation and engagement</div>
@@ -292,6 +320,10 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                             rows={2}
                         />
                     </div>
+
+                    </>}
+
+                    {step === 3 && <>
 
                     <details
                         className="rounded-xl border border-slate-200 bg-slate-50 p-3"
@@ -405,9 +437,12 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                         />
                     </div>
 
-                    <button onClick={save} className="w-full rounded-lg bg-brand text-white font-bold py-3">
-                        Save record
-                    </button>
+                    </>}
+
+                    <div className="eod-form-actions-4a">
+                        {step > 1 && <button type="button" onClick={() => setStep(step - 1)}>← Back</button>}
+                        {step < 3 ? <button type="button" onClick={() => setStep(step + 1)}>Continue →</button> : <button type="button" onClick={save}>Save daily story</button>}
+                    </div>
                 </div>
             </Modal>
         </AppShell>

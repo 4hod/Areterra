@@ -34,8 +34,13 @@ class IncidentController extends Controller
                     'injury_details' => $i->injury_details,
                     'severity' => $i->severity,
                     'actions_taken' => $i->actions_taken,
+                    'manager_review' => $i->manager_review,
+                    'learning' => $i->learning,
+                    'prevention_action' => $i->prevention_action,
                     'follow_up_required' => $i->follow_up_required,
                     'status' => $i->status,
+                    'reviewed_at' => $i->reviewed_at?->toDateTimeString(),
+                    'closed_at' => $i->closed_at?->toDateTimeString(),
                     'reported_by' => $i->reportedBy->name,
                     'about' => $i->subject ? RecordLinks::metadataIfVisible($i->subject) : null,
                 ]),
@@ -80,11 +85,26 @@ class IncidentController extends Controller
     public function update(Request $request, Incident $incident)
     {
         $wasClosed = $incident->status === 'closed';
-        $incident->update($request->validate([
+        $data = $request->validate([
             'status' => ['sometimes', 'in:'.implode(',', Incident::STATUSES)],
             'actions_taken' => ['nullable', 'string'],
+            'manager_review' => ['nullable', 'string'],
+            'learning' => ['nullable', 'string'],
+            'prevention_action' => ['nullable', 'string'],
             'follow_up_required' => ['boolean'],
-        ]));
+        ]);
+
+        if (($data['status'] ?? null) === 'under-review' && ! $incident->reviewed_at) {
+            $data['reviewed_at'] = now();
+        }
+        if (($data['status'] ?? null) === 'closed') {
+            $data['reviewed_at'] ??= $incident->reviewed_at ?? now();
+            $data['closed_at'] = now();
+        } elseif (array_key_exists('status', $data)) {
+            $data['closed_at'] = null;
+        }
+
+        $incident->update($data);
 
         if (! $wasClosed && $incident->status === 'closed') {
             $subject = $incident->subject ?? $incident->vehicle;

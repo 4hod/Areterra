@@ -15,8 +15,13 @@ interface IncidentRow {
     injury_details: string | null;
     severity: 'minor' | 'moderate' | 'serious' | 'critical';
     actions_taken: string | null;
+    manager_review: string | null;
+    learning: string | null;
+    prevention_action: string | null;
     follow_up_required: boolean;
     status: 'open' | 'under-review' | 'closed';
+    reviewed_at: string | null;
+    closed_at: string | null;
     reported_by: string;
     about: { id: number; type: string; name: string; url: string | null } | null;
 }
@@ -43,6 +48,8 @@ interface Props {
 
 export default function Incidents({ incidents, canManage, relatedOptions, context }: Props) {
     const [adding, setAdding] = useState(false);
+    const [reviewing, setReviewing] = useState<IncidentRow | null>(null);
+    const [review, setReview] = useState({ status: 'under-review', actions_taken: '', manager_review: '', learning: '', prevention_action: '', follow_up_required: false });
     const { data, setData, post, processing, reset } = useForm({
         title: '',
         occurred_at: new Date().toISOString().slice(0, 16),
@@ -62,8 +69,22 @@ export default function Incidents({ incidents, canManage, relatedOptions, contex
         post('/incidents', { onSuccess: () => { setAdding(false); reset(); } });
     }
 
-    function setStatus(id: number, status: string) {
-        router.put(`/incidents/${id}`, { status }, { preserveScroll: true });
+    function openReview(incident: IncidentRow) {
+        setReviewing(incident);
+        setReview({
+            status: incident.status === 'open' ? 'under-review' : incident.status,
+            actions_taken: incident.actions_taken ?? '',
+            manager_review: incident.manager_review ?? '',
+            learning: incident.learning ?? '',
+            prevention_action: incident.prevention_action ?? '',
+            follow_up_required: incident.follow_up_required,
+        });
+    }
+
+    function saveReview(event: FormEvent) {
+        event.preventDefault();
+        if (!reviewing) return;
+        router.put(`/incidents/${reviewing.id}`, review, { preserveScroll: true, onSuccess: () => setReviewing(null) });
     }
 
     return (
@@ -91,7 +112,10 @@ export default function Incidents({ incidents, canManage, relatedOptions, contex
                                 <p className="text-sm text-slate-500 mt-1">{i.description}</p>
                                 {i.persons_involved && <p className="text-xs text-slate-500 mt-1">Involved: {i.persons_involved}</p>}
                                 {i.injury_details && <p className="text-xs text-red-600 mt-1">Injury: {i.injury_details}</p>}
-                                {i.actions_taken && <p className="text-xs text-slate-500 mt-1">Actions: {i.actions_taken}</p>}
+                                {i.actions_taken && <p className="text-xs text-slate-500 mt-1">Immediate action: {i.actions_taken}</p>}
+                                {i.manager_review && <p className="text-xs text-slate-500 mt-1">Manager review: {i.manager_review}</p>}
+                                {i.learning && <p className="text-xs text-slate-500 mt-1">Learning: {i.learning}</p>}
+                                {i.prevention_action && <p className="text-xs text-slate-500 mt-1">Prevention: {i.prevention_action}</p>}
                                 {i.follow_up_required && <p className="text-xs text-amber-700 font-semibold mt-1">⚠ Follow-up required</p>}
                                 {i.about && <p className="mt-1 text-xs">Linked to: {i.about.url ? <Link href={i.about.url} className="font-bold text-brand">{i.about.name}</Link> : i.about.name}</p>}
                             </div>
@@ -100,18 +124,16 @@ export default function Incidents({ incidents, canManage, relatedOptions, contex
                                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${STATUS_STYLE[i.status]}`}>{i.status}</span>
                             </div>
                         </div>
-                        {canManage && i.status !== 'closed' && (
-                            <div className="flex gap-1.5 mt-2">
-                                {i.status === 'open' && (
-                                    <button onClick={() => setStatus(i.id, 'under-review')} className="rounded-full bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5">
-                                        Mark under review
-                                    </button>
-                                )}
-                                <button onClick={() => setStatus(i.id, 'closed')} className="rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5">
-                                    ✓ Close
-                                </button>
-                            </div>
-                        )}
+                        <div className="incident-cycle-4a" aria-label="Incident progress">
+                            <span className="is-done">1 <b>Reported</b></span>
+                            <i />
+                            <span className={i.status !== 'open' ? 'is-done' : ''}>2 <b>Reviewed</b></span>
+                            <i />
+                            <span className={i.actions_taken || i.prevention_action ? 'is-done' : ''}>3 <b>Actioned</b></span>
+                            <i />
+                            <span className={i.status === 'closed' ? 'is-done' : ''}>4 <b>Closed & learned</b></span>
+                        </div>
+                        {canManage && <button onClick={() => openReview(i)} className="incident-review-button-4a">{i.status === 'closed' ? 'View or reopen review' : 'Continue review'} →</button>}
                     </Card>
                 ))}
                 {incidents.length === 0 && <Card><p className="text-slate-500">No incidents logged.</p></Card>}
@@ -179,6 +201,31 @@ export default function Incidents({ incidents, canManage, relatedOptions, contex
                     <button type="submit" disabled={processing} className="w-full rounded-lg bg-brand text-white font-bold py-3 disabled:opacity-60">
                         Submit incident report
                     </button>
+                </form>
+            </Modal>
+
+            <Modal open={Boolean(reviewing)} title="Incident review and learning" onClose={() => setReviewing(null)}>
+                <form onSubmit={saveReview} className="space-y-3">
+                    <div className="incident-review-intro-4a"><b>{reviewing?.title}</b><p>Record what happened next so the report leads to a visible action and learning.</p></div>
+                    <label className="block text-sm font-medium">Review stage
+                        <select value={review.status} onChange={(event) => setReview({ ...review, status: event.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-3 bg-white">
+                            <option value="open">Reported</option><option value="under-review">Under review</option><option value="closed">Closed and learning recorded</option>
+                        </select>
+                    </label>
+                    <label className="block text-sm font-medium">Immediate actions taken
+                        <textarea value={review.actions_taken} onChange={(event) => setReview({ ...review, actions_taken: event.target.value })} rows={2} className="mt-1 w-full rounded-lg border border-slate-300 p-3" placeholder="What was done at the time to keep people safe?" />
+                    </label>
+                    <label className="block text-sm font-medium">Manager review
+                        <textarea value={review.manager_review} onChange={(event) => setReview({ ...review, manager_review: event.target.value })} rows={3} className="mt-1 w-full rounded-lg border border-slate-300 p-3" placeholder="What did the review establish?" />
+                    </label>
+                    <label className="block text-sm font-medium">What did we learn?
+                        <textarea value={review.learning} onChange={(event) => setReview({ ...review, learning: event.target.value })} rows={3} className="mt-1 w-full rounded-lg border border-slate-300 p-3" placeholder="Record the useful learning in plain language." />
+                    </label>
+                    <label className="block text-sm font-medium">What will prevent a repeat?
+                        <textarea value={review.prevention_action} onChange={(event) => setReview({ ...review, prevention_action: event.target.value })} rows={3} className="mt-1 w-full rounded-lg border border-slate-300 p-3" placeholder="Updated guidance, risk control, task or other action." />
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={review.follow_up_required} onChange={(event) => setReview({ ...review, follow_up_required: event.target.checked })} className="rounded border-slate-300" />Further follow-up is still required</label>
+                    <button type="submit" className="w-full rounded-lg bg-brand text-white font-bold py-3">Save review</button>
                 </form>
             </Modal>
         </AppShell>

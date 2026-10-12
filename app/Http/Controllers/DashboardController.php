@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Animal;
 use App\Models\Announcement;
 use App\Models\Attendance;
+use App\Models\EndOfDayRecord;
+use App\Models\ImpactEntry;
+use App\Models\Incident;
 use App\Models\LeaveBalance;
 use App\Models\Member;
 use App\Models\Setting;
 use App\Models\StaffAttendance;
 use App\Services\TodayChecklist;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -33,6 +37,9 @@ class DashboardController extends Controller
 
             return Attendance::whereDate('date', $date)->where('checked_in', true)->count();
         })->values();
+
+        $thisWeekAttendance = Attendance::where('checked_in', true)->whereBetween('date', [$today->copy()->subDays(6), $today])->count();
+        $previousWeekAttendance = Attendance::where('checked_in', true)->whereBetween('date', [$today->copy()->subDays(13), $today->copy()->subDays(7)])->count();
 
         return Inertia::render('Dashboard', [
             // Derived from the records themselves — nothing here is a stored
@@ -92,6 +99,13 @@ class DashboardController extends Controller
                     'read' => $n->read_at !== null,
                     'created_at' => $n->created_at->diffForHumans(),
                 ]),
+            'servicePulse' => Gate::allows('view_reports') ? [
+                'attendanceThisWeek' => $thisWeekAttendance,
+                'attendanceDirection' => $thisWeekAttendance <=> $previousWeekAttendance,
+                'progressEvidence' => ImpactEntry::where('observed_at', '>=', $today->copy()->subDays(30))->count(),
+                'openIncidents' => Incident::where('status', '!=', 'closed')->count(),
+                'dailyStoriesToday' => EndOfDayRecord::whereDate('date', $today)->count(),
+            ] : null,
         ]);
     }
 }

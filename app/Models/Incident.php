@@ -40,6 +40,11 @@ class Incident extends Model
             'title' => 'encrypted',
             'location' => 'encrypted',
             'actions_taken' => 'encrypted',
+            'manager_review' => 'encrypted',
+            'learning' => 'encrypted',
+            'prevention_action' => 'encrypted',
+            'reviewed_at' => 'datetime',
+            'closed_at' => 'datetime',
         ];
     }
 

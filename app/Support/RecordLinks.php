@@ -7,6 +7,7 @@ use App\Models\Animal;
 use App\Models\Grant;
 use App\Models\Incident;
 use App\Models\Member;
+use App\Models\MemberGoal;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -15,6 +16,7 @@ class RecordLinks
 {
     private const TYPES = [
         'member' => [Member::class, 'view_member_details'],
+        'goal' => [MemberGoal::class, 'view_member_details'],
         'animal' => [Animal::class, 'view_animals'],
         'vehicle' => [Vehicle::class, 'view_vehicles'],
         'activity' => [Activity::class, null],
@@ -55,6 +57,10 @@ class RecordLinks
                 }
                 if ($type === 'activity') {
                     $query->whereDate('activity_date', '>=', today()->subMonths(3));
+                }
+                if ($type === 'goal') {
+                    $query->with('member')->where('status', 'active')
+                        ->whereHas('member', fn ($member) => $member->where('status', 'active'));
                 }
 
                 return [$type => $query->limit(250)->get()->map(fn (Model $record) => [
@@ -111,6 +117,7 @@ class RecordLinks
             $record instanceof Vehicle => trim($record->registration.' '.($record->make_model ?? '')),
             $record instanceof Animal => $record->name.' · '.$record->species,
             $record instanceof Activity => $record->title.' · '.$record->activity_date?->format('j M Y'),
+            $record instanceof MemberGoal => $record->member->displayName().' · '.$record->title,
             default => $record->name ?? $record->title ?? '#'.$record->getKey(),
         };
     }
@@ -122,6 +129,7 @@ class RecordLinks
             $record instanceof Animal => route('animals.show', $record, false),
             $record instanceof Vehicle => route('vehicles', [], false).'#vehicle-'.$record->getKey(),
             $record instanceof Activity => route('calendar', [], false).'?date='.$record->activity_date?->toDateString(),
+            $record instanceof MemberGoal => route('members.show', $record->member_id, false).'?section=goals',
             $record instanceof Grant => route('finance', [], false),
             $record instanceof Incident => route('incidents', [], false).'?about=incident&id='.$record->getKey(),
             default => null,

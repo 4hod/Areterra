@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { SharedProps } from '../types';
 import AccountMenu from './AccountMenu';
@@ -56,8 +56,7 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/invoices', label: 'Invoices', icon: 'receipt', cap: 'manage_finance' },
     ] },
     { title: 'Administration', items: [
-        { href: '/audit', label: 'System audit', icon: 'shield', cap: 'view_reports' },
-        { href: '/audit-log', label: 'Audit log', icon: 'file', cap: 'view_audit_log' },
+        { href: '/audit-log', label: 'Security log', icon: 'file', cap: 'view_audit_log' },
         { href: '/notifications', label: 'Notifications', icon: 'bell' },
         { href: '/import', label: 'Data import', icon: 'upload', cap: 'manage_settings' },
         { href: '/settings', label: 'Settings', icon: 'settings', cap: 'manage_settings' },
@@ -67,9 +66,8 @@ export const NAV_SECTIONS: NavSection[] = [
 
 const MOBILE_NAV: NavItem[] = [
     { href: '/today', label: 'Today', icon: 'today' },
-    { href: '/register', label: 'Register', icon: 'register', capsAll: ['view_member_details', 'log_sessions'] },
-    { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
     { href: '/members', label: 'Members', icon: 'users', cap: 'view_members' },
+    { href: '/animals', label: 'Animals', icon: 'paw', cap: 'view_animals' },
     { href: '/more', label: 'More', icon: 'grid' },
 ];
 
@@ -95,6 +93,16 @@ function isActive(href: string, url: string) {
     if (href === '/settings') return url === '/settings';
     return url === href || url.startsWith(`${href}/`) || url.startsWith(`${href}?`);
 }
+
+function routeTheme(url: string) {
+    if (url.startsWith('/members')) return 'people';
+    if (url.startsWith('/animals') || url.startsWith('/monitoring')) return 'nature';
+    if (url.startsWith('/transport') || url.startsWith('/vehicles')) return 'journey';
+    if (url.startsWith('/incidents') || url.startsWith('/safeguarding')) return 'safety';
+    if (url.startsWith('/register') || url.startsWith('/fire-register') || url.startsWith('/end-of-day')) return 'attendance';
+    if (url.startsWith('/tasks') || url.startsWith('/calendar') || url.startsWith('/activities')) return 'activity';
+    return 'workspace';
+}
 export function allowed(item: NavItem, caps: string[]) {
     return (!item.cap || caps.includes(item.cap)) && (!item.capsAll || item.capsAll.every((capability) => caps.includes(capability)));
 }
@@ -104,6 +112,9 @@ export default function AppShell({ title, children }: { title: string; children:
     const url = usePage().url;
     const caps = auth.user?.capabilities ?? [];
     const [drawer, setDrawer] = useState(false);
+    const [recording, setRecording] = useState(false);
+    const [navigating, setNavigating] = useState(false);
+    const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
     const [searching, setSearching] = useState(false);
     const [favourites, setFavourites] = useState<string[]>([]);
     const [recentModules, setRecentModules] = useState<string[]>([]);
@@ -119,6 +130,19 @@ export default function AppShell({ title, children }: { title: string; children:
         const timer = window.setTimeout(() => setToast(null), 3500);
         return () => window.clearTimeout(timer);
     }, [flash]);
+
+    useEffect(() => {
+        const update = () => setOnline(navigator.onLine);
+        window.addEventListener('online', update);
+        window.addEventListener('offline', update);
+        return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
+    }, []);
+
+    useEffect(() => {
+        const stopStart = router.on('start', () => setNavigating(true));
+        const stopFinish = router.on('finish', () => setNavigating(false));
+        return () => { stopStart(); stopFinish(); };
+    }, []);
 
     useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
@@ -199,7 +223,18 @@ export default function AppShell({ title, children }: { title: string; children:
 
     const today = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 
-    return <div className="portal-shell hub-app-shell">
+    const recordActions = [
+        { href: '/register', label: 'Take the register', detail: 'Record who is on site', icon: 'register', caps: ['view_member_details', 'log_sessions'], tone: 'blue' },
+        { href: '/end-of-day', label: 'Member daily story', detail: 'Record progress, choices and photos', icon: 'activity', caps: ['view_member_details', 'log_sessions'], tone: 'purple' },
+        { href: '/animals', label: 'Animal welfare check', detail: 'Record feeding and welfare', icon: 'paw', caps: ['view_animals'], tone: 'green' },
+        { href: '/incidents', label: 'Report an incident', detail: 'Capture an event or near miss', icon: 'alert', caps: ['report_incidents'], tone: 'red' },
+        { href: '/members', label: 'Member progress', detail: 'Add outcome evidence or an achievement', icon: 'users', caps: ['view_member_details'], tone: 'yellow' },
+    ].filter((action) => action.caps.every((capability) => caps.includes(capability)));
+    const mobileCore = MOBILE_NAV.filter((item) => item.href !== '/more' && allowed(item, caps));
+    const mobileMore = MOBILE_NAV.find((item) => item.href === '/more')!;
+
+    return <div className={`portal-shell hub-app-shell route-theme-${routeTheme(url)}`}>
+        <div className={`portal-navigation-progress ${navigating ? 'is-visible' : ''}`} aria-hidden="true"><i /></div>
         <aside className="portal-sidebar hidden md:flex">
             <div className="portal-brand">
                 <img src="/areterra-logo-2026.jpg" alt="Areterra" />
@@ -229,9 +264,20 @@ export default function AppShell({ title, children }: { title: string; children:
             <main className="portal-content hub-page-content">{children}</main>
         </div>
 
+        {!online && <div className="portal-offline-banner" role="status"><i />You’re offline. Open information remains available and unsaved daily-story drafts stay on this device.</div>}
+
         <nav className="portal-mobile-nav md:hidden">
-            {MOBILE_NAV.filter((item) => allowed(item, caps)).map((item) => <Link key={item.href} href={item.href} className={isActive(item.href, url) || (item.href === '/today' && url === '/') ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
+            {mobileCore.map((item) => <Link key={item.href} href={item.href} className={isActive(item.href, url) || (item.href === '/today' && url === '/') ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
+            <button type="button" className="portal-record-button" onClick={() => setRecording(true)} aria-haspopup="dialog"><span><AppIcon name="plus"/></span><b>Record</b></button>
+            <Link href={mobileMore.href} className={isActive(mobileMore.href, url) ? 'is-active' : ''}><AppIcon name={mobileMore.icon}/><span>{mobileMore.label}</span></Link>
         </nav>
+
+        {recording && <div className="portal-action-sheet-backdrop md:hidden" onClick={() => setRecording(false)}>
+            <section className="portal-action-sheet" role="dialog" aria-modal="true" aria-label="Create a record" onClick={(event) => event.stopPropagation()}>
+                <header><div><span>QUICK RECORD</span><h2>What are you recording?</h2><p>Choose a job and the Hub will take you straight to the right place.</p></div><button type="button" onClick={() => setRecording(false)} aria-label="Close">×</button></header>
+                <div>{recordActions.map((action) => <Link href={action.href} key={action.href} onClick={() => setRecording(false)} className={`is-${action.tone}`}><i><AppIcon name={action.icon}/></i><span><b>{action.label}</b><small>{action.detail}</small></span><AppIcon name="arrow"/></Link>)}</div>
+            </section>
+        </div>}
 
         {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>
             <div className="portal-drawer-head"><Link href="/today" className="portal-drawer-product-brand" aria-label="Areterra — Today" onClick={() => setDrawer(false)}><img src="/areterra-logo-2026.jpg" alt="Areterra" /></Link><button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
