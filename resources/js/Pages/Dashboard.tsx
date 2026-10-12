@@ -75,7 +75,7 @@ export default function Dashboard(props: Props) {
             {props.banner && <div className="overview-banner"><AppIcon name="megaphone"/>{props.banner}</div>}
 
             <section className="overview-intro">
-                <div className="overview-intro-copy"><span>ARETERRA HUB</span><h1>{dayName} <i aria-hidden="true">☀</i></h1><h2>{dateLine}</h2><p>Your daily view of tasks, animal care and team activity.</p></div>
+                <div className="overview-intro-copy"><span>ARETERRA</span><h1>{dayName}</h1><h2>{dateLine}</h2><p>Your daily view of tasks, animal care and team activity.</p></div>
                 <div className="overview-intro-motto"><b>Support</b><b>Nurture</b><b>Belong</b><i/></div>
             </section>
 

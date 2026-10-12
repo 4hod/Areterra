@@ -33,7 +33,6 @@ export default function ModuleHero({ eyebrow, title, description, icon, tone = '
 
     return (
         <section className={`module-hero module-hero--${tone}`}>
-            <div className="module-hero__glow" aria-hidden="true" />
             <div className="module-hero__body">
                 <div className="module-hero__icon" aria-hidden="true"><AppIcon name={iconName} /></div>
                 <div className="module-hero__copy">
