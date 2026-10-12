@@ -178,105 +178,144 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
 
             <Modal open={editing !== null} title={`End of day — ${editing?.name ?? ''}`} onClose={() => setEditing(null)}>
                 <div className="space-y-4">
+                    <p className="rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
+                        Keep it quick: choose their leaving mood, say what they did, add anything worth remembering, and include a photo if useful.
+                    </p>
                     <div>
                         <div className="text-sm font-medium mb-2">Mood at end of day</div>
                         <MoodPicker value={form.end_mood} onChange={(m) => setForm({ ...form, end_mood: m })} />
                     </div>
                     <div>
-                        <label htmlFor="eod-session" className="text-sm font-medium block mb-1">Session type</label>
-                        <input
-                            id="eod-session"
-                            value={form.session_type ?? ''}
-                            onChange={(e) => setForm({ ...form, session_type: e.target.value })}
-                            placeholder="e.g. Animal care, Horticulture"
-                            className="w-full rounded-lg border border-slate-300 px-3"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="eod-activities" className="text-sm font-medium block mb-1">Activities participated in</label>
+                        <label htmlFor="eod-activities" className="text-sm font-medium block mb-1">What did they do today?</label>
                         <textarea
                             id="eod-activities"
                             value={form.activities ?? ''}
                             onChange={(e) => setForm({ ...form, activities: e.target.value })}
-                            className="w-full rounded-lg border border-slate-300 p-3"
-                            rows={2}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <div className="text-sm font-medium mb-1">Food intake</div>
-                            <IntakePicker value={form.food_intake} onChange={(v) => setForm({ ...form, food_intake: v })} />
-                        </div>
-                        <div>
-                            <div className="text-sm font-medium mb-1">Fluid intake</div>
-                            <IntakePicker value={form.fluid_intake} onChange={(v) => setForm({ ...form, fluid_intake: v })} />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label htmlFor="eod-toileting" className="text-sm font-medium block mb-1">Toileting notes</label>
-                        <textarea
-                            id="eod-toileting"
-                            value={form.toileting_notes ?? ''}
-                            onChange={(e) => setForm({ ...form, toileting_notes: e.target.value })}
+                            placeholder="e.g. Fed the chickens, helped prepare lunch and joined the gardening group"
                             className="w-full rounded-lg border border-slate-300 p-3"
                             rows={2}
                         />
                     </div>
 
                     <div>
-                        <label className="flex items-center gap-2 text-sm font-medium">
-                            <input
-                                type="checkbox"
-                                checked={form.medication_given}
-                                onChange={(e) => setForm({ ...form, medication_given: e.target.checked })}
-                                className="rounded border-slate-300"
-                            />
-                            Medication given
-                        </label>
-                        {form.medication_given && (
-                            <textarea
-                                value={form.medication_notes ?? ''}
-                                onChange={(e) => setForm({ ...form, medication_notes: e.target.value })}
-                                placeholder="What was given and when"
-                                className="mt-2 w-full rounded-lg border border-slate-300 p-3"
-                                rows={2}
-                            />
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-medium text-amber-700">
-                            <input
-                                type="checkbox"
-                                checked={form.incident}
-                                onChange={(e) => setForm({ ...form, incident: e.target.checked })}
-                                className="rounded border-slate-300"
-                            />
-                            🩹 Log an incident (bump, trip, minor injury — not a safeguarding concern)
-                        </label>
-                        {form.incident && (
-                            <textarea
-                                value={form.incident_detail ?? ''}
-                                onChange={(e) => setForm({ ...form, incident_detail: e.target.value })}
-                                placeholder="What happened, action taken"
-                                className="mt-2 w-full rounded-lg border border-amber-300 bg-amber-50 p-3"
-                                rows={2}
-                            />
-                        )}
-                    </div>
-
-                    <div>
-                        <label htmlFor="eod-notes" className="text-sm font-medium block mb-1">General notes</label>
+                        <label htmlFor="eod-notes" className="text-sm font-medium block mb-1">Anything worth noting?</label>
                         <textarea
                             id="eod-notes"
                             value={form.notes ?? ''}
                             onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                            placeholder="Optional — progress, achievements, choices or useful handover information"
                             className="w-full rounded-lg border border-slate-300 p-3"
                             rows={2}
                         />
                     </div>
+
+                    <details
+                        className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+                        open={Boolean(
+                            form.session_type || form.food_intake || form.fluid_intake || form.toileting_notes
+                            || form.medication_given || form.incident || form.concern
+                        )}
+                    >
+                        <summary className="cursor-pointer font-semibold text-brand-dark">Add care, medication, incident or concern details</summary>
+                        <p className="mt-1 text-xs text-slate-500">Only open this when there is something extra to record.</p>
+                        <div className="mt-4 space-y-4">
+                            <div>
+                                <label htmlFor="eod-session" className="text-sm font-medium block mb-1">Session type (optional)</label>
+                                <input
+                                    id="eod-session"
+                                    value={form.session_type ?? ''}
+                                    onChange={(e) => setForm({ ...form, session_type: e.target.value })}
+                                    placeholder="e.g. Animal care, Horticulture"
+                                    className="w-full rounded-lg border border-slate-300 px-3"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div>
+                                    <div className="text-sm font-medium mb-1">Food intake</div>
+                                    <IntakePicker value={form.food_intake} onChange={(v) => setForm({ ...form, food_intake: v })} />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-medium mb-1">Fluid intake</div>
+                                    <IntakePicker value={form.fluid_intake} onChange={(v) => setForm({ ...form, fluid_intake: v })} />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label htmlFor="eod-toileting" className="text-sm font-medium block mb-1">Toileting notes</label>
+                                <textarea
+                                    id="eod-toileting"
+                                    value={form.toileting_notes ?? ''}
+                                    onChange={(e) => setForm({ ...form, toileting_notes: e.target.value })}
+                                    className="w-full rounded-lg border border-slate-300 p-3"
+                                    rows={2}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.medication_given}
+                                        onChange={(e) => setForm({ ...form, medication_given: e.target.checked })}
+                                        className="rounded border-slate-300"
+                                    />
+                                    Medication given
+                                </label>
+                                {form.medication_given && (
+                                    <textarea
+                                        value={form.medication_notes ?? ''}
+                                        onChange={(e) => setForm({ ...form, medication_notes: e.target.value })}
+                                        placeholder="What was given and when"
+                                        className="mt-2 w-full rounded-lg border border-slate-300 p-3"
+                                        rows={2}
+                                    />
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium text-amber-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.incident}
+                                        onChange={(e) => setForm({ ...form, incident: e.target.checked })}
+                                        className="rounded border-slate-300"
+                                    />
+                                    🩹 Log an incident
+                                </label>
+                                {form.incident && (
+                                    <textarea
+                                        value={form.incident_detail ?? ''}
+                                        onChange={(e) => setForm({ ...form, incident_detail: e.target.value })}
+                                        placeholder="What happened and what action was taken"
+                                        className="mt-2 w-full rounded-lg border border-amber-300 bg-amber-50 p-3"
+                                        rows={2}
+                                    />
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2 text-sm font-medium text-red-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.concern}
+                                        onChange={(e) => setForm({ ...form, concern: e.target.checked })}
+                                        className="rounded border-slate-300"
+                                    />
+                                    ⚠️ Flag a safeguarding concern
+                                </label>
+                                {form.concern && (
+                                    <textarea
+                                        value={form.concern_detail ?? ''}
+                                        onChange={(e) => setForm({ ...form, concern_detail: e.target.value })}
+                                        placeholder="Describe the concern — managers will be notified"
+                                        className="mt-2 w-full rounded-lg border border-red-300 bg-red-50 p-3"
+                                        rows={2}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </details>
 
                     <div>
                         <div className="text-sm font-medium mb-1">Photos</div>
@@ -314,24 +353,6 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                         />
                     </div>
 
-                    <label className="flex items-center gap-2 text-sm font-medium text-red-700">
-                        <input
-                            type="checkbox"
-                            checked={form.concern}
-                            onChange={(e) => setForm({ ...form, concern: e.target.checked })}
-                            className="rounded border-slate-300"
-                        />
-                        ⚠️ Flag a safeguarding concern
-                    </label>
-                    {form.concern && (
-                        <textarea
-                            value={form.concern_detail ?? ''}
-                            onChange={(e) => setForm({ ...form, concern_detail: e.target.value })}
-                            placeholder="Describe the concern — managers will be notified"
-                            className="w-full rounded-lg border border-red-300 bg-red-50 p-3"
-                            rows={2}
-                        />
-                    )}
                     <button onClick={save} className="w-full rounded-lg bg-brand text-white font-bold py-3">
                         Save record
                     </button>

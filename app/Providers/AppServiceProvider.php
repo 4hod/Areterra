@@ -66,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\SarRequest::class, \App\Models\InsurancePolicy::class,
             \App\Models\VehicleCheck::class, \App\Models\PortfolioItem::class, \App\Models\Certificate::class,
             \App\Models\AutomationRule::class, \App\Models\AutomationRun::class,
+            \App\Models\DailyShiftCompletion::class,
         ];
         foreach ($audited as $model) {
             $model::observe(\App\Observers\AuditLogObserver::class);
