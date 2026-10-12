@@ -2,7 +2,6 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
-import TransportMap from '../components/TransportMap';
 import Modal from '../components/Modal';
 import { confirmDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
@@ -249,15 +248,6 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                 </Card>
             )}
 
-            {rows.length > 0 && (
-                <Card title="🗺️ Today's stops" className="mb-4">
-                    <TransportMap
-                        activeStopId={next?.id}
-                        stops={rows.map((r) => ({ id: r.id, name: r.name, address: r.address, lat: r.lat, lng: r.lng }))}
-                    />
-                </Card>
-            )}
-
             {rows.length === 0 && (
                 <Card>
                     <p className="text-slate-500">
@@ -358,13 +348,17 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                 <Card title="Still to collect" className="mb-4">
                     <ul className="divide-y divide-slate-100">
                         {morningQueue.slice(1).map((r) => (
-                            <li key={r.id} className="py-2 flex items-center justify-between text-sm">
+                            <li key={r.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
                                 <div>
                                     <span className="font-semibold">{r.name}</span>
-                                    {!r.address && <span className="ml-2 text-amber-600 text-xs font-bold">⚠ no address</span>}
+                                    {r.address ? (
+                                        <div className="mt-0.5 text-xs leading-relaxed text-slate-500">{r.address}</div>
+                                    ) : (
+                                        <span className="ml-2 text-amber-600 text-xs font-bold">⚠ no address</span>
+                                    )}
                                     <div><FeeStatus row={r} /></div>
                                 </div>
-                                <div className="flex gap-1 shrink-0">
+                                <div className="flex flex-wrap gap-1 shrink-0">
                                     <button
                                         onClick={() => complete(r, 'morning')}
                                         disabled={!transportUnlocked}
@@ -394,9 +388,16 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                 <Card title="Still to drop off" className="mb-4">
                     <ul className="divide-y divide-slate-100">
                         {afternoonQueue.slice(1).map((r) => (
-                            <li key={r.id} className="py-2 flex items-center justify-between text-sm">
-                                <span className="font-semibold">{r.name}</span>
-                                <div className="flex gap-1 shrink-0">
+                            <li key={r.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                                <div>
+                                    <span className="font-semibold">{r.name}</span>
+                                    {r.address ? (
+                                        <div className="mt-0.5 text-xs leading-relaxed text-slate-500">{r.address}</div>
+                                    ) : (
+                                        <span className="ml-2 text-amber-600 text-xs font-bold">⚠ no address</span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-1 shrink-0">
                                     <button
                                         onClick={() => complete(r, 'afternoon')}
                                         disabled={!transportUnlocked}
@@ -426,7 +427,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                     <div className="mt-2 space-y-2">
                         {morningDone.map((r) => (
                             <Card key={r.id}>
-                                <div className="flex items-center justify-between text-sm">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
                                     <div>
                                         <span className="font-semibold">{r.name}</span>
                                         <span className={`ml-2 text-xs font-bold ${r.morning_outcome === 'collected' ? 'text-emerald-700' : r.morning_outcome === 'absent' ? 'text-red-600' : 'text-slate-500'}`}>
@@ -434,9 +435,10 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                                             {r.afternoon_outcome && ` · ${OUTCOME_LABEL[r.afternoon_outcome].toLowerCase()} home`}
                                             {' · '}{gbp(r.todays_charge)}
                                         </span>
+                                        {r.address && <div className="mt-0.5 text-xs leading-relaxed text-slate-500">{r.address}</div>}
                                         <div><FeeStatus row={r} /></div>
                                     </div>
-                                    <div className="flex gap-1">
+                                    <div className="flex flex-wrap gap-1">
                                         <button
                                             onClick={() => { setPaying(r); setAmount(r.suggested_top_up || r.daily_rate); }}
                                             className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs px-3 py-2"
