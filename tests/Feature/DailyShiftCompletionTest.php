@@ -22,10 +22,12 @@ class DailyShiftCompletionTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success');
 
-        $this->assertDatabaseHas('daily_shift_completions', [
-            'user_id' => $staff->id,
-            'work_date' => today()->toDateString(),
-        ]);
+        $this->assertTrue(
+            DailyShiftCompletion::query()
+                ->where('user_id', $staff->id)
+                ->whereDate('work_date', today())
+                ->exists()
+        );
     }
 
     public function test_staff_cannot_finish_today_while_required_work_is_outstanding(): void
