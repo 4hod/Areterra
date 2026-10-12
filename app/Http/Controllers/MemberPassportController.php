@@ -38,7 +38,7 @@ class MemberPassportController extends Controller
                 ->map(fn ($alert) => $alert->only(['id', 'type', 'text', 'severity'])),
             'goals' => $member->goals()->where('status', 'active')->latest()->limit(3)->get()
                 ->map(fn ($goal) => $goal->only(['id', 'title', 'description'])),
-            'recentHandover' => $member->endOfDayRecords()->orderByDesc('date')->first()?->only([
+            'recentRecord' => $member->endOfDayRecords()->orderByDesc('date')->first()?->only([
                 'date', 'end_mood', 'notes', 'concern', 'concern_detail',
             ]),
         ]);

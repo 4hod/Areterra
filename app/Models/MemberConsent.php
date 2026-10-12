@@ -9,7 +9,7 @@ class MemberConsent extends Model
 {
     use HasFactory;
 
-    public const TYPES = ['photos', 'outings', 'medication', 'data_sharing', 'emergency_treatment'];
+    public const TYPES = ['photos', 'outings', 'data_sharing', 'emergency_treatment'];
 
     protected $guarded = [];
 

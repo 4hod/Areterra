@@ -117,16 +117,16 @@ class SecurityHardeningTest extends TestCase
             'member_id' => $member->id,
             'date' => today(),
             'user_id' => $user->id,
-            'medication_notes' => 'Sensitive medication note',
+            'support_notes' => 'Sensitive support note',
         ]);
 
         $rawMember = DB::table('members')->find($member->id);
         $rawRecord = DB::table('end_of_day_records')->find($record->id);
         $this->assertNotSame('01562 000000', $rawMember->phone);
         $this->assertNotSame('Sensitive address', $rawMember->address_line1);
-        $this->assertNotSame('Sensitive medication note', $rawRecord->medication_notes);
+        $this->assertNotSame('Sensitive support note', $rawRecord->support_notes);
         $this->assertSame('01562 000000', $member->fresh()->phone);
-        $this->assertSame('Sensitive medication note', $record->fresh()->medication_notes);
+        $this->assertSame('Sensitive support note', $record->fresh()->support_notes);
     }
 
     public function test_staff_cannot_change_someone_elses_task(): void

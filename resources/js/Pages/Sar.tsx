@@ -7,7 +7,7 @@ interface Props {
     generated_at: string;
     member: Record<string, any>;
     attendance: { date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null }[];
-    endOfDay: { date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean; food_intake?: string | null; fluid_intake?: string | null; toileting_notes?: string | null; medication_given?: boolean; medication_notes?: string | null; concern_detail?: string | null; incident?: boolean; incident_detail?: string | null; photos?: string[] }[];
+    endOfDay: { date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; participation_level?: string | null; achievement?: string | null; support_notes?: string | null; notes: string | null; concern: boolean; food_intake?: string | null; fluid_intake?: string | null; toileting_notes?: string | null; concern_detail?: string | null; incident?: boolean; incident_detail?: string | null; photos?: string[] }[];
     reviews: { date: string; outcomes: string | null; actions: string | null }[];
     abc: { date: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null }[];
     transportLedger: { date: string; type: string; amount: number }[];
@@ -76,7 +76,7 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                             'Medical notes': member.medical_notes,
                             Interests: member.interests,
                             Diagnoses: member.diagnoses,
-                            Medication: member.medication,
+                            'Current medication (emergency information only)': member.medication,
                             Allergies: member.allergies,
                             GP: [member.gp_name, member.gp_practice, member.gp_phone].filter(Boolean).join(' · '),
                         })
@@ -186,10 +186,12 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                         {r.end_mood && ` → ${MOOD_EMOJI[r.end_mood]}`}
                         {r.concern && ' · ⚠ concern flagged'}
                         {r.activities && <div>Activities: {r.activities}</div>}
+                        {r.participation_level && <div>Participation: {r.participation_level.replace(/_/g, ' ')}</div>}
+                        {r.achievement && <div>Achievement/progress: {r.achievement}</div>}
+                        {r.support_notes && <div>Support or prompts: {r.support_notes}</div>}
                         {r.food_intake && <div>Food intake: {r.food_intake}</div>}
                         {r.fluid_intake && <div>Fluid intake: {r.fluid_intake}</div>}
                         {r.toileting_notes && <div>Toileting: {r.toileting_notes}</div>}
-                        {r.medication_given && <div>Medication given{r.medication_notes ? ` — ${r.medication_notes}` : ''}</div>}
                         {r.concern_detail && <div>Concern detail: {r.concern_detail}</div>}
                         {r.incident_detail && <div>Incident detail: {r.incident_detail}</div>}
                         {r.notes && <div>Notes: {r.notes}</div>}

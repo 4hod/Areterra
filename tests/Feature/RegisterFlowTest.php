@@ -141,6 +141,10 @@ class RegisterFlowTest extends TestCase
         $this->actingAs($user)->post("/end-of-day/{$member->id}", [
             'end_mood' => 'neutral',
             'session_type' => 'Animal care',
+            'activities' => 'Fed the chickens and collected eggs',
+            'participation_level' => 'with_support',
+            'achievement' => 'Completed the feed round with one verbal prompt',
+            'support_notes' => 'A picture checklist helped with the sequence',
             'concern' => true,
             'concern_detail' => 'Seemed withdrawn this afternoon',
         ])->assertRedirect();
@@ -148,6 +152,9 @@ class RegisterFlowTest extends TestCase
         $record = $member->endOfDayRecords()->first();
         $this->assertSame('happy', $record->arrival_mood);
         $this->assertSame('neutral', $record->end_mood);
+        $this->assertSame('with_support', $record->participation_level);
+        $this->assertSame('Completed the feed round with one verbal prompt', $record->achievement);
+        $this->assertSame('A picture checklist helped with the sequence', $record->support_notes);
         $this->assertTrue($record->concern);
     }
 }

@@ -52,6 +52,8 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
 
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('/today', TodayController::class)->name('today');
+    Route::post('/today/finish', [TodayController::class, 'finish'])
+        ->middleware(['can:view_member_details', 'can:log_sessions'])->name('today.finish');
 
     Route::get('/members', [MemberController::class, 'index'])
         ->middleware('can:view_members')->name('members.index');

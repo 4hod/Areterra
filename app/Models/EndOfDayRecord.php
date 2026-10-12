@@ -16,12 +16,12 @@ class EndOfDayRecord extends Model
         return [
             'date' => 'date',
             'concern' => 'boolean',
-            'medication_given' => 'boolean',
             'incident' => 'boolean',
             'photos' => 'array',
             'activities' => 'encrypted',
+            'achievement' => 'encrypted',
+            'support_notes' => 'encrypted',
             'toileting_notes' => 'encrypted',
-            'medication_notes' => 'encrypted',
             'incident_detail' => 'encrypted',
             'notes' => 'encrypted',
             'concern_detail' => 'encrypted',
@@ -29,6 +29,8 @@ class EndOfDayRecord extends Model
     }
 
     public const INTAKE_LEVELS = ['good', 'some', 'poor', 'refused'];
+
+    public const PARTICIPATION_LEVELS = ['independent', 'with_support', 'partial', 'declined'];
 
     public function member()
     {

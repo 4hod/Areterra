@@ -291,7 +291,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                             disabled={!transportUnlocked}
                             className="rounded-full bg-white text-brand-dark font-bold px-5 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {!transportUnlocked ? 'Pre-drive check first' : phase === 2 ? 'Dropped off ✓' : 'Collected ✓'}
+                            {!transportUnlocked ? 'Pre-drive check first' : phase === 2 ? 'Mark dropped off' : 'Mark collected'}
                         </button>
                         <button
                             onClick={() => askReason(next, phase === 2 ? 'afternoon' : 'morning', 'not_collected')}
@@ -304,12 +304,6 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                             className="rounded-full bg-white/20 font-semibold px-4 py-2.5"
                         >
                             Absent all day
-                        </button>
-                        <button
-                            onClick={() => { setPaying(next); setAmount(next.suggested_top_up || next.daily_rate); }}
-                            className="rounded-full bg-accent text-brand-dark font-bold px-4 py-2.5"
-                        >
-                            💷 Take Payment
                         </button>
                         <button
                             onClick={() => openStatement(next)}
@@ -364,7 +358,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                                         disabled={!transportUnlocked}
                                         className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2 disabled:opacity-40"
                                     >
-                                        Collected ✓
+                                        Mark collected
                                     </button>
                                     <button
                                         onClick={() => askReason(r, 'morning', 'not_collected')}
@@ -403,7 +397,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                                         disabled={!transportUnlocked}
                                         className="rounded-full bg-slate-100 font-semibold text-xs px-3 py-2 disabled:opacity-40"
                                     >
-                                        Dropped ✓
+                                        Mark dropped off
                                     </button>
                                     <button
                                         onClick={() => askReason(r, 'afternoon', 'not_collected')}
@@ -443,7 +437,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                                             onClick={() => { setPaying(r); setAmount(r.suggested_top_up || r.daily_rate); }}
                                             className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs px-3 py-2"
                                         >
-                                            💷 Payment
+                                            💷 Record payment
                                         </button>
                                         <button
                                             onClick={() => undo(r, r.afternoon_done ? 'afternoon' : 'morning')}
@@ -459,9 +453,9 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
                 </details>
             )}
 
-            {/* Take payment from anyone */}
+            {/* Payments are intentionally separate from recording a journey. */}
             {rows.length > 0 && (
-                <Card title="Monthly summary">
+                <Card title="Payments and monthly summary">
                     <div className="grid grid-cols-3 gap-3 text-center">
                         <div>
                             <div className="text-xl font-extrabold text-brand-dark">{gbp(monthly.charged)}</div>

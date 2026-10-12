@@ -12,11 +12,12 @@ interface EodRow {
     end_mood: Mood | null;
     session_type: string | null;
     activities: string | null;
+    participation_level: string | null;
+    achievement: string | null;
+    support_notes: string | null;
     food_intake: string | null;
     fluid_intake: string | null;
     toileting_notes: string | null;
-    medication_given: boolean;
-    medication_notes: string | null;
     incident: boolean;
     incident_detail: string | null;
     photos: string[];
@@ -53,7 +54,7 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
     general: 'General note',
     concern: 'Concern note',
     progress: 'Progress note',
-    handover: 'Handover note',
+    handover: 'Daily note',
 };
 
 function Pagination({ links }: { links: PageLink[] }) {
@@ -136,6 +137,9 @@ export default function History({
                             {r.session_type && <div className="text-sm text-slate-500 mt-1">{r.session_type}</div>}
                             {r.author && <div className="text-xs text-slate-400">by {r.author}</div>}
                             {r.activities && <div className="text-sm text-slate-500">{r.activities}</div>}
+                            {r.participation_level && <div className="text-xs text-slate-500">Participation: {r.participation_level.replace(/_/g, ' ')}</div>}
+                            {r.achievement && <div className="mt-1 rounded-lg bg-emerald-50 p-2 text-sm text-emerald-900"><b>Went well:</b> {r.achievement}</div>}
+                            {r.support_notes && <div className="text-xs text-slate-500">Support: {r.support_notes}</div>}
 
                             {(r.food_intake || r.fluid_intake) && (
                                 <div className="text-xs text-slate-500 mt-1">
@@ -144,9 +148,6 @@ export default function History({
                                 </div>
                             )}
                             {r.toileting_notes && <div className="text-xs text-slate-500">Toileting: {r.toileting_notes}</div>}
-                            {r.medication_given && (
-                                <div className="text-xs text-slate-500">Medication given{r.medication_notes && `: ${r.medication_notes}`}</div>
-                            )}
                             {r.incident && r.incident_detail && (
                                 <div className="text-sm text-amber-700 mt-1 bg-amber-50 rounded-lg p-2">🩹 {r.incident_detail}</div>
                             )}

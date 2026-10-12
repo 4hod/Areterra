@@ -13,7 +13,7 @@ interface Props {
     today: { status: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null };
     alerts: { id: number; type: string; text: string; severity: string }[];
     goals: { id: number; title: string; description: string | null }[];
-    recentHandover: { date: string; end_mood: Mood | null; notes: string | null; concern: boolean; concern_detail: string | null } | null;
+    recentRecord: { date: string; end_mood: Mood | null; notes: string | null; concern: boolean; concern_detail: string | null } | null;
 }
 
 function Section({ icon, title, value, urgent = false }: { icon: string; title: string; value: string | null; urgent?: boolean }) {
@@ -25,7 +25,7 @@ function Section({ icon, title, value, urgent = false }: { icon: string; title: 
     );
 }
 
-export default function Passport({ member, today, alerts, goals, recentHandover }: Props) {
+export default function Passport({ member, today, alerts, goals, recentRecord }: Props) {
     return (
         <AppShell title={`${member.preferred_name || member.name} · Day Passport`}>
             <Head title={`${member.name} — Day Passport`} />
@@ -56,7 +56,7 @@ export default function Passport({ member, today, alerts, goals, recentHandover 
                     <Section icon="🤝" title="How best to support me" value={member.support_needs} />
                     <Section icon="💛" title="What matters to me" value={member.interests} />
                     <Section icon="⚕" title="Allergies" value={member.allergies || 'No known allergies recorded.'} urgent={Boolean(member.allergies && !/none|no known/i.test(member.allergies))} />
-                    <Section icon="💊" title="Medication" value={member.medication} />
+                    <Section icon="💊" title="Current medication — emergency information only" value={member.medication ? `${member.medication}\n\nAreterra does not administer medication.` : null} />
                     <Section icon="🩺" title="Important health information" value={member.medical_notes} />
                     <Section icon="🚐" title="Today’s practical plan" value={`${member.transport_required ? 'Transport required.' : 'No transport required.'}${member.key_worker ? ` Key worker: ${member.key_worker}.` : ''}`} />
                 </div>
@@ -66,10 +66,10 @@ export default function Passport({ member, today, alerts, goals, recentHandover 
                     <ul>{goals.map((goal) => <li key={goal.id}><b>{goal.title}</b>{goal.description && <span>{goal.description}</span>}</li>)}</ul>
                 </section>}
 
-                {recentHandover && <section className={`passport-wide-card ${recentHandover.concern ? 'has-concern' : ''}`}>
-                    <h2>↪ Latest handover</h2>
-                    <p className="passport-meta">{new Date(recentHandover.date).toLocaleDateString('en-GB')}{recentHandover.end_mood && ` · ${MOOD_EMOJI[recentHandover.end_mood]}`}</p>
-                    <p>{recentHandover.concern_detail || recentHandover.notes || 'No handover notes recorded.'}</p>
+                {recentRecord && <section className={`passport-wide-card ${recentRecord.concern ? 'has-concern' : ''}`}>
+                    <h2>↪ Latest daily record</h2>
+                    <p className="passport-meta">{new Date(recentRecord.date).toLocaleDateString('en-GB')}{recentRecord.end_mood && ` · ${MOOD_EMOJI[recentRecord.end_mood]}`}</p>
+                    <p>{recentRecord.concern_detail || recentRecord.notes || 'No additional daily notes recorded.'}</p>
                 </section>}
 
                 <section className="passport-wide-card">

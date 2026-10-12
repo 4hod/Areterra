@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppShell from '../components/AppShell';
 import { ChecklistItem, SharedProps } from '../types';
 
@@ -14,9 +14,10 @@ const REQUIRED_CAPABILITIES: Record<string, string[]> = {
     return_transport: ['view_member_details', 'log_sessions'],
 };
 
-export default function Today({ checklist, date }: { checklist: ChecklistItem[]; date: string }) {
+export default function Today({ checklist, date, shiftCompletedAt }: { checklist: ChecklistItem[]; date: string; shiftCompletedAt: string | null }) {
     const capabilities = usePage<SharedProps>().props.auth.user?.capabilities ?? [];
     const canOpen = (key: string) => (REQUIRED_CAPABILITIES[key] ?? []).every((capability) => capabilities.includes(capability));
+    const canFinishDay = canOpen('end_of_day');
     const visibleChecklist = checklist.filter((item) => canOpen(item.key));
     const applicableItems = visibleChecklist.filter((item) => item.applicable);
     const doneItems = applicableItems.filter((item) => item.done);
@@ -73,7 +74,24 @@ export default function Today({ checklist, date }: { checklist: ChecklistItem[];
                     </details>
                 )}
 
-                {done === applicableItems.length && <section className="today-finished-4a"><span>✓</span><div><h2>All applicable work is recorded</h2><p>Tasks that were not scheduled have not been counted as completed.</p></div></section>}
+                {canFinishDay && applicableItems.length > 0 && done === applicableItems.length && (
+                    <section className="today-finished-4a">
+                        <span>✓</span>
+                        <div className="flex-1">
+                            <h2>{shiftCompletedAt ? 'Finished for today' : 'All required work is complete'}</h2>
+                            <p>
+                                {shiftCompletedAt
+                                    ? `Confirmed at ${new Date(shiftCompletedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`
+                                    : 'Check the completed list, then finish your day.'}
+                            </p>
+                        </div>
+                        {shiftCompletedAt ? (
+                            <Link href="/" className="module-primary-btn-4a">Return to dashboard</Link>
+                        ) : (
+                            <button onClick={() => router.post('/today/finish')} className="module-primary-btn-4a">Finish for today</button>
+                        )}
+                    </section>
+                )}
             </div>
         </AppShell>
     );
