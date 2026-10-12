@@ -1,10 +1,6 @@
 import { useEffect, useRef } from 'react';
-
-declare global {
-    interface Window {
-        L: any;
-    }
-}
+import * as L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 export interface MapStop {
     id: number;
@@ -18,12 +14,13 @@ export default function TransportMap({ stops }: { stops: MapStop[] }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
 
-    const pinned = stops.filter((s) => s.lat !== null && s.lng !== null);
+    const pinned = stops.filter(
+        (stop): stop is MapStop & { lat: number; lng: number } => stop.lat !== null && stop.lng !== null,
+    );
 
     useEffect(() => {
-        if (!containerRef.current || !window.L || pinned.length === 0) return;
+        if (!containerRef.current || pinned.length === 0) return;
 
-        const L = window.L;
         const map = L.map(containerRef.current, { scrollWheelZoom: false });
         mapRef.current = map;
 
@@ -53,7 +50,7 @@ export default function TransportMap({ stops }: { stops: MapStop[] }) {
             mapRef.current = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(pinned.map((s) => s.id))]);
+    }, [JSON.stringify(pinned.map((s) => [s.id, s.lat, s.lng]))]);
 
     if (pinned.length === 0) {
         return (
