@@ -28,7 +28,11 @@ class DashboardController extends Controller
         $checkedAnimals = Animal::active()
             ->whereHas('welfareChecks', fn ($q) => $q
                 ->whereDate('created_at', $today)
-                ->where('fed', true))
+                ->where('fed', true)
+                ->where('pellets_given', true)
+                ->where('greenery_given', true)
+                ->where('fresh_water', true)
+                ->where('hay_topped_up', true))
             ->count();
 
         // 7-day attendance trend for the dashboard sparkline.

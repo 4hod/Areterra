@@ -196,6 +196,11 @@ class PortalQaFixesTest extends TestCase
         $this->actingAs($staff)->post('/welfare-checks/species', [
             'species' => 'Macaw',
             'verification_confirmed' => true,
+            'pellets_given' => true,
+            'greenery_given' => true,
+            'fresh_water' => true,
+            'hay_topped_up' => true,
+            'enclosure_cleaned' => true,
             'checks' => [[
                 'animal_id' => $first->id,
                 'status' => null,

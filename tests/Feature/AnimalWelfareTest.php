@@ -41,6 +41,11 @@ class AnimalWelfareTest extends TestCase
         $this->actingAs($user)->post('/welfare-checks/species', [
             'species' => 'Macaw',
             'verification_confirmed' => true,
+            'pellets_given' => true,
+            'greenery_given' => true,
+            'fresh_water' => true,
+            'hay_topped_up' => true,
+            'enclosure_cleaned' => true,
             // The controller and the Animals page both use 'checks'. This test
             // posted 'flagged', so the override never applied and the flagged
             // animal silently came back green.
@@ -57,6 +62,28 @@ class AnimalWelfareTest extends TestCase
         $this->assertSame('green', $demon->fresh()->welfare_status);
         $this->assertSame('amber', $angel->fresh()->welfare_status);
         $this->assertTrue($angel->welfareChecks()->first()->concern);
+        $this->assertTrue($angel->welfareChecks()->first()->fresh_water);
+        $this->assertTrue($angel->welfareChecks()->first()->hay_topped_up);
+        $this->assertTrue($angel->welfareChecks()->first()->enclosure_cleaned);
+    }
+
+    public function test_species_check_requires_full_clean_when_enclosure_has_not_been_cleaned_for_a_week(): void
+    {
+        $user = User::factory()->create(['role' => 'staff']);
+        $animal = Animal::create(['name' => 'Fidget', 'species' => 'Chinchilla']);
+
+        $this->actingAs($user)->post('/welfare-checks/species', [
+            'species' => 'Chinchilla',
+            'verification_confirmed' => true,
+            'pellets_given' => true,
+            'greenery_given' => true,
+            'fresh_water' => true,
+            'hay_topped_up' => true,
+            'enclosure_cleaned' => false,
+            'checks' => [['animal_id' => $animal->id, 'status' => null, 'fed' => true, 'treats_given' => false]],
+        ])->assertSessionHasErrors('enclosure_cleaned');
+
+        $this->assertDatabaseCount('welfare_checks', 0);
     }
 
     public function test_individual_check_updates_animal_welfare_status(): void
@@ -85,6 +112,11 @@ class AnimalWelfareTest extends TestCase
             'user_id' => $manager->id,
             'status' => 'green',
             'fed' => true,
+            'pellets_given' => true,
+            'greenery_given' => true,
+            'fresh_water' => true,
+            'hay_topped_up' => true,
+            'enclosure_cleaned' => true,
             'concern' => false,
         ]);
         $checked->dailyMonitoring()->create([
@@ -106,6 +138,8 @@ class AnimalWelfareTest extends TestCase
             'monitored' => 1,
             'concerns' => 1,
             'vet_due' => 1,
+            'enclosures' => 2,
+            'clean_due' => 1,
         ], $props['summary']);
         $this->assertTrue($props['bySpecies']['Macaw'][0]['checked_today']);
         $this->assertFalse($props['bySpecies']['Chinchilla'][0]['monitored_today']);
