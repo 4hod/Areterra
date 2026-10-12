@@ -141,7 +141,7 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
             <div className="eod-page-4a">
                 <section className="eod-hero-4a">
                     <div>
-                        <span className="module-kicker-4a">Daily records and handover</span>
+                        <span className="module-kicker-4a">Daily records and outcomes</span>
                         <h1>End of Day</h1>
                         <p>{new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                     </div>
@@ -282,12 +282,12 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                     </div>
 
                     <div>
-                        <label htmlFor="eod-notes" className="text-sm font-medium block mb-1">Handover or anything for next time?</label>
+                        <label htmlFor="eod-notes" className="text-sm font-medium block mb-1">Other daily notes</label>
                         <textarea
                             id="eod-notes"
                             value={form.notes ?? ''}
                             onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                            placeholder="Optional — preferences, follow-up, reminders or other useful information"
+                            placeholder="Optional — preferences, choices or anything else worth recording"
                             className="w-full rounded-lg border border-slate-300 p-3"
                             rows={2}
                         />

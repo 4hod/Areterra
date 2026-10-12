@@ -15,7 +15,6 @@ const DAY_LABELS: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wedn
 const CONSENT_LABELS: Record<string, string> = {
     photos: 'Photography & media',
     outings: 'Outings & trips',
-    medication: 'Medication administration',
     data_sharing: 'Data sharing',
     emergency_treatment: 'Emergency treatment',
 };
@@ -93,7 +92,7 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
     general: 'General note',
     concern: 'Concern note',
     progress: 'Progress note',
-    handover: 'Handover note',
+    handover: 'Daily note',
 };
 
 const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -349,15 +348,16 @@ export default function Show(props: Props) {
                         </dl>
                     </Card>
 
-                    <Card title="Medical & medication" className="member-panel-4a member-medical-panel-4a">
+                    <Card title="Medical & emergency information" className="member-panel-4a member-medical-panel-4a">
                         <dl className="space-y-2 text-sm">
                             <div>
                                 <dt className="text-slate-400 font-medium">Diagnoses</dt>
                                 <dd className="font-medium whitespace-pre-wrap">{member.diagnoses || '—'}</dd>
                             </div>
                             <div>
-                                <dt className="text-slate-400 font-medium">Medication</dt>
+                                <dt className="text-slate-400 font-medium">Current medication (emergency information only)</dt>
                                 <dd className="font-medium whitespace-pre-wrap">{member.medication || '—'}</dd>
+                                <dd className="mt-1 text-xs text-slate-400">Areterra does not administer medication.</dd>
                             </div>
                             <div>
                                 <dt className="text-slate-400 font-medium">Allergies</dt>
@@ -967,7 +967,7 @@ export default function Show(props: Props) {
                 </div>
                 <div className="mt-3 space-y-3">
                     {(
-                        [['diagnoses', 'Diagnoses'], ['allergies', 'Allergies'], ['medication', 'Medication'], ['support_needs', 'Support needs'], ['medical_notes', 'Medical notes'], ['interests', 'Interests']] as const
+                        [['diagnoses', 'Diagnoses'], ['allergies', 'Allergies'], ['medication', 'Current medication (emergency information only)'], ['support_needs', 'Support needs'], ['medical_notes', 'Medical notes'], ['interests', 'Interests']] as const
                     ).map(([key, label]) => (
                         <label key={key} className="block text-sm font-medium">
                             {label}

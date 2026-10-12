@@ -76,7 +76,7 @@ export default function Sar({ generated_at, member, attendance, endOfDay, review
                             'Medical notes': member.medical_notes,
                             Interests: member.interests,
                             Diagnoses: member.diagnoses,
-                            Medication: member.medication,
+                            'Current medication (emergency information only)': member.medication,
                             Allergies: member.allergies,
                             GP: [member.gp_name, member.gp_practice, member.gp_phone].filter(Boolean).join(' · '),
                         })

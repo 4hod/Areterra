@@ -54,7 +54,7 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
     general: 'General note',
     concern: 'Concern note',
     progress: 'Progress note',
-    handover: 'Handover note',
+    handover: 'Daily note',
 };
 
 function Pagination({ links }: { links: PageLink[] }) {

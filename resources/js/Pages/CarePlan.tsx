@@ -102,8 +102,9 @@ export default function CarePlan({ generated_at, member, goals }: Props) {
             )}
 
             {member.medication && (
-                <Section title="Medication">
+                <Section title="Current medication — emergency information only">
                     <p className="whitespace-pre-wrap">{member.medication}</p>
+                    <p className="mt-2 text-xs text-slate-500">Areterra does not administer medication.</p>
                 </Section>
             )}
 

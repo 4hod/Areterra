@@ -126,7 +126,7 @@ class CoreRecordsSweepTest extends SweepTestCase
 
         $r = $this->post("/members/{$m->id}/body-maps", [
             'markers' => [['view' => 'front', 'x' => 40.5, 'y' => 62.0, 'note' => 'Small graze']],
-            'notes' => 'Noticed at handover.',
+            'notes' => 'Noticed in the daily record.',
             'observed_at' => now()->toDateTimeString(),
         ]);
         $this->assertWriteOk($r, 'body-maps.store');
