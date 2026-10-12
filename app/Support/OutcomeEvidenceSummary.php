@@ -53,7 +53,12 @@ class OutcomeEvidenceSummary
         }
 
         foreach ($dayRecords as $record) {
-            $text = trim(collect([$record->activities, $record->notes])->filter()->join(' — '));
+            $text = trim(collect([
+                $record->activities,
+                $record->achievement,
+                $record->support_notes,
+                $record->notes,
+            ])->filter()->join(' — '));
             if ($text === '') continue;
             foreach (self::themesFor($text) as $theme) {
                 $themeExamples->push([

@@ -7,6 +7,7 @@ import MoodPicker from '../components/MoodPicker';
 import { MOOD_EMOJI, Mood } from '../types';
 
 type Intake = 'good' | 'some' | 'poor' | 'refused';
+type Participation = 'independent' | 'with_support' | 'partial' | 'declined';
 
 const INTAKE_OPTIONS: { value: Intake; label: string }[] = [
     { value: 'good', label: 'Good' },
@@ -15,15 +16,23 @@ const INTAKE_OPTIONS: { value: Intake; label: string }[] = [
     { value: 'refused', label: 'Refused' },
 ];
 
+const PARTICIPATION_OPTIONS: { value: Participation; label: string }[] = [
+    { value: 'independent', label: 'Independent' },
+    { value: 'with_support', label: 'With support' },
+    { value: 'partial', label: 'Some participation' },
+    { value: 'declined', label: 'Chose not to' },
+];
+
 interface Record {
     end_mood: Mood | null;
     session_type: string | null;
     activities: string | null;
+    participation_level: Participation | null;
+    achievement: string | null;
+    support_notes: string | null;
     food_intake: Intake | null;
     fluid_intake: Intake | null;
     toileting_notes: string | null;
-    medication_given: boolean;
-    medication_notes: string | null;
     incident: boolean;
     incident_detail: string | null;
     photos: string[];
@@ -43,11 +52,12 @@ const BLANK: Record = {
     end_mood: null,
     session_type: '',
     activities: '',
+    participation_level: null,
+    achievement: '',
+    support_notes: '',
     food_intake: null,
     fluid_intake: null,
     toileting_notes: '',
-    medication_given: false,
-    medication_notes: '',
     incident: false,
     incident_detail: '',
     photos: [],
@@ -75,11 +85,31 @@ function IntakePicker({ value, onChange }: { value: Intake | null; onChange: (v:
     );
 }
 
+function ParticipationPicker({ value, onChange }: { value: Participation | null; onChange: (v: Participation) => void }) {
+    return (
+        <div className="grid grid-cols-2 gap-2">
+            {PARTICIPATION_OPTIONS.map((option) => (
+                <button
+                    type="button"
+                    key={option.value}
+                    onClick={() => onChange(option.value)}
+                    className={`rounded-lg px-2 py-2.5 text-xs font-semibold ${
+                        value === option.value ? 'bg-brand text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
+                >
+                    {option.label}
+                </button>
+            ))}
+        </div>
+    );
+}
+
 export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) {
     const [editing, setEditing] = useState<Row | null>(null);
     const [form, setForm] = useState<Record>(BLANK);
     const [newPhotos, setNewPhotos] = useState<File[]>([]);
     const [removePhotos, setRemovePhotos] = useState<string[]>([]);
+    const [toiletingIssue, setToiletingIssue] = useState(false);
     const photoInput = useRef<HTMLInputElement>(null);
 
     const doneCount = rows.filter((r) => r.record).length;
@@ -88,6 +118,7 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
         setEditing(row);
         setNewPhotos([]);
         setRemovePhotos([]);
+        setToiletingIssue(Boolean(row.record?.toileting_notes));
         setForm({
             ...BLANK,
             ...row.record,
@@ -99,7 +130,7 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
         if (!editing) return;
         router.post(
             `/end-of-day/${editing.id}`,
-            { ...form, photos: newPhotos, remove_photos: removePhotos },
+            { ...form, toileting_issue: toiletingIssue, toileting_notes: toiletingIssue ? form.toileting_notes : '', photos: newPhotos, remove_photos: removePhotos },
             { forceFormData: true, onSuccess: () => setEditing(null) },
         );
     }
@@ -179,11 +210,21 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
             <Modal open={editing !== null} title={`End of day — ${editing?.name ?? ''}`} onClose={() => setEditing(null)}>
                 <div className="space-y-4">
                     <p className="rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-900">
-                        Keep it quick: choose their leaving mood, say what they did, add anything worth remembering, and include a photo if useful.
+                        Record the useful story of their day: what they joined in with, what went well, the support they needed and anything to hand over.
                     </p>
                     <div>
                         <div className="text-sm font-medium mb-2">Mood at end of day</div>
                         <MoodPicker value={form.end_mood} onChange={(m) => setForm({ ...form, end_mood: m })} />
+                    </div>
+                    <div>
+                        <label htmlFor="eod-session" className="text-sm font-medium block mb-1">Main session or area</label>
+                        <input
+                            id="eod-session"
+                            value={form.session_type ?? ''}
+                            onChange={(e) => setForm({ ...form, session_type: e.target.value })}
+                            placeholder="e.g. Animal care, cooking, horticulture"
+                            className="w-full rounded-lg border border-slate-300 px-3"
+                        />
                     </div>
                     <div>
                         <label htmlFor="eod-activities" className="text-sm font-medium block mb-1">What did they do today?</label>
@@ -198,12 +239,55 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
                     </div>
 
                     <div>
-                        <label htmlFor="eod-notes" className="text-sm font-medium block mb-1">Anything worth noting?</label>
+                        <div className="text-sm font-medium mb-1">Participation and engagement</div>
+                        <ParticipationPicker
+                            value={form.participation_level}
+                            onChange={(value) => setForm({ ...form, participation_level: value })}
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="eod-achievement" className="text-sm font-medium block mb-1">What went well or what did they achieve?</label>
+                        <textarea
+                            id="eod-achievement"
+                            value={form.achievement ?? ''}
+                            onChange={(e) => setForm({ ...form, achievement: e.target.value })}
+                            placeholder="A skill, positive choice, progress, confidence or something they were proud of"
+                            className="w-full rounded-lg border border-slate-300 p-3"
+                            rows={2}
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="eod-support" className="text-sm font-medium block mb-1">Support or prompts needed</label>
+                        <textarea
+                            id="eod-support"
+                            value={form.support_notes ?? ''}
+                            onChange={(e) => setForm({ ...form, support_notes: e.target.value })}
+                            placeholder="Optional — what helped them take part or be more independent?"
+                            className="w-full rounded-lg border border-slate-300 p-3"
+                            rows={2}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                            <div className="text-sm font-medium mb-1">Food intake</div>
+                            <IntakePicker value={form.food_intake} onChange={(v) => setForm({ ...form, food_intake: v })} />
+                        </div>
+                        <div>
+                            <div className="text-sm font-medium mb-1">Fluid intake</div>
+                            <IntakePicker value={form.fluid_intake} onChange={(v) => setForm({ ...form, fluid_intake: v })} />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="eod-notes" className="text-sm font-medium block mb-1">Handover or anything for next time?</label>
                         <textarea
                             id="eod-notes"
                             value={form.notes ?? ''}
                             onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                            placeholder="Optional — progress, achievements, choices or useful handover information"
+                            placeholder="Optional — preferences, follow-up, reminders or other useful information"
                             className="w-full rounded-lg border border-slate-300 p-3"
                             rows={2}
                         />
@@ -211,62 +295,30 @@ export default function EndOfDay({ date, rows }: { date: string; rows: Row[] }) 
 
                     <details
                         className="rounded-xl border border-slate-200 bg-slate-50 p-3"
-                        open={Boolean(
-                            form.session_type || form.food_intake || form.fluid_intake || form.toileting_notes
-                            || form.medication_given || form.incident || form.concern
-                        )}
+                        open={Boolean(toiletingIssue || form.incident || form.concern)}
                     >
-                        <summary className="cursor-pointer font-semibold text-brand-dark">Add care, medication, incident or concern details</summary>
-                        <p className="mt-1 text-xs text-slate-500">Only open this when there is something extra to record.</p>
+                        <summary className="cursor-pointer font-semibold text-brand-dark">Record an issue or concern</summary>
+                        <p className="mt-1 text-xs text-slate-500">Leave this closed when there were no issues.</p>
                         <div className="mt-4 space-y-4">
-                            <div>
-                                <label htmlFor="eod-session" className="text-sm font-medium block mb-1">Session type (optional)</label>
-                                <input
-                                    id="eod-session"
-                                    value={form.session_type ?? ''}
-                                    onChange={(e) => setForm({ ...form, session_type: e.target.value })}
-                                    placeholder="e.g. Animal care, Horticulture"
-                                    className="w-full rounded-lg border border-slate-300 px-3"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div>
-                                    <div className="text-sm font-medium mb-1">Food intake</div>
-                                    <IntakePicker value={form.food_intake} onChange={(v) => setForm({ ...form, food_intake: v })} />
-                                </div>
-                                <div>
-                                    <div className="text-sm font-medium mb-1">Fluid intake</div>
-                                    <IntakePicker value={form.fluid_intake} onChange={(v) => setForm({ ...form, fluid_intake: v })} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="eod-toileting" className="text-sm font-medium block mb-1">Toileting notes</label>
-                                <textarea
-                                    id="eod-toileting"
-                                    value={form.toileting_notes ?? ''}
-                                    onChange={(e) => setForm({ ...form, toileting_notes: e.target.value })}
-                                    className="w-full rounded-lg border border-slate-300 p-3"
-                                    rows={2}
-                                />
-                            </div>
-
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-medium">
                                     <input
                                         type="checkbox"
-                                        checked={form.medication_given}
-                                        onChange={(e) => setForm({ ...form, medication_given: e.target.checked })}
+                                        checked={toiletingIssue}
+                                        onChange={(event) => {
+                                            setToiletingIssue(event.target.checked);
+                                            if (!event.target.checked) setForm({ ...form, toileting_notes: '' });
+                                        }}
                                         className="rounded border-slate-300"
                                     />
-                                    Medication given
+                                    Any toileting issue?
                                 </label>
-                                {form.medication_given && (
+                                {toiletingIssue && (
                                     <textarea
-                                        value={form.medication_notes ?? ''}
-                                        onChange={(e) => setForm({ ...form, medication_notes: e.target.value })}
-                                        placeholder="What was given and when"
+                                        id="eod-toileting"
+                                        value={form.toileting_notes ?? ''}
+                                        onChange={(e) => setForm({ ...form, toileting_notes: e.target.value })}
+                                        placeholder="What was the issue and was any action needed?"
                                         className="mt-2 w-full rounded-lg border border-slate-300 p-3"
                                         rows={2}
                                     />

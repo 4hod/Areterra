@@ -35,8 +35,8 @@ class EndOfDayController extends Controller
                     'record' => $record ? [
                         ...$record->only([
                             'end_mood', 'session_type', 'activities',
+                            'participation_level', 'achievement', 'support_notes',
                             'food_intake', 'fluid_intake', 'toileting_notes',
-                            'medication_given', 'medication_notes',
                             'incident', 'incident_detail',
                             'notes', 'concern', 'concern_detail',
                         ]),
@@ -54,11 +54,13 @@ class EndOfDayController extends Controller
             'end_mood' => ['nullable', 'in:'.implode(',', Attendance::MOODS)],
             'session_type' => ['nullable', 'string', 'max:100'],
             'activities' => ['nullable', 'string'],
+            'participation_level' => ['nullable', 'in:'.implode(',', EndOfDayRecord::PARTICIPATION_LEVELS)],
+            'achievement' => ['nullable', 'string'],
+            'support_notes' => ['nullable', 'string'],
             'food_intake' => ['nullable', 'in:'.implode(',', EndOfDayRecord::INTAKE_LEVELS)],
             'fluid_intake' => ['nullable', 'in:'.implode(',', EndOfDayRecord::INTAKE_LEVELS)],
-            'toileting_notes' => ['nullable', 'string'],
-            'medication_given' => ['boolean'],
-            'medication_notes' => ['nullable', 'string'],
+            'toileting_issue' => ['boolean'],
+            'toileting_notes' => ['nullable', 'string', 'required_if:toileting_issue,true'],
             'incident' => ['boolean'],
             'incident_detail' => ['nullable', 'string', 'required_if:incident,true'],
             'notes' => ['nullable', 'string'],
@@ -93,7 +95,7 @@ class EndOfDayController extends Controller
         $record = EndOfDayRecord::updateOrCreate(
             ['member_id' => $member->id, 'date' => today()],
             [
-                ...collect($data)->except(['photos', 'remove_photos'])->all(),
+                ...collect($data)->except(['photos', 'remove_photos', 'toileting_issue'])->all(),
                 'photos' => $photos->all(),
                 'arrival_mood' => $arrival,
                 'user_id' => $request->user()->id,

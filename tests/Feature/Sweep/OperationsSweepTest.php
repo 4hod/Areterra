@@ -92,6 +92,9 @@ class OperationsSweepTest extends SweepTestCase
         $this->assertWriteOk($this->post("/end-of-day/{$m->id}", [
             'end_mood' => 'happy', 'session_type' => 'Farm morning',
             'activities' => 'Mucking out, feeding',
+            'participation_level' => 'independent',
+            'achievement' => 'Completed the feed round',
+            'support_notes' => 'Used the picture checklist',
             'food_intake' => 'good', 'fluid_intake' => 'good',
             'notes' => 'Great day.',
         ]), 'end-of-day.store');

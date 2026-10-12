@@ -67,7 +67,7 @@ interface Props {
     };
     memberNotes: MemberNoteRow[];
     recentAttendance: { id: number; date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null }[];
-    recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; notes: string | null; concern: boolean; incident: boolean; author: string | null }[];
+    recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; participation_level: string | null; achievement: string | null; support_notes: string | null; notes: string | null; concern: boolean; incident: boolean; author: string | null }[];
     abcObservations: { id: number; observed_at: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null; concern: boolean; user: string }[];
     bodyMaps: { id: number; recorded_at: string; markers: { view: 'front' | 'back'; x: number; y: number; note?: string | null }[]; notes: string | null; user: string }[];
     commsLog: CommsRow[];
@@ -460,6 +460,9 @@ export default function Show(props: Props) {
                                     {r.session_type && <div className="text-sm text-slate-500">{r.session_type}</div>}
                                     {r.author && <div className="text-xs text-slate-400">by {r.author}</div>}
                                     {r.activities && <div className="text-sm text-slate-500">{r.activities}</div>}
+                                    {r.achievement && <div className="text-sm text-emerald-800">✓ {r.achievement}</div>}
+                                    {r.participation_level && <div className="text-xs text-slate-400">Participation: {r.participation_level.replace(/_/g, ' ')}</div>}
+                                    {r.support_notes && <div className="text-xs text-slate-500">Support: {r.support_notes}</div>}
                                     {r.notes && <div className="text-sm mt-1">{r.notes}</div>}
                                 </li>
                             ))}
