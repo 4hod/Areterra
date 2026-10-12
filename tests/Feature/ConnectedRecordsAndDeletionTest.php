@@ -150,4 +150,45 @@ class ConnectedRecordsAndDeletionTest extends TestCase
         $this->delete("/tasks/{$task->id}")->assertSessionHas('success');
         $this->assertSoftDeleted('tasks', ['id' => $task->id]);
     }
+
+    public function test_task_can_be_attached_directly_to_an_active_member_goal(): void
+    {
+        $member = Member::create(['first_name' => 'Billy', 'last_name' => 'Example', 'status' => 'active']);
+        $goal = $member->goals()->create(['title' => 'Build confidence with animals', 'status' => 'active']);
+
+        $this->post('/tasks', [
+            'title' => 'Offer a supported feeding activity',
+            'priority' => 'medium',
+            'related_type' => 'goal',
+            'related_id' => $goal->id,
+        ])->assertSessionHas('success');
+
+        $this->assertTrue(Task::firstOrFail()->taskable->is($goal));
+    }
+
+    public function test_incident_review_records_action_learning_and_closure(): void
+    {
+        $incident = Incident::create([
+            'title' => 'Near miss',
+            'occurred_at' => now(),
+            'description' => 'A gate was left unsecured.',
+            'severity' => 'moderate',
+            'reported_by' => $this->admin->id,
+        ]);
+
+        $this->put("/incidents/{$incident->id}", [
+            'status' => 'closed',
+            'actions_taken' => 'The gate was secured immediately.',
+            'manager_review' => 'The closing check was missed.',
+            'learning' => 'The final check needs a named owner.',
+            'prevention_action' => 'Added the gate to the end-of-day checklist.',
+            'follow_up_required' => false,
+        ])->assertSessionHas('success');
+
+        $incident->refresh();
+        $this->assertSame('closed', $incident->status);
+        $this->assertSame('The final check needs a named owner.', $incident->learning);
+        $this->assertNotNull($incident->reviewed_at);
+        $this->assertNotNull($incident->closed_at);
+    }
 }

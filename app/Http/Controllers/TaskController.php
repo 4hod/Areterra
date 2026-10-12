@@ -50,7 +50,7 @@ class TaskController extends Controller
             'mine' => (bool) $request->query('mine'),
             'staff' => User::orderBy('name')->get(['id', 'name']),
             'canManage' => Gate::allows('manage_operations'),
-            'relatedOptions' => RecordLinks::options(['member', 'animal', 'vehicle', 'activity', 'grant']),
+            'relatedOptions' => RecordLinks::options(['member', 'goal', 'animal', 'vehicle', 'activity', 'grant']),
             'context' => $context ? RecordLinks::metadata($context) : null,
             'counts' => [
                 'open' => (clone $visible)->open()->count(),
@@ -67,7 +67,7 @@ class TaskController extends Controller
             'priority' => ['required', 'in:low,medium,high'],
             'due_date' => ['nullable', 'date'],
             'assigned_to' => ['nullable', 'exists:users,id'],
-            'related_type' => ['nullable', 'required_with:related_id', 'in:member,animal,vehicle,activity,grant'],
+            'related_type' => ['nullable', 'required_with:related_id', 'in:member,goal,animal,vehicle,activity,grant'],
             'related_id' => ['nullable', 'required_with:related_type', 'integer'],
         ]);
 

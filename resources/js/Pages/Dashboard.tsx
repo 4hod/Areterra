@@ -24,6 +24,7 @@ interface Props {
     leaveBalance: { entitlement: number; taken: number; remaining: number };
     announcements: { id: number; title: string; author: string; created_at: string; read: boolean }[];
     notifications: { id: string; title: string; body: string; url: string; read: boolean; created_at: string }[];
+    servicePulse: { attendanceThisWeek: number; attendanceDirection: number; progressEvidence: number; openIncidents: number; dailyStoriesToday: number } | null;
 }
 
 function greeting() {
@@ -120,6 +121,16 @@ export default function Dashboard(props: Props) {
                     <footer><span className={props.stats.animalsNeedingChecks ? '' : 'is-clear'}>{props.stats.animalsNeedingChecks ? `${props.stats.animalsNeedingChecks} checks outstanding` : 'All checks complete'}</span><Link href="/animals"><AppIcon name="plus"/> Record welfare check</Link></footer>
                 </article>
             </section>
+
+            {props.servicePulse && <section className="overview-service-pulse-4a">
+                <header><div><span>SERVICE PULSE</span><h2>What is changing?</h2><p>A useful view of recent delivery—not another list of totals.</p></div><Link href="/reports">Explore reports <AppIcon name="arrow"/></Link></header>
+                <div>
+                    <article><i className={props.servicePulse.attendanceDirection < 0 ? 'is-down' : 'is-up'}>{props.servicePulse.attendanceDirection < 0 ? '↓' : props.servicePulse.attendanceDirection > 0 ? '↑' : '→'}</i><span><b>{props.servicePulse.attendanceThisWeek}</b><small>attendances in the last 7 days</small></span></article>
+                    <article><i><AppIcon name="activity"/></i><span><b>{props.servicePulse.progressEvidence}</b><small>pieces of progress evidence this month</small></span></article>
+                    <article><i className={props.servicePulse.openIncidents ? 'is-down' : 'is-up'}><AppIcon name="alert"/></i><span><b>{props.servicePulse.openIncidents}</b><small>incidents still in the learning cycle</small></span></article>
+                    <article><i><AppIcon name="file"/></i><span><b>{props.servicePulse.dailyStoriesToday}</b><small>daily stories completed today</small></span></article>
+                </div>
+            </section>}
 
             <h2 className="overview-section-heading">Quick actions</h2>
             <section className="overview-quick-actions">{availableQuickActions.map((action) => <Link href={action.href} key={action.href}><AppIcon name={action.icon}/><b>{action.label}</b><AppIcon name="arrow"/></Link>)}</section>

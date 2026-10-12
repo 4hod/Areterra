@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Activity;
 use App\Models\Animal;
 use App\Models\DailyMonitoring;
 use App\Models\ImpactEntry;
@@ -148,6 +149,33 @@ class AreterraInsightsTest extends TestCase
         $volunteer = User::factory()->create(['role' => 'volunteer']);
         $this->actingAs($volunteer)->get("/members/{$member->id}/passport")
             ->assertForbidden();
+    }
+
+    public function test_member_portfolio_includes_upcoming_sessions_and_personal_choices(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $member = Member::create(['first_name' => 'Billy', 'last_name' => 'Example', 'status' => 'active']);
+        $activity = Activity::create([
+            'title' => 'Animal care morning',
+            'activity_date' => today()->addWeek(),
+            'user_id' => $staff->id,
+        ]);
+        $activity->participants()->create(['member_id' => $member->id, 'attended' => false]);
+        $member->portfolioItems()->create([
+            'type' => 'choice',
+            'title' => 'Visit the alpacas',
+            'visible_to_member' => true,
+            'created_by' => $staff->id,
+        ]);
+
+        $this->actingAs($staff)->get("/members/{$member->id}/portfolio")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Members/Portfolio')
+                ->where('upcomingActivities.0.title', 'Animal care morning')
+                ->where('items.0.type', 'choice')
+                ->where('items.0.title', 'Visit the alpacas')
+            );
     }
 
     public function test_welfare_baseline_stays_in_learning_mode_without_enough_history(): void

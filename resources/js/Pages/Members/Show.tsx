@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import BodyMapFigure from '../../components/BodyMapFigure';
@@ -22,8 +22,8 @@ const CONSENT_LABELS: Record<string, string> = {
 interface EmergencyContact { name: string; relationship?: string; phone?: string }
 interface CommsRow { id: number; type: string; direction: string; subject: string | null; summary: string | null; contact_name: string | null; organisation: string | null; date: string; user: string }
 interface ContactRow { id: number; name: string; role: string | null; organisation: string | null; email: string | null; phone: string | null; notes: string | null }
-interface GoalRow { id: number; title: string; description: string | null; status: string; target_date: string | null; achieved_at: string | null }
-interface OutcomeRow { id: number; date: string; outcome: string; goal: string | null; user: string }
+interface GoalRow { id: number; title: string; description: string | null; status: string; target_date: string | null; achieved_at: string | null; evidence_count: number }
+interface OutcomeRow { id: number; date: string; updated_at: string; outcome: string; goal: string | null; user: string }
 interface AlertRow { id: number; type: string; text: string; severity: string }
 interface ConsentRow { consent_type: string; granted: boolean; recorded_on: string; expires_at: string | null; is_expired: boolean; notes: string | null }
 interface MemberNoteRow { id: number; note_type: string; note: string; author_name: string | null; noted_at: string | null; source: string }
@@ -65,8 +65,8 @@ interface Props {
         settings: { transport_required: boolean; attendance_days: number[]; key_worker: string | null };
     };
     memberNotes: MemberNoteRow[];
-    recentAttendance: { id: number; date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null }[];
-    recentEndOfDay: { id: number; date: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; participation_level: string | null; achievement: string | null; support_notes: string | null; notes: string | null; concern: boolean; incident: boolean; author: string | null }[];
+    recentAttendance: { id: number; date: string; checked_in: boolean; arrival_mood: Mood | null; notes: string | null; updated_at: string }[];
+    recentEndOfDay: { id: number; date: string; updated_at: string; arrival_mood: Mood | null; end_mood: Mood | null; session_type: string | null; activities: string | null; participation_level: string | null; achievement: string | null; support_notes: string | null; photos: string[]; notes: string | null; concern: boolean; incident: boolean; author: string | null }[];
     abcObservations: { id: number; observed_at: string; antecedent: string | null; behaviour: string; consequence: string | null; wellbeing_score: number | null; concern: boolean; user: string }[];
     bodyMaps: { id: number; recorded_at: string; markers: { view: 'front' | 'back'; x: number; y: number; note?: string | null }[]; notes: string | null; user: string }[];
     commsLog: CommsRow[];
@@ -84,7 +84,7 @@ interface Props {
     canRecordImpact: boolean;
 }
 
-const TABS = ['Profile', 'Sessions', 'Impact', '📞 Comms', 'Goals', 'Outcomes', '⚠ Alerts', 'Circle of Care', 'Consents', 'Body Map', 'ABC Obs', 'GP Info', 'Settings'] as const;
+const TABS = ['Profile', 'Daily story', 'Impact', '📞 Comms', 'Goals', 'Outcomes', '⚠ Alerts', 'Circle of Care', 'Consents', 'Body Map', 'ABC Obs', 'GP Info', 'Settings'] as const;
 
 const COMMS_ICONS: Record<string, string> = { email: '✉️', phone: '📞', letter: '📮', meeting: '🤝', text: '💬', other: '📝' };
 const NOTE_TYPE_LABELS: Record<string, string> = {
@@ -116,12 +116,33 @@ function ageFromDob(dob: string | null) {
 export default function Show(props: Props) {
     const { member, memberNotes, recentAttendance, recentEndOfDay, abcObservations, bodyMaps, commsLog, contacts, goals, outcomes, impactEntries, impactOptions, alerts, consents, canEdit, canRecordImpact } = props;
     const [tab, setTab] = useState<(typeof TABS)[number]>('Profile');
+    const pageUrl = usePage().url;
+    const [lastVisitedAt] = useState<string | null>(() => {
+        if (typeof window === 'undefined') return null;
+        try {
+            return localStorage.getItem(`ah-member-last-visit-${member.id}`);
+        } catch {
+            return null;
+        }
+    });
     const photoInput = useRef<HTMLInputElement>(null);
     const staffNotes = memberNotes.filter((note) => note.note_type !== 'end_of_day');
 
     useEffect(() => {
         recordRecentlyViewed({ title: member.name, url: `/members/${member.id}`, type: 'Member' });
+        try {
+            localStorage.setItem(`ah-member-last-visit-${member.id}`, new Date().toISOString());
+        } catch {
+            // A last-visited marker is helpful, but never blocks the profile.
+        }
     }, [member.id]);
+
+    useEffect(() => {
+        const section = new URLSearchParams(pageUrl.split('?')[1] ?? '').get('section');
+        if (section === 'goals') setTab('Goals');
+        if (section === 'story') setTab('Daily story');
+        if (section === 'impact') setTab('Impact');
+    }, [pageUrl]);
 
     // --- modal state ---
     const [editing, setEditing] = useState(false);
@@ -215,6 +236,28 @@ export default function Show(props: Props) {
     }
 
     const grantedCount = consents.filter((c) => c.granted).length;
+    const latestSession = recentEndOfDay[0] ?? null;
+    const latestAttendance = recentAttendance[0] ?? null;
+    const activeGoals = goals.filter((item) => item.status === 'active');
+    const latestPositive = latestSession?.achievement || impactEntries[0]?.outcome_note || 'No recent achievement has been recorded.';
+    const dailyStory = [
+        ...recentEndOfDay.map((record) => ({
+            key: `daily-${record.id}`, date: record.date, changedAt: record.updated_at, title: record.achievement ? 'Positive moment' : 'Daily story',
+            summary: record.achievement || record.activities || record.notes || 'Daily record completed.', photos: record.photos,
+            mood: [record.arrival_mood ? MOOD_EMOJI[record.arrival_mood] : '', record.end_mood ? MOOD_EMOJI[record.end_mood] : ''].filter(Boolean).join(' → '),
+            tags: [record.session_type, record.participation_level ? `${record.participation_level.replace(/_/g, ' ')} participation` : null, record.author ? `Recorded by ${record.author}` : null].filter((tag): tag is string => Boolean(tag)),
+        })),
+        ...impactEntries.map((entry) => ({
+            key: `impact-${entry.id}`, date: entry.observed_at, changedAt: entry.observed_at, title: entry.goal ? `Progress towards ${entry.goal}` : 'Progress evidence',
+            summary: entry.outcome_note, photos: [] as string[], mood: [entry.mood_before ? MOOD_EMOJI[entry.mood_before] : '', entry.mood_after ? MOOD_EMOJI[entry.mood_after] : ''].filter(Boolean).join(' → '),
+            tags: [entry.activity, entry.animal ? `${entry.animal.name} · ${entry.animal.species}` : null, ...entry.evidence_tags].filter((tag): tag is string => Boolean(tag)),
+        })),
+        ...outcomes.map((entry) => ({ key: `outcome-${entry.id}`, date: entry.date, changedAt: entry.updated_at, title: entry.goal ? `Outcome · ${entry.goal}` : 'Outcome recorded', summary: entry.outcome, photos: [] as string[], mood: '', tags: [`Recorded by ${entry.user}`] })),
+        ...recentAttendance.map((entry) => ({ key: `attendance-${entry.id}`, date: entry.date, changedAt: entry.updated_at, title: entry.checked_in ? 'Arrived at Areterra' : 'Attendance updated', summary: entry.notes || 'Attendance recorded.', photos: [] as string[], mood: entry.arrival_mood ? MOOD_EMOJI[entry.arrival_mood] : '', tags: ['Attendance'] })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 30);
+    const changesSinceLastVisit = lastVisitedAt
+        ? dailyStory.filter((entry) => new Date(entry.changedAt).getTime() > new Date(lastVisitedAt).getTime()).length
+        : null;
 
     return (
         <AppShell title={member.name}>
@@ -299,6 +342,31 @@ export default function Show(props: Props) {
                     ))}
                 </div>
             )}
+
+            <section className="member-briefing-4a" aria-label="Member support briefing">
+                <article>
+                    <span>{lastVisitedAt ? 'Since your last visit' : 'Latest positive change'}</span>
+                    <b>{latestPositive}</b>
+                    <small>{changesSinceLastVisit !== null
+                        ? `${changesSinceLastVisit} new timeline update${changesSinceLastVisit === 1 ? '' : 's'} since ${fmt(lastVisitedAt!)}`
+                        : latestSession ? `From the daily story on ${fmt(latestSession.date)}` : 'Add progress evidence as meaningful moments happen.'}</small>
+                </article>
+                <article>
+                    <span>Last attendance</span>
+                    <b>{latestAttendance ? fmt(latestAttendance.date) : 'No attendance yet'}</b>
+                    <small>{latestAttendance?.arrival_mood ? `Arrival mood ${MOOD_EMOJI[latestAttendance.arrival_mood]}` : 'Attendance and arrival mood appear here.'}</small>
+                </article>
+                <article>
+                    <span>Current focus</span>
+                    <b>{activeGoals[0]?.title ?? 'No active goal'}</b>
+                    <small>{activeGoals.length > 1 ? `${activeGoals.length - 1} more active goal${activeGoals.length === 2 ? '' : 's'}` : 'Connect everyday progress to a meaningful goal.'}</small>
+                </article>
+                <article>
+                    <span>Important today</span>
+                    <b>{alerts[0]?.text || member.allergies || 'No current alerts'}</b>
+                    <small>{alerts.length > 1 ? `${alerts.length - 1} more alert${alerts.length === 2 ? '' : 's'} on this record` : member.allergies ? 'Allergy information' : 'Nothing new needs staff attention.'}</small>
+                </article>
+            </section>
 
             <details className="member-connected-records-4a">
                 <summary>Related records <span>Tasks, forms, documents and incidents</span></summary>
@@ -432,8 +500,8 @@ export default function Show(props: Props) {
                 </div>
             )}
 
-            {/* ── Sessions ── */}
-            {tab === 'Sessions' && (
+            {/* ── Daily story ── */}
+            {tab === 'Daily story' && (
                 <div className="space-y-3">
                     <Link
                         href={`/members/${member.id}/history`}
@@ -441,32 +509,21 @@ export default function Show(props: Props) {
                     >
                         View full history →
                     </Link>
-                    <Card title="End-of-day records">
-                        {recentEndOfDay.length === 0 && <p className="text-sm text-slate-400">No records yet.</p>}
-                        <ul className="divide-y divide-slate-100">
-                            {recentEndOfDay.map((r) => (
-                                <li key={r.id} className="py-3">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-semibold text-sm">
-                                            {new Date(r.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                                            {r.concern && <span className="ml-2">⚠️</span>}
-                                            {r.incident && <span className="ml-1">🩹</span>}
-                                        </span>
-                                        <span className="text-lg">
-                                            {r.arrival_mood && MOOD_EMOJI[r.arrival_mood]}
-                                            {r.end_mood && <> → {MOOD_EMOJI[r.end_mood]}</>}
-                                        </span>
-                                    </div>
-                                    {r.session_type && <div className="text-sm text-slate-500">{r.session_type}</div>}
-                                    {r.author && <div className="text-xs text-slate-400">by {r.author}</div>}
-                                    {r.activities && <div className="text-sm text-slate-500">{r.activities}</div>}
-                                    {r.achievement && <div className="text-sm text-emerald-800">✓ {r.achievement}</div>}
-                                    {r.participation_level && <div className="text-xs text-slate-400">Participation: {r.participation_level.replace(/_/g, ' ')}</div>}
-                                    {r.support_notes && <div className="text-xs text-slate-500">Support: {r.support_notes}</div>}
-                                    {r.notes && <div className="text-sm mt-1">{r.notes}</div>}
-                                </li>
+                    <Card title="Daily story">
+                        {dailyStory.length === 0 && <p className="text-sm text-slate-400">No daily story entries yet.</p>}
+                        <div className="member-story-list-4a">
+                            {dailyStory.map((entry) => (
+                                <article key={entry.key} className="member-story-item-4a">
+                                    <header>
+                                        <h3>{entry.title}</h3>
+                                        <time>{new Date(entry.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}{entry.mood && ` · ${entry.mood}`}</time>
+                                    </header>
+                                    <p>{entry.summary}</p>
+                                    {entry.photos.length > 0 && <div className="member-story-photos-4a">{entry.photos.map((photo, index) => <img key={photo} src={photo} alt={`${member.name}'s daily story ${index + 1}`} loading="lazy" />)}</div>}
+                                    {entry.tags.length > 0 && <footer>{entry.tags.map((tag) => <span key={tag}>{tag}</span>)}</footer>}
+                                </article>
                             ))}
-                        </ul>
+                        </div>
                     </Card>
                     <Card title="Recent attendance">
                         <ul className="divide-y divide-slate-100 text-sm">
@@ -568,9 +625,9 @@ export default function Show(props: Props) {
                         + Add goal
                     </button>}
                     {goals.length === 0 && <Card><p className="text-sm text-slate-400">No goals set yet.</p></Card>}
-                    <div className="space-y-2">
+                    <div className="member-goal-journey-4a">
                         {goals.map((g) => (
-                            <Card key={g.id} className={g.status === 'achieved' ? 'border-l-4 border-l-status-green' : ''}>
+                            <Card key={g.id} className={`member-goal-card-4a is-${g.status}`}>
                                 <div className="flex items-center justify-between gap-2">
                                     <div>
                                         <div className={`font-bold ${g.status === 'achieved' ? 'text-status-green' : 'text-brand-dark'}`}>
@@ -591,6 +648,7 @@ export default function Show(props: Props) {
                                         {['active', 'achieved', 'paused'].map((s) => <option key={s}>{s}</option>)}
                                     </select>
                                 </div>
+                                <div className="member-goal-evidence-4a"><div><i style={{ width: `${Math.min(100, Math.max(8, g.evidence_count * 20))}%` }} /></div><span><b>{g.evidence_count}</b> connected example{g.evidence_count === 1 ? '' : 's'}</span>{canRecordImpact && g.status === 'active' && <button onClick={() => { setImpact({ ...impact, member_goal_id: String(g.id) }); setAddingImpact(true); }}>Record progress →</button>}</div>
                             </Card>
                         ))}
                     </div>
