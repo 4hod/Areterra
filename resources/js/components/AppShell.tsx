@@ -235,7 +235,7 @@ export default function AppShell({ title, children }: { title: string; children:
 
     return <div className={`portal-shell hub-app-shell route-theme-${routeTheme(url)}`}>
         <div className={`portal-navigation-progress ${navigating ? 'is-visible' : ''}`} aria-hidden="true"><i /></div>
-        <aside className="portal-sidebar hidden md:flex">
+        <aside className="portal-sidebar hidden lg:flex">
             <div className="portal-brand">
                 <img src="/areterra-logo-2026.jpg" alt="Areterra" />
             </div>
@@ -249,7 +249,7 @@ export default function AppShell({ title, children }: { title: string; children:
 
         <div className="portal-main hub-main-column">
             <header className="portal-topbar hub-topbar">
-                <button className="portal-menu-button md:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation">☰</button>
+                <button className="portal-menu-button lg:hidden" onClick={() => setDrawer(true)} aria-label="Open navigation"><AppIcon name="menu" /></button>
                 <Link href="/today" className="portal-mobile-brand" aria-label="Areterra — Today">
                     <img src="/areterra-logo-2026.jpg" alt="Areterra" />
                 </Link>
@@ -267,7 +267,7 @@ export default function AppShell({ title, children }: { title: string; children:
 
         {!online && <div className="portal-offline-banner" role="status"><i />You’re offline. Open information remains available and unsaved daily-story drafts stay on this device.</div>}
 
-        <nav className="portal-mobile-nav md:hidden">
+        <nav className="portal-mobile-nav lg:hidden" aria-label="Primary navigation">
             {mobileCore.map((item) => <Link key={item.href} href={item.href} className={isActive(item.href, url) || (item.href === '/today' && url === '/') ? 'is-active' : ''}><AppIcon name={item.icon}/><span>{item.label}</span></Link>)}
             <button type="button" className="portal-record-button" onClick={() => setRecording(true)} aria-haspopup="dialog"><span><AppIcon name="plus"/></span><b>Record</b></button>
             <Link href={mobileMore.href} className={isActive(mobileMore.href, url) ? 'is-active' : ''}><AppIcon name={mobileMore.icon}/><span>{mobileMore.label}</span></Link>
@@ -280,8 +280,8 @@ export default function AppShell({ title, children }: { title: string; children:
             </section>
         </div>}
 
-        {drawer && <div className="portal-drawer-backdrop md:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" onClick={(event) => event.stopPropagation()}>
-            <div className="portal-drawer-head"><Link href="/today" className="portal-drawer-product-brand" aria-label="Areterra — Today" onClick={() => setDrawer(false)}><img src="/areterra-logo-2026.jpg" alt="Areterra" /></Link><button onClick={() => setDrawer(false)} aria-label="Close navigation">×</button></div>
+        {drawer && <div className="portal-drawer-backdrop lg:hidden" onClick={() => setDrawer(false)}><aside className="portal-drawer" aria-label="Application navigation" onClick={(event) => event.stopPropagation()}>
+            <div className="portal-drawer-head"><Link href="/today" className="portal-drawer-product-brand" aria-label="Areterra — Today" onClick={() => setDrawer(false)}><img src="/areterra-logo-2026.jpg" alt="Areterra" /></Link><button onClick={() => setDrawer(false)} aria-label="Close navigation"><AppIcon name="close" /></button></div>
             <nav>
                 {drawerLinks('Favourites', shortcutFavourites)}
                 {drawerLinks('Recent', shortcutRecents)}

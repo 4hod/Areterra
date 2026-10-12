@@ -10,7 +10,7 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800" rel="stylesheet">
     <title inertia>{{ config('app.name', 'Areterra Hub') }}</title>
     @viteReactRefresh
-    @vite(['resources/css/app.css', 'resources/css/reference-refresh.css', 'resources/js/app.tsx'])
+    @vite(['resources/css/app.css', 'resources/css/reference-refresh.css', 'resources/css/design-system.css', 'resources/js/app.tsx'])
     @inertiaHead
 </head>
 <body class="font-sans antialiased bg-paper">
