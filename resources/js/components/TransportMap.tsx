@@ -10,7 +10,7 @@ export interface MapStop {
     lng: number | null;
 }
 
-export default function TransportMap({ stops }: { stops: MapStop[] }) {
+export default function TransportMap({ stops, activeStopId }: { stops: MapStop[]; activeStopId?: number | null }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
 
@@ -29,12 +29,37 @@ export default function TransportMap({ stops }: { stops: MapStop[] }) {
             maxZoom: 19,
         }).addTo(map);
 
-        const markers = pinned.map((s) => {
-            const marker = L.marker([s.lat, s.lng]).addTo(map);
+        const markers = pinned.map((s, index) => {
+            const isActive = s.id === activeStopId;
+            const icon = L.divIcon({
+                className: `transport-map-pin${isActive ? ' is-active' : ''}`,
+                html: `<span><b>${index + 1}</b></span>`,
+                iconSize: [36, 44],
+                iconAnchor: [18, 44],
+                popupAnchor: [0, -40],
+            });
+            const marker = L.marker([s.lat, s.lng], {
+                icon,
+                title: `${index + 1}. ${s.name}`,
+                alt: `Stop ${index + 1}: ${s.name}`,
+            }).addTo(map);
             const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address ?? `${s.lat},${s.lng}`)}`;
-            marker.bindPopup(
-                `<b>${s.name}</b><br>${s.address ?? ''}<br><a href="${directionsUrl}" target="_blank" rel="noreferrer">Open in Google Maps →</a>`,
-            );
+            const popup = document.createElement('div');
+            const name = document.createElement('strong');
+            name.textContent = `${index + 1}. ${s.name}${isActive ? ' — next stop' : ''}`;
+            popup.append(name);
+            if (s.address) {
+                const address = document.createElement('div');
+                address.textContent = s.address;
+                popup.append(address);
+            }
+            const directions = document.createElement('a');
+            directions.href = directionsUrl;
+            directions.target = '_blank';
+            directions.rel = 'noreferrer';
+            directions.textContent = 'Open in Google Maps →';
+            popup.append(directions);
+            marker.bindPopup(popup);
             return marker;
         });
 
@@ -44,13 +69,15 @@ export default function TransportMap({ stops }: { stops: MapStop[] }) {
             const group = L.featureGroup(markers);
             map.fitBounds(group.getBounds().pad(0.2));
         }
+        const activeIndex = pinned.findIndex((stop) => stop.id === activeStopId);
+        if (activeIndex >= 0) markers[activeIndex]?.openPopup();
 
         return () => {
             map.remove();
             mapRef.current = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [JSON.stringify(pinned.map((s) => [s.id, s.lat, s.lng]))]);
+    }, [activeStopId, JSON.stringify(pinned.map((s) => [s.id, s.name, s.address, s.lat, s.lng]))]);
 
     if (pinned.length === 0) {
         return (
@@ -60,5 +87,19 @@ export default function TransportMap({ stops }: { stops: MapStop[] }) {
         );
     }
 
-    return <div ref={containerRef} className="rounded-card overflow-hidden h-72 w-full" />;
+    return (
+        <div className="space-y-2">
+            <div className="flex flex-wrap gap-2" aria-label="Mapped transport stops">
+                {pinned.map((stop, index) => (
+                    <span
+                        key={stop.id}
+                        className={`transport-map-key${stop.id === activeStopId ? ' is-active' : ''}`}
+                    >
+                        {index + 1}. {stop.name}{stop.id === activeStopId ? ' · Next' : ''}
+                    </span>
+                ))}
+            </div>
+            <div ref={containerRef} className="rounded-card overflow-hidden h-72 w-full" />
+        </div>
+    );
 }

@@ -251,7 +251,10 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
 
             {rows.length > 0 && (
                 <Card title="🗺️ Today's stops" className="mb-4">
-                    <TransportMap stops={rows.map((r) => ({ id: r.id, name: r.name, address: r.address, lat: r.lat, lng: r.lng }))} />
+                    <TransportMap
+                        activeStopId={next?.id}
+                        stops={rows.map((r) => ({ id: r.id, name: r.name, address: r.address, lat: r.lat, lng: r.lng }))}
+                    />
                 </Card>
             )}
 
@@ -274,7 +277,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
 
             {/* Next-person card */}
             {next && (
-                <div className={`rounded-card p-5 text-white mb-4 ${phase === 2 ? 'bg-purple-700' : 'bg-brand'}`}>
+                <div className={`transport-next-card rounded-card p-5 text-white mb-4 ${phase === 2 ? 'is-afternoon' : ''}`}>
                     <div className="text-xs font-bold uppercase tracking-wide opacity-80">
                         {phase === 2 ? 'Next drop-off' : 'Next to collect'}
                     </div>
