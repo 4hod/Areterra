@@ -14,19 +14,39 @@ class AnimalController extends Controller
     {
         $today = today();
 
-        $animals = Animal::active()->orderBy('species')->orderBy('name')->get()
+        $animals = Animal::active()
+            ->with([
+                'welfareChecks' => fn ($query) => $query->whereDate('created_at', $today)->latest(),
+                'dailyMonitoring' => fn ($query) => $query->whereDate('monitor_date', $today),
+                'vetRecords' => fn ($query) => $query->whereNotNull('next_due_date')->orderBy('next_due_date'),
+            ])
+            ->orderBy('species')->orderBy('name')->get()
             ->map(fn ($a) => [
                 'id' => $a->id,
                 'name' => $a->name,
                 'species' => $a->species,
                 'welfare_status' => $a->welfare_status,
                 'photo_path' => $a->photo_path,
-                'checked_today' => $a->welfareChecks()->whereDate('created_at', $today)->exists(),
+                'checked_today' => $a->welfareChecks->isNotEmpty(),
+                'monitored_today' => $a->dailyMonitoring->isNotEmpty(),
+                'concern_today' => $a->welfareChecks->contains('concern', true)
+                    || $a->dailyMonitoring->contains('concern', true),
+                'next_vet_due' => $a->vetRecords->first()?->next_due_date?->toDateString(),
             ]);
+
+        $nextThirtyDays = $today->copy()->addDays(30);
 
         return Inertia::render('Animals/Index', [
             'species' => Animal::SPECIES,
             'bySpecies' => $animals->groupBy('species'),
+            'summary' => [
+                'total' => $animals->count(),
+                'checked' => $animals->where('checked_today', true)->count(),
+                'monitored' => $animals->where('monitored_today', true)->count(),
+                'concerns' => $animals->filter(fn ($animal) => $animal['concern_today'] || $animal['welfare_status'] !== 'green')->count(),
+                'vet_due' => $animals->filter(fn ($animal) => $animal['next_vet_due']
+                    && $animal['next_vet_due'] <= $nextThirtyDays->toDateString())->count(),
+            ],
             'canEdit' => Gate::allows('edit_animals'),
         ]);
     }

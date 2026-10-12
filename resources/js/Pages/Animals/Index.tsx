@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
@@ -23,7 +23,20 @@ interface AnimalRow {
     species: string;
     welfare_status: WelfareStatus;
     checked_today: boolean;
+    monitored_today: boolean;
+    concern_today: boolean;
+    next_vet_due: string | null;
 }
+
+interface Summary {
+    total: number;
+    checked: number;
+    monitored: number;
+    concerns: number;
+    vet_due: number;
+}
+
+type CareFilter = 'all' | 'outstanding' | 'concerns' | 'complete';
 
 interface AnimalCheck {
     animal_id: number;
@@ -39,12 +52,36 @@ function blankCheck(animal_id: number): AnimalCheck {
     return { animal_id, concern: false, status: 'amber', notes: '', fed: true, treats_given: false, treats_notes: '' };
 }
 
-export default function Index({ species, bySpecies, canEdit }: { species: string[]; bySpecies: Record<string, AnimalRow[]>; canEdit: boolean }) {
+export default function Index({ species, bySpecies, summary, canEdit }: { species: string[]; bySpecies: Record<string, AnimalRow[]>; summary: Summary; canEdit: boolean }) {
     const [checking, setChecking] = useState<string | null>(null);
     const [checks, setChecks] = useState<Record<number, AnimalCheck>>({});
     const [verificationConfirmed, setVerificationConfirmed] = useState(false);
     const [adding, setAdding] = useState(false);
+    const [filter, setFilter] = useState<CareFilter>('all');
+    const [search, setSearch] = useState('');
     const [newAnimal, setNewAnimal] = useState({ name: '', species: species[0] ?? '', sex: 'unknown', joined_date: '', care_requirements: '', feeding_notes: '' });
+
+    const visibleSpecies = useMemo(() => Object.entries(bySpecies)
+        .map(([speciesName, animals]) => [speciesName, animals.filter((animal) => {
+            const matchesSearch = !search.trim() || `${animal.name} ${animal.species}`.toLowerCase().includes(search.trim().toLowerCase());
+            const matchesFilter = filter === 'all'
+                || (filter === 'outstanding' && (!animal.checked_today || !animal.monitored_today))
+                || (filter === 'concerns' && (animal.concern_today || animal.welfare_status !== 'green'))
+                || (filter === 'complete' && animal.checked_today && animal.monitored_today && !animal.concern_today);
+
+            return matchesSearch && matchesFilter;
+        })] as const)
+        .filter(([, animals]) => animals.length > 0), [bySpecies, filter, search]);
+
+    const firstOutstandingSpecies = Object.entries(bySpecies).find(([, animals]) => animals.some((animal) => !animal.checked_today))?.[0] ?? null;
+    const welfarePct = summary.total ? Math.round((summary.checked / summary.total) * 100) : 100;
+    const monitoringPct = summary.total ? Math.round((summary.monitored / summary.total) * 100) : 100;
+
+    function openSpeciesCheck(speciesName: string) {
+        setChecking(speciesName);
+        setChecks({});
+        setVerificationConfirmed(false);
+    }
 
     function addAnimal() {
         router.post('/animals', { ...newAnimal, status: 'active' }, {
@@ -113,7 +150,7 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
         <AppShell title="Animals">
             <Head title="Animals" />
             <div className="animals-heading-actions-4a">
-                <ModuleHero eyebrow="Animal care" title="Animals" description="Open today's checks or review an animal's care record." icon="🦜" tone="green" />
+                <ModuleHero eyebrow="Animal care" title="Today's animal care" description="See what needs doing, record care and spot concerns early." icon="🐾" tone="green" />
 
                 {canEdit && (
                     <button onClick={() => setAdding(true)} className="animals-add-quiet-4a">
@@ -122,8 +159,40 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                 )}
             </div>
 
+            <section className="animal-care-board-5a">
+                <div className="animal-care-board-head-5a">
+                    <div>
+                        <span>DAILY CARE BOARD</span>
+                        <h2>{summary.checked === summary.total && summary.monitored === summary.total ? 'Today’s care is complete' : 'Keep today’s care moving'}</h2>
+                        <p>{summary.total} active animal{summary.total === 1 ? '' : 's'} · updates appear here as staff record them</p>
+                    </div>
+                    <div className="animal-care-board-actions-5a">
+                        {firstOutstandingSpecies && <button onClick={() => openSpeciesCheck(firstOutstandingSpecies)}>Continue welfare checks</button>}
+                        <Link href="/monitoring">Open daily monitoring</Link>
+                    </div>
+                </div>
+                <div className="animal-care-progress-5a">
+                    <div><span><b>Welfare & feeding</b><em>{summary.checked}/{summary.total}</em></span><i><u style={{ width: `${welfarePct}%` }} /></i><small>{summary.total - summary.checked === 0 ? 'All recorded' : `${summary.total - summary.checked} outstanding`}</small></div>
+                    <div><span><b>Daily monitoring</b><em>{summary.monitored}/{summary.total}</em></span><i><u style={{ width: `${monitoringPct}%` }} /></i><small>{summary.total - summary.monitored === 0 ? 'All recorded' : `${summary.total - summary.monitored} outstanding`}</small></div>
+                    <div className={summary.concerns ? 'has-alert' : ''}><span><b>Needs attention</b><em>{summary.concerns}</em></span><p>{summary.concerns ? 'Open the highlighted animal records' : 'No concerns recorded today'}</p></div>
+                    <div className={summary.vet_due ? 'has-due' : ''}><span><b>Vet care due</b><em>{summary.vet_due}</em></span><p>{summary.vet_due ? 'Due or coming up within 30 days' : 'Nothing due in the next 30 days'}</p></div>
+                </div>
+            </section>
+
+            <div className="animal-care-tools-5a">
+                <label><span className="sr-only">Search animals</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search animals…" /></label>
+                <div role="group" aria-label="Filter animal care records">
+                    {([
+                        ['all', 'All'],
+                        ['outstanding', 'Outstanding'],
+                        ['concerns', 'Concerns'],
+                        ['complete', 'Complete'],
+                    ] as [CareFilter, string][]).map(([value, label]) => <button key={value} onClick={() => setFilter(value)} className={filter === value ? 'is-active' : ''}>{label}</button>)}
+                </div>
+            </div>
+
             <div className="space-y-4">
-                {Object.entries(bySpecies).map(([species, animals]) => {
+                {visibleSpecies.map(([species, animals]) => {
                     const allChecked = animals.every((a) => a.checked_today);
                     return (
                         <Card
@@ -131,11 +200,7 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                             title={`${SPECIES_EMOJI[species] ?? '🐾'} ${species}s (${animals.length})`}
                             action={
                                 <button
-                                    onClick={() => {
-                                        setChecking(species);
-                                        setChecks({});
-                                        setVerificationConfirmed(false);
-                                    }}
+                                    onClick={() => openSpeciesCheck(species)}
                                     className={`rounded-full text-xs font-bold px-3 py-1.5 ${
                                         allChecked ? 'bg-emerald-100 text-emerald-800' : 'bg-brand text-white'
                                     }`}
@@ -149,9 +214,13 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                                     <Link
                                         key={a.id}
                                         href={`/animals/${a.id}`}
-                                        className="animal-list-link-4a"
+                                        className={`animal-list-link-4a animal-care-row-5a ${a.concern_today || a.welfare_status !== 'green' ? 'has-concern' : ''}`}
                                     >
-                                        <span><strong>{a.name}</strong><small>{a.checked_today ? 'Today\'s care check recorded' : 'Today\'s care check not recorded'}</small></span>
+                                        <span className="animal-care-row-main-5a"><strong>{a.name}</strong><small>{a.next_vet_due ? `Next vet care ${new Date(a.next_vet_due).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'No upcoming vet care recorded'}</small></span>
+                                        <span className="animal-care-row-statuses-5a">
+                                            <small className={a.checked_today ? 'is-done' : 'is-pending'}>{a.checked_today ? '✓ Welfare recorded' : 'Welfare due'}</small>
+                                            <small className={a.monitored_today ? 'is-done' : 'is-pending'}>{a.monitored_today ? '✓ Monitoring recorded' : 'Monitoring due'}</small>
+                                        </span>
                                         <em className={`is-${a.welfare_status}`}>{welfareStatusLabel(a.welfare_status)}</em>
                                     </Link>
                                 ))}
@@ -159,6 +228,7 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                         </Card>
                     );
                 })}
+                {visibleSpecies.length === 0 && <div className="animal-care-empty-5a"><span>🐾</span><b>No animals match this view</b><p>Try another filter or clear the search.</p></div>}
             </div>
 
             <Modal open={adding} title="Add animal" onClose={() => setAdding(false)}>
@@ -257,7 +327,7 @@ export default function Index({ species, bySpecies, canEdit }: { species: string
                                                             : 'bg-white border border-slate-200'
                                                     }`}
                                                 >
-                                                    {s}
+                                                    {s === 'amber' ? 'Keep watching' : 'Urgent concern'}
                                                 </button>
                                             ))}
                                         </div>
