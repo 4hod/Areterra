@@ -139,7 +139,7 @@ export default function Incidents({ incidents, canManage, relatedOptions, contex
                 {incidents.length === 0 && <Card><p className="text-slate-500">No incidents logged.</p></Card>}
             </div>
 
-            <Modal open={adding} title="Report an incident" onClose={() => setAdding(false)}>
+            <Modal open={adding} title="Report an incident" onClose={() => setAdding(false)} size="wide">
                 <form onSubmit={submit} className="space-y-3">
                     <label className="block text-sm font-medium">
                         Title
