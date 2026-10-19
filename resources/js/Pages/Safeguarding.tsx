@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { promptDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface Concern {
     id: number;
@@ -27,7 +28,7 @@ export default function Safeguarding({ concerns, members }: Props) {
     const [adding, setAdding] = useState(false);
     const { data, setData, post, processing, reset } = useForm({
         member_id: '' as string | number,
-        date: new Date().toISOString().slice(0, 10),
+        date: localDateInputValue(),
         details: '',
         actions_taken: '',
     });

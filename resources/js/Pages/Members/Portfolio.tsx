@@ -4,6 +4,7 @@ import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import { confirmDialog } from '../../utils/dialogs';
+import { localDateInputValue } from '../../utils/dates';
 
 interface Example { theme: string; date: string; example: string; source: string }
 interface Evidence { from: string; to: string; participation_count: number; activity_titles: string[]; headline: string; themes: { theme: string; count: number; examples: Example[] }[]; photos: { date: string; title: string; description: string | null; media_url: string }[] }
@@ -15,8 +16,8 @@ const LABELS: Record<string, string> = { 'practical-skills': 'Practical skills',
 
 export default function Portfolio({ member, months, evidence, items, certificates, achievedGoals, upcomingActivities, canEdit }: Props) {
     const [adding, setAdding] = useState(false); const [certifying, setCertifying] = useState(false);
-    const item = useForm({ type: 'achievement', title: '', description: '', achieved_on: new Date().toISOString().slice(0, 10), visible_to_member: true });
-    const cert = useForm({ title: '', description: '', issued_on: new Date().toISOString().slice(0, 10) });
+    const item = useForm({ type: 'achievement', title: '', description: '', achieved_on: localDateInputValue(), visible_to_member: true });
+    const cert = useForm({ title: '', description: '', issued_on: localDateInputValue() });
     const choices = items.filter((entry) => entry.type === 'choice');
     const achievements = items.filter((entry) => entry.type === 'achievement' || entry.type === 'project');
     const submitItem = (e: FormEvent) => { e.preventDefault(); item.post(`/members/${member.id}/portfolio-items`, { onSuccess: () => { setAdding(false); item.reset(); } }); };

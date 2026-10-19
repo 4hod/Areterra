@@ -1,10 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Modal from '../components/Modal';
 import MoodPicker from '../components/MoodPicker';
 import { MOOD_EMOJI, Mood } from '../types';
 import { promptDialog } from '../utils/dialogs';
+import { SharedProps } from '../types';
 
 interface Row { id: number; name: string; scheduled: boolean; status: 'expected' | 'present' | 'absent'; absence_reason: string | null; checked_in: boolean; checked_in_at: string | null; arrival_mood: Mood | null; notes: string | null; }
 interface StaffRow { key: string; kind: 'user' | 'roster'; id: number; name: string; job_title: string | null; present: boolean; }
@@ -12,6 +13,8 @@ interface Cancellation { date: string; reason: string }
 interface Props { date: string; rows: Row[]; others: { id: number; name: string }[]; staff: StaffRow[]; cancellation: Cancellation | null; }
 
 export default function Register({ date, rows, others, staff, cancellation }: Props) {
+    const capabilities = usePage<SharedProps>().props.auth.user?.capabilities ?? [];
+    const canManageOperations = capabilities.includes('manage_operations');
     const [editing, setEditing] = useState<Row | null>(null);
     const [mood, setMood] = useState<Mood | null>(null);
     const [notes, setNotes] = useState('');
@@ -69,9 +72,9 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
                         <Link href="/fire-register?print=1" className="rounded-full bg-brand text-white font-semibold text-xs px-4 py-2">
                             Print fire register
                         </Link>
-                        <button onClick={cancelDay} className="rounded-full bg-slate-100 text-slate-700 font-semibold text-xs px-4 py-2">
+                        {canManageOperations && <button onClick={cancelDay} className="rounded-full bg-slate-100 text-slate-700 font-semibold text-xs px-4 py-2">
                             Cancel today
-                        </button>
+                        </button>}
                     </div>
                 )}
 
@@ -95,7 +98,7 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
                     ))}
                 </section>
 
-                {absentRows.length > 0 && <section className="register-others-4a"><button type="button" onClick={() => setShowAbsent(!showAbsent)}><span>Absent today</span><b>{absentRows.length}</b><i>{showAbsent ? 'Hide' : 'Show'} list</i></button>{showAbsent && <div>{absentRows.map((row) => <article key={row.id}><span><strong className="block text-sm text-brand-dark">{row.name}</strong><small className="block mt-0.5 text-slate-500">{row.absence_reason ?? 'No reason recorded'}</small></span><button type="button" onClick={() => markAbsent(row)}>Edit reason</button></article>)}</div>}</section>}
+                {absentRows.length > 0 && <section className="register-others-4a"><button type="button" onClick={() => setShowAbsent(!showAbsent)}><span>Absent today</span><b>{absentRows.length}</b><i>{showAbsent ? 'Hide' : 'Show'} list</i></button>{showAbsent && <div>{absentRows.map((row) => <article key={row.id}><span><strong className="block text-sm text-brand-dark">{row.name}</strong><small className="block mt-0.5 text-slate-500">{row.absence_reason ?? 'No reason recorded'}</small></span><div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={() => markAbsent(row)}>Edit reason</button><button type="button" onClick={() => openCheckIn(row)} className="!bg-emerald-50 !text-emerald-800">Check in instead</button></div></article>)}</div>}</section>}
 
                 {others.length > 0 && <section className="register-others-4a"><button onClick={() => setShowOthers(!showOthers)}><span>Members not scheduled today</span><b>{others.length}</b><i>{showOthers ? 'Hide' : 'Show'} list</i></button>{showOthers && <div>{others.map((member) => <article key={member.id}><span>{member.name}</span><button onClick={() => openCheckIn({ id: member.id, name: member.name, scheduled: false, status: 'expected', absence_reason: null, checked_in: false, checked_in_at: null, arrival_mood: null, notes: null })}>Ad-hoc check in</button></article>)}</div>}</section>}
 

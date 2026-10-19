@@ -7,6 +7,7 @@ import Modal from '../components/Modal';
 import SegmentedControl from '../components/SegmentedControl';
 import { confirmDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface Invoice {
     id: number;
@@ -81,7 +82,7 @@ export default function Invoices({ invoices, summary, members }: Props) {
         member_id: members[0]?.id ?? 0,
         qb_reference: '',
         amount: '',
-        invoice_date: new Date().toISOString().slice(0, 10),
+        invoice_date: localDateInputValue(),
         due_date: '',
         status: 'sent',
         qb_url: '',

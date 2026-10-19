@@ -9,6 +9,7 @@ use App\Notifications\LeaveReviewed;
 use App\Notifications\LeaveSubmitted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class LeaveTest extends TestCase
@@ -111,5 +112,27 @@ class LeaveTest extends TestCase
 
         $this->actingAs($staff)->put("/leave/{$leave->id}/review", ['status' => 'approved'])
             ->assertForbidden();
+    }
+
+    public function test_a_leave_approver_can_see_requests_without_the_team_reporting_permission(): void
+    {
+        $staff = User::factory()->create(['role' => 'staff']);
+        $approver = User::factory()->create(['role' => 'staff']);
+        $approver->syncCapabilities(['request_leave', 'approve_leave']);
+
+        $leave = $staff->leaveRequests()->create([
+            'type' => 'annual',
+            'start_date' => today()->addWeek(),
+            'end_date' => today()->addWeek(),
+            'days' => 1,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($approver)->get('/leave')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Leave')
+                ->where('isManager', true)
+                ->where('pending.0.id', $leave->id));
     }
 }

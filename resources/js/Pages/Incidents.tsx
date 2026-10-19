@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { localDateTimeInputValue } from '../utils/dates';
 
 interface IncidentRow {
     id: number;
@@ -52,7 +53,7 @@ export default function Incidents({ incidents, canManage, relatedOptions, contex
     const [review, setReview] = useState({ status: 'under-review', actions_taken: '', manager_review: '', learning: '', prevention_action: '', follow_up_required: false });
     const { data, setData, post, processing, reset } = useForm({
         title: '',
-        occurred_at: new Date().toISOString().slice(0, 16),
+        occurred_at: localDateTimeInputValue(),
         location: '',
         description: '',
         persons_involved: '',

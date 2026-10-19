@@ -9,6 +9,7 @@ import { WelfareStatus } from '../../types';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
 import Sparkline from '../../components/Sparkline';
 import ConnectedRecordLinks from '../../components/ConnectedRecordLinks';
+import { localDateInputValue } from '../../utils/dates';
 
 interface Monitoring {
     id?: number;
@@ -78,7 +79,7 @@ interface Props {
 }
 
 const emptyMonitoring = (): Monitoring => ({
-    monitor_date: new Date().toISOString().slice(0, 10),
+    monitor_date: localDateInputValue(),
     weight_grams: null,
     body_condition: null,
     coat_condition: '',
@@ -123,7 +124,7 @@ export default function Show({ animal, welfareChecks, monitoring, todayMonitorin
     const [monitorOpen, setMonitorOpen] = useState(false);
     const [m, setM] = useState<Monitoring>(todayMonitoring ?? emptyMonitoring());
     const [vetOpen, setVetOpen] = useState(false);
-    const [vet, setVet] = useState({ visit_date: new Date().toISOString().slice(0, 10), next_due_date: '', reason: '', treatment: '', vet_name: '', notes: '' });
+    const [vet, setVet] = useState({ visit_date: localDateInputValue(), next_due_date: '', reason: '', treatment: '', vet_name: '', notes: '' });
 
     function saveCheck() {
         router.post(

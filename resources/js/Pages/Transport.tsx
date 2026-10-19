@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Modal from '../components/Modal';
 import { confirmDialog, promptDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface LedgerEntry {
     id: number;
@@ -93,7 +94,7 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
     const [paying, setPaying] = useState<Row | null>(null);
     const [statement, setStatement] = useState<{ member: string; balance: number; returns_remaining: number; entries: StatementRow[] } | null>(null);
     const [amount, setAmount] = useState<number>(dailyRate);
-    const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+    const [payDate, setPayDate] = useState(localDateInputValue());
     const [payNotes, setPayNotes] = useState('');
     const [checking, setChecking] = useState(false);
     const checkForm = useForm({

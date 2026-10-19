@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface MemberRow {
     id: number;
@@ -30,7 +31,7 @@ export default function Reviews({ members, reviews, canManage }: { members: Memb
     const [adding, setAdding] = useState(false);
     const { data, setData, post, processing, reset } = useForm({
         member_id: members[0]?.id ?? 0,
-        review_date: new Date().toISOString().slice(0, 10),
+        review_date: localDateInputValue(),
         outcomes: '',
         actions: '',
         next_review_date: '',

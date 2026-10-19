@@ -18,7 +18,10 @@ class LeaveController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $isManager = Gate::allows('view_all_leave');
+        // An approver must be able to see the requests they are authorised to
+        // review, even if they have not separately been granted the broader
+        // team-leave reporting capability.
+        $isManager = Gate::allows('view_all_leave') || Gate::allows('approve_leave');
 
         return Inertia::render('Leave', [
             'balance' => LeaveBalance::remainingFor($user),

@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface ActivityRow {
     id: number;
@@ -29,7 +30,7 @@ export default function Activities({ month, activities, upcoming, prevMonth, nex
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const { data, setData, post, processing, reset } = useForm({
         title: '',
-        activity_date: new Date().toISOString().slice(0, 10),
+        activity_date: localDateInputValue(),
         start_time: '',
         description: '',
     });
@@ -60,7 +61,7 @@ export default function Activities({ month, activities, upcoming, prevMonth, nex
     ];
     while (cells.length % 7 !== 0) cells.push(null);
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = localDateInputValue();
     const monthLabel = firstOfMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     const selectedRows = selectedDate ? byDate[selectedDate] ?? [] : [];
 

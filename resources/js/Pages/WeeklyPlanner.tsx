@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface ActivityRow {
     id: number;
@@ -48,7 +49,7 @@ export default function WeeklyPlanner({ weekStart, weekEnd, prevWeek, nextWeek, 
     }
 
     const rangeLabel = `${new Date(weekStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${new Date(weekEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = localDateInputValue();
 
     return (
         <AppShell title="Weekly Planner">

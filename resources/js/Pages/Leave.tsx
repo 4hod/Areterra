@@ -1,10 +1,11 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import StatusPill from '../components/StatusPill';
 import ModuleHero from '../components/ModuleHero';
+import { SharedProps } from '../types';
 
 interface LeaveRow {
     id: number;
@@ -36,6 +37,9 @@ const STATUS_STYLE: Record<string, string> = {
 const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
 export default function Leave({ balance, myRequests, types, isManager, pending, upcoming }: Props) {
+    const capabilities = usePage<SharedProps>().props.auth.user?.capabilities ?? [];
+    const canRequest = capabilities.includes('request_leave');
+    const canApprove = capabilities.includes('approve_leave');
     const [requesting, setRequesting] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         type: 'annual',
@@ -80,12 +84,12 @@ export default function Leave({ balance, myRequests, types, isManager, pending, 
                 </Card>
             </div>
 
-            <button
+            {canRequest && <button
                 onClick={() => setRequesting(true)}
                 className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5 mb-4"
             >
                 + Request leave
-            </button>
+            </button>}
 
             {isManager && pending.length > 0 && (
                 <Card title={`Awaiting approval (${pending.length})`} className="mb-4 border-l-4 border-l-status-amber">
@@ -100,7 +104,7 @@ export default function Leave({ balance, myRequests, types, isManager, pending, 
                                         </div>
                                         {r.reason && <div className="text-sm text-slate-400">{r.reason}</div>}
                                     </div>
-                                    <div className="flex gap-1 shrink-0">
+                                    {canApprove && <div className="flex gap-1 shrink-0">
                                         <button
                                             onClick={() => review(r, 'approved')}
                                             className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs px-3 py-2"
@@ -113,7 +117,7 @@ export default function Leave({ balance, myRequests, types, isManager, pending, 
                                         >
                                             ✕ Decline
                                         </button>
-                                    </div>
+                                    </div>}
                                 </div>
                             </li>
                         ))}
