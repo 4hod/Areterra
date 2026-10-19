@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface History {
     id: number;
@@ -35,7 +36,7 @@ export default function Supervisions({ staff, types }: { staff: StaffRow[]; type
     const { data, setData, post, processing, reset } = useForm({
         subject_key: staff[0]?.subject_key ?? '',
         type: 'supervision',
-        date: new Date().toISOString().slice(0, 10),
+        date: localDateInputValue(),
         duration_minutes: '' as string | number,
         discussion: '',
         actions_agreed: '',

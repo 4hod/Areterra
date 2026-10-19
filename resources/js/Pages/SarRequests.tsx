@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { localDateInputValue } from '../utils/dates';
 
 interface SarRequestRow {
     id: number;
@@ -34,7 +35,7 @@ export default function SarRequests({ requests, members }: { requests: SarReques
         requester_name: '',
         requester_relationship: '',
         member_id: '',
-        received_date: new Date().toISOString().slice(0, 10),
+        received_date: localDateInputValue(),
         notes: '',
     });
 

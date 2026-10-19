@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
 import { promptDialog } from '../utils/dialogs';
 import { SharedProps } from '../types';
+import { localDateInputValue } from '../utils/dates';
 
 interface CalEvent {
     date: string;
@@ -39,14 +40,16 @@ interface Props {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Calendar({ month, prevMonth, nextMonth, events, canManageLeave, pendingLeave }: Props) {
-    const canManageOperations = (usePage<SharedProps>().props.auth.user?.capabilities ?? []).includes('manage_operations');
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const capabilities = usePage<SharedProps>().props.auth.user?.capabilities ?? [];
+    const canManageOperations = capabilities.includes('manage_operations');
+    const canLogSessions = capabilities.includes('log_sessions');
+    const todayStr = localDateInputValue();
     const [selectedDate, setSelectedDate] = useState<string | null>(todayStr.startsWith(month) ? todayStr : null);
     const [reviewing, setReviewing] = useState(false);
     const [adding, setAdding] = useState(false);
     const { data, setData, post, processing, reset } = useForm({
         title: '',
-        activity_date: new Date().toISOString().slice(0, 10),
+        activity_date: localDateInputValue(),
         start_time: '',
         description: '',
     });
@@ -98,7 +101,7 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
             <ModuleHero eyebrow="Plan and deliver" title="Calendar & activities" description="Plan the weekly programme, add activities and see leave in one calendar." icon="🗓️" tone="purple" />
 
             <div className="flex gap-2 mb-4 flex-wrap">
-                <button onClick={() => openAdd(selectedDate ?? undefined)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">+ Add activity</button>
+                {canLogSessions && <button onClick={() => openAdd(selectedDate ?? undefined)} className="rounded-full bg-brand text-white font-semibold text-sm px-5 py-2.5">+ Add activity</button>}
                 <a href={`/weekly-planner/print?week=${selectedDate ?? todayStr}`} target="_blank" rel="noreferrer" className="rounded-full bg-slate-100 text-brand-dark font-semibold text-sm px-5 py-2.5">🖨 Print week</a>
             </div>
 
@@ -159,7 +162,7 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
 
             {selectedDate && (
                 <Card title={new Date(selectedDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })} className="mt-4 calendar-selected-day-4a">
-                    {selectedEvents.length === 0 && <div className="calendar-day-empty-4a"><b>Nothing planned</b><span>This day is clear.</span>{canManageOperations && <button onClick={() => openAdd(selectedDate)}>+ Add an activity</button>}</div>}
+                    {selectedEvents.length === 0 && <div className="calendar-day-empty-4a"><b>Nothing planned</b><span>This day is clear.</span>{canLogSessions && <button onClick={() => openAdd(selectedDate)}>+ Add an activity</button>}</div>}
                     <ul className="calendar-day-list-4a">
                         {selectedEvents.map((e, i) => (
                             <li key={i}>

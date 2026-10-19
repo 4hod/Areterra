@@ -10,6 +10,7 @@ import { MOOD_EMOJI, Mood } from '../../types';
 import { confirmDialog, promptDialog } from '../../utils/dialogs';
 import { recordRecentlyViewed } from '../../utils/recentlyViewed';
 import ConnectedRecordLinks from '../../components/ConnectedRecordLinks';
+import { localDateInputValue, localDateTimeInputValue } from '../../utils/dates';
 
 const DAY_LABELS: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
 const CONSENT_LABELS: Record<string, string> = {
@@ -176,22 +177,22 @@ export default function Show(props: Props) {
     const [postcodeResults, setPostcodeResults] = useState<string[]>([]);
 
     const [addingComms, setAddingComms] = useState(false);
-    const [comms, setComms] = useState({ type: 'phone', direction: 'outbound', subject: '', summary: '', contact_name: '', organisation: '', date: new Date().toISOString().slice(0, 10) });
+    const [comms, setComms] = useState({ type: 'phone', direction: 'outbound', subject: '', summary: '', contact_name: '', organisation: '', date: localDateInputValue() });
     const [addingContact, setAddingContact] = useState(false);
     const [contact, setContact] = useState({ name: '', role: '', organisation: '', email: '', phone: '', notes: '' });
     const [addingGoal, setAddingGoal] = useState(false);
     const [goal, setGoal] = useState({ title: '', description: '', target_date: '' });
     const [addingOutcome, setAddingOutcome] = useState(false);
-    const [outcome, setOutcome] = useState({ date: new Date().toISOString().slice(0, 10), outcome: '', member_goal_id: '' as string | number });
+    const [outcome, setOutcome] = useState({ date: localDateInputValue(), outcome: '', member_goal_id: '' as string | number });
     const [addingImpact, setAddingImpact] = useState(false);
     const [impact, setImpact] = useState({
-        observed_at: new Date().toISOString().slice(0, 16), member_goal_id: '', activity_id: '', animal_id: '',
+        observed_at: localDateTimeInputValue(), member_goal_id: '', activity_id: '', animal_id: '',
         mood_before: '', mood_after: '', engagement_rating: '', independence_rating: '', outcome_note: '', evidence_tags: [] as string[],
     });
     const [addingAlert, setAddingAlert] = useState(false);
     const [alert, setAlert] = useState({ type: 'medical', text: '', severity: 'amber' });
     const [addingAbc, setAddingAbc] = useState(false);
-    const [abc, setAbc] = useState({ observed_at: new Date().toISOString().slice(0, 16), antecedent: '', behaviour: '', consequence: '', wellbeing_score: '' as string | number, concern: false });
+    const [abc, setAbc] = useState({ observed_at: localDateTimeInputValue(), antecedent: '', behaviour: '', consequence: '', wellbeing_score: '' as string | number, concern: false });
     const [addingMap, setAddingMap] = useState(false);
     const [mapView, setMapView] = useState<'front' | 'back'>('front');
     const [newMarkers, setNewMarkers] = useState<{ view: 'front' | 'back'; x: number; y: number; note: string }[]>([]);

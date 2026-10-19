@@ -42,6 +42,30 @@ class RegisterFlowTest extends TestCase
         $this->assertSame('neutral', Attendance::first()->arrival_mood);
     }
 
+    public function test_an_absence_can_be_corrected_when_the_member_arrives_later(): void
+    {
+        $user = User::factory()->create(['role' => 'staff']);
+        $member = Member::create(['first_name' => 'Gaz', 'last_name' => 'Warner']);
+
+        $this->actingAs($user)->post("/register/{$member->id}/absent", [
+            'absence_reason' => 'Stomach pain',
+        ])->assertRedirect();
+
+        $absence = Attendance::where('member_id', $member->id)->sole();
+        $this->assertSame('absent', $absence->status);
+        $this->assertSame('Stomach pain', $absence->absence_reason);
+
+        $this->actingAs($user)->post("/register/{$member->id}/check-in", [
+            'arrival_mood' => 'neutral',
+        ])->assertRedirect();
+
+        $attendance = Attendance::where('member_id', $member->id)->sole();
+        $this->assertSame('present', $attendance->status);
+        $this->assertTrue($attendance->checked_in);
+        $this->assertNull($attendance->absence_reason);
+        $this->assertSame('neutral', $attendance->arrival_mood);
+    }
+
     public function test_staff_can_be_marked_here_without_creating_a_timeclock_entry(): void
     {
         $recorder = User::factory()->create(['role' => 'staff']);
