@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import ModuleHero from '../components/ModuleHero';
+import { promptDialog } from '../utils/dialogs';
 import { SharedProps } from '../types';
 
 interface CalEvent {
@@ -86,8 +87,8 @@ export default function Calendar({ month, prevMonth, nextMonth, events, canManag
         post('/activities', { onSuccess: () => { setAdding(false); reset(); } });
     }
 
-    function cancelActivity(activity: CalEvent) {
-        const reason = window.prompt(`Why is “${activity.title}” being cancelled?`);
+    async function cancelActivity(activity: CalEvent) {
+        const reason = await promptDialog(`Why is “${activity.title}” being cancelled?`);
         if (reason?.trim()) router.post(`/activities/${activity.id}/cancel`, { reason: reason.trim() }, { preserveScroll: true });
     }
 

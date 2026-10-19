@@ -4,6 +4,7 @@ import AppShell from '../components/AppShell';
 import Modal from '../components/Modal';
 import MoodPicker from '../components/MoodPicker';
 import { MOOD_EMOJI, Mood } from '../types';
+import { promptDialog } from '../utils/dialogs';
 
 interface Row { id: number; name: string; scheduled: boolean; status: 'expected' | 'present' | 'absent'; absence_reason: string | null; checked_in: boolean; checked_in_at: string | null; arrival_mood: Mood | null; notes: string | null; }
 interface StaffRow { key: string; kind: 'user' | 'roster'; id: number; name: string; job_title: string | null; present: boolean; }
@@ -15,24 +16,28 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
     const [mood, setMood] = useState<Mood | null>(null);
     const [notes, setNotes] = useState('');
     const [showOthers, setShowOthers] = useState(false);
+    const [showAbsent, setShowAbsent] = useState(false);
     const present = rows.filter((row) => row.checked_in).length;
     const absent = rows.filter((row) => row.status === 'absent').length;
     const outstanding = rows.length - present - absent;
-    const percent = rows.length ? Math.round((present / rows.length) * 100) : 0;
+    const completed = present + absent;
+    const percent = rows.length ? Math.round((completed / rows.length) * 100) : 0;
+    const activeRows = rows.filter((row) => row.status !== 'absent');
+    const absentRows = rows.filter((row) => row.status === 'absent');
     const staffPresent = staff.filter((person) => person.present);
 
     function openCheckIn(row: Row) { setEditing(row); setMood(row.arrival_mood); setNotes(row.notes ?? ''); }
 
-    function markAbsent(row: Row) {
-        const reason = window.prompt(`Why is ${row.name} not in today? (leave blank if unknown)`);
+    async function markAbsent(row: Row) {
+        const reason = await promptDialog(`Why is ${row.name} not in today? Leave blank if the reason is not known.`, row.absence_reason ?? '');
         if (reason === null) return;
-        router.post(`/register/${row.id}/absent`, { absence_reason: reason || null });
+        router.post(`/register/${row.id}/absent`, { absence_reason: reason.trim() || null }, { preserveScroll: true });
     }
 
-    function cancelDay() {
-        const reason = window.prompt('Why is today cancelled? This stands down every session, both transport runs, and all charges.');
-        if (!reason) return;
-        router.post('/register/cancel-day', { reason });
+    async function cancelDay() {
+        const reason = await promptDialog('Why is today cancelled? This stands down every session, both transport runs, and all charges.');
+        if (!reason?.trim()) return;
+        router.post('/register/cancel-day', { reason: reason.trim() });
     }
     function save() {
         if (!editing) return;
@@ -70,10 +75,10 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
                     </div>
                 )}
 
-                <section className="register-progress-card-4a"><div><span>Arrival progress</span><b>{present} of {rows.length} members are in</b></div><div className="register-progress-track-4a"><i style={{ width: `${percent}%` }} /></div></section>
+                <section className="register-progress-card-4a"><div><span>Register progress</span><b>{present} in · {absent} absent · {outstanding} still expected</b></div><div className="register-progress-track-4a"><i style={{ width: `${percent}%` }} /></div></section>
 
                 <section className="register-grid-4a">
-                    {rows.map((row) => (
+                    {activeRows.map((row) => (
                         <article key={row.id} className={`register-member-card-4a ${row.checked_in ? 'is-present' : ''}`}>
                             <div className="register-member-head-4a"><div className="register-avatar-4a">{row.name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2)}</div><span>{row.scheduled ? 'Scheduled' : 'Ad-hoc'}</span></div>
                             <h2>{row.name}</h2>
@@ -89,6 +94,8 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
                         </article>
                     ))}
                 </section>
+
+                {absentRows.length > 0 && <section className="register-others-4a"><button type="button" onClick={() => setShowAbsent(!showAbsent)}><span>Absent today</span><b>{absentRows.length}</b><i>{showAbsent ? 'Hide' : 'Show'} list</i></button>{showAbsent && <div>{absentRows.map((row) => <article key={row.id}><span><strong className="block text-sm text-brand-dark">{row.name}</strong><small className="block mt-0.5 text-slate-500">{row.absence_reason ?? 'No reason recorded'}</small></span><button type="button" onClick={() => markAbsent(row)}>Edit reason</button></article>)}</div>}</section>}
 
                 {others.length > 0 && <section className="register-others-4a"><button onClick={() => setShowOthers(!showOthers)}><span>Members not scheduled today</span><b>{others.length}</b><i>{showOthers ? 'Hide' : 'Show'} list</i></button>{showOthers && <div>{others.map((member) => <article key={member.id}><span>{member.name}</span><button onClick={() => openCheckIn({ id: member.id, name: member.name, scheduled: false, status: 'expected', absence_reason: null, checked_in: false, checked_in_at: null, arrival_mood: null, notes: null })}>Ad-hoc check in</button></article>)}</div>}</section>}
 
