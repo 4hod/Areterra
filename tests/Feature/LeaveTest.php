@@ -118,7 +118,7 @@ class LeaveTest extends TestCase
     {
         $staff = User::factory()->create(['role' => 'staff']);
         $approver = User::factory()->create(['role' => 'staff']);
-        $approver->syncCapabilities(['request_leave', 'approve_leave']);
+        $approver->syncCapabilities(['access_hub', 'request_leave', 'approve_leave']);
 
         $leave = $staff->leaveRequests()->create([
             'type' => 'annual',

@@ -51,11 +51,9 @@ class RegisterFlowTest extends TestCase
             'absence_reason' => 'Stomach pain',
         ])->assertRedirect();
 
-        $this->assertDatabaseHas('attendances', [
-            'member_id' => $member->id,
-            'status' => 'absent',
-            'absence_reason' => 'Stomach pain',
-        ]);
+        $absence = Attendance::where('member_id', $member->id)->sole();
+        $this->assertSame('absent', $absence->status);
+        $this->assertSame('Stomach pain', $absence->absence_reason);
 
         $this->actingAs($user)->post("/register/{$member->id}/check-in", [
             'arrival_mood' => 'neutral',
