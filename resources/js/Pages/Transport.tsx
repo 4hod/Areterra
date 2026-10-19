@@ -3,7 +3,7 @@ import { useState } from 'react';
 import AppShell from '../components/AppShell';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
-import { confirmDialog } from '../utils/dialogs';
+import { confirmDialog, promptDialog } from '../utils/dialogs';
 import ModuleHero from '../components/ModuleHero';
 
 interface LedgerEntry {
@@ -160,13 +160,13 @@ export default function Transport({ date, isToday, afternoonAvailable, rows, dai
         record(row, p, 'collected');
     }
 
-    function askReason(row: Row, p: 'morning' | 'afternoon', outcome: Outcome) {
+    async function askReason(row: Row, p: 'morning' | 'afternoon', outcome: Outcome) {
         const prompt = outcome === 'absent'
             ? `Why is ${row.name} absent today?`
             : `Why wasn't ${row.name} collected? (they're still expected in)`;
-        const reason = window.prompt(prompt) ?? undefined;
-        if (reason === undefined) return;
-        record(row, p, outcome, reason);
+        const reason = await promptDialog(prompt);
+        if (reason === null) return;
+        record(row, p, outcome, reason.trim());
     }
 
     function undo(row: Row, p: 'morning' | 'afternoon') {

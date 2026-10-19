@@ -1,6 +1,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import AppShell from '../components/AppShell';
+import { confirmDialog } from '../utils/dialogs';
 import Card from '../components/Card';
 import ModuleHero from '../components/ModuleHero';
 
@@ -157,7 +158,7 @@ export default function Permissions({ catalogue, presets, users }: Props) {
                                 </button>
                             }
                         >
-                            {selected.active ? <button type="button" onClick={() => window.confirm(`Deactivate ${selected.name}'s Hub account?`) && router.delete(`/settings/users/${selected.id}`)} className="float-right ml-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">Deactivate account</button> : <button type="button" onClick={() => router.post(`/settings/users/${selected.id}/restore`)} className="float-right ml-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Restore account</button>}
+                            {selected.active ? <button type="button" onClick={async () => { if (await confirmDialog(`Deactivate ${selected.name}'s Hub account?`)) router.delete(`/settings/users/${selected.id}`); }} className="float-right ml-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">Deactivate account</button> : <button type="button" onClick={() => router.post(`/settings/users/${selected.id}/restore`)} className="float-right ml-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">Restore account</button>}
                             {errors?.capabilities && (
                                 <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
                                     {errors.capabilities}

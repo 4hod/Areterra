@@ -1,5 +1,5 @@
-// Branded replacement for window.confirm()/window.prompt() (SPEC.md: "AH.utils.promptModal()
-// — branded modal replacing ALL native prompt()/confirm() calls"). A single <DialogHost />
+// Branded replacement for browser-native confirmation and text-entry dialogs.
+// A single <DialogHost />
 // is mounted once in AppShell; any file can import confirmDialog()/promptDialog() and await
 // them like the native functions, but they render as a proper branded modal instead of the
 // browser's own dialog chrome.

@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import AppShell from '../../components/AppShell';
 import Card from '../../components/Card';
 import Breadcrumbs from '../../components/Breadcrumbs';
-import { confirmDialog } from '../../utils/dialogs';
+import { confirmDialog, promptDialog } from '../../utils/dialogs';
 import ModuleHero from '../../components/ModuleHero';
 
 export interface Entry {
@@ -105,8 +105,8 @@ export default function Show({ period, preview }: { period: Period; preview: Pre
         router.put(`/payroll/periods/${period.id}`, { status });
     }
 
-    function approve() {
-        const by = window.prompt('Who is approving this pay run?');
+    async function approve() {
+        const by = await promptDialog('Who is approving this pay run?');
         if (!by) return;
         router.post(`/payroll/periods/${period.id}/approve`, { approved_by: by });
     }
