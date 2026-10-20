@@ -15,6 +15,7 @@ interface ModuleHeroProps {
 export default function ModuleHero({ eyebrow, title, description, icon, tone = 'teal', actions }: ModuleHeroProps) {
     const label = `${title} ${eyebrow}`.toLowerCase();
     const iconName = label.includes('animal') || label.includes('welfare') ? 'paw'
+        : label.includes('help') || label.includes('support') ? 'help'
         : label.includes('member') || label.includes('staff') || label.includes('directory') ? 'users'
         : label.includes('report') || label.includes('monitor') || label.includes('audit') ? 'chart'
         : label.includes('incident') || label.includes('safeguard') ? 'alert'

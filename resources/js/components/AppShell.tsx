@@ -56,6 +56,7 @@ export const NAV_SECTIONS: NavSection[] = [
         { href: '/invoices', label: 'Invoices', icon: 'receipt', cap: 'manage_finance' },
     ] },
     { title: 'Administration', items: [
+        { href: '/help', label: 'Help & guides', icon: 'help' },
         { href: '/audit-log', label: 'Security log', icon: 'file', cap: 'view_audit_log' },
         { href: '/notifications', label: 'Notifications', icon: 'bell' },
         { href: '/import', label: 'Data import', icon: 'upload', cap: 'manage_settings' },
@@ -258,6 +259,7 @@ export default function AppShell({ title, children }: { title: string; children:
                 <div className="portal-topbar-actions">
                     {recordActions.length > 0 && <button type="button" className="portal-desktop-record" onClick={() => setRecording(true)} aria-haspopup="dialog"><AppIcon name="plus"/><span>Record</span></button>}
                     <span className="portal-date hidden lg:inline-flex"><AppIcon name="today"/>{today}</span>
+                    <Link href="/help" className="portal-help-link" aria-label="Help and guides" title="Help and guides"><AppIcon name="help"/><span>Help</span></Link>
                     <NotificationBell unreadCount={unreadNotifications}/>
                     <AccountMenu name={auth.user?.name ?? ''} role={auth.user?.role ?? ''} canManageSettings={caps.includes('manage_settings')}/>
                 </div>
