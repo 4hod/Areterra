@@ -155,6 +155,7 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::post('/notifications/test', [NotificationController::class, 'test'])->name('notifications.test');
 
     Route::get('/more', fn () => Inertia::render('More'))->name('more');
+    Route::get('/help', fn () => Inertia::render('Help'))->name('help');
 
     // ── Phase 3 ──────────────────────────────────────────────────────────
 

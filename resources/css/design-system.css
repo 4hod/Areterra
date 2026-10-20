@@ -64,6 +64,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .portal-desktop-record { min-height: 40px; display: inline-flex; align-items: center; gap: 7px; padding: 0 15px; border: 0; border-radius: 10px; background: var(--portal-yellow); color: var(--portal-navy-deep); font-size: 13px; font-weight: 750; box-shadow: none; }
 .portal-desktop-record:hover { background: var(--portal-yellow-hover); }
 .portal-desktop-record svg { width: 17px; }
+.portal-help-link { min-height: 38px; display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; border-radius: 8px; color: var(--portal-muted); font-size: 12px; font-weight: 700; }
+.portal-help-link:hover, .portal-help-link[aria-current="page"] { background: var(--portal-surface-muted); color: var(--portal-heading); }
+.portal-help-link svg { width: 18px; height: 18px; }
 
 /* Shared surface hierarchy. */
 .hub-card, .overview-panel, .finance-card, .staff-register-4a, .register-member-card-4a {
@@ -150,6 +153,26 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .portal-content input:focus, .portal-content select:focus, .portal-content textarea:focus, .hub-modal-body input:focus, .hub-modal-body select:focus, .hub-modal-body textarea:focus { border-color: var(--portal-blue); outline: 3px solid rgba(0,157,230,.14); box-shadow: none; }
 .module-primary-btn-4a, .overview-welfare-panel footer > a { border-radius: 10px; background: var(--portal-yellow); color: var(--portal-navy-deep); box-shadow: none; }
 
+/* Help is deliberately calm and task-led: no marketing artwork or competing colour panels. */
+.help-start-panel { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 16px; padding: 18px; border: 1px solid #cde4ef; border-radius: var(--portal-radius-card); background: #f5fbfe; }
+.help-start-panel span { color: var(--portal-blue-dark); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.help-start-panel h2 { margin: 3px 0 0; }
+.help-start-panel p { max-width: 680px; margin: 5px 0 0; color: var(--portal-muted); }
+.help-start-panel > a { min-height: 42px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: var(--portal-radius-control); background: var(--portal-yellow); color: var(--portal-navy-deep); font-weight: 750; white-space: nowrap; }
+.help-start-panel > a svg { width: 17px; }
+.help-guide-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.help-guide-card { min-width: 0; display: grid; grid-template-columns: 42px 1fr; gap: 14px; padding: 17px; border: 1px solid var(--portal-line); border-radius: var(--portal-radius-card); background: #fff; box-shadow: var(--portal-shadow-card); }
+.help-guide-card > i { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 10px; background: #eaf7fc; color: var(--portal-blue-dark); font-style: normal; }
+.help-guide-card > i svg { width: 21px; }
+.help-guide-card h2 { margin: 0; font-size: 16px; }
+.help-guide-card p { margin: 5px 0 12px; color: var(--portal-muted); }
+.help-guide-card a { display: inline-flex; align-items: center; gap: 7px; color: var(--portal-blue-dark); font-size: 13px; font-weight: 750; }
+.help-guide-card a svg { width: 15px; }
+.help-safety-note { display: flex; align-items: flex-start; gap: 13px; margin-top: 16px; padding: 16px 18px; border: 1px solid #f0d9a4; border-radius: var(--portal-radius-card); background: #fffbef; }
+.help-safety-note > svg { width: 22px; flex: 0 0 22px; color: var(--portal-warning); }
+.help-safety-note h2 { margin: 0; font-size: 15px; }
+.help-safety-note p { margin: 3px 0 0; color: var(--portal-muted); }
+
 /* Dialogs are dialogs on desktop and safe-area-aware sheets on mobile. */
 .hub-modal-backdrop, .portal-action-sheet-backdrop { z-index: 90; align-items: center; justify-content: center; padding: 28px; background: rgba(0,31,53,.52); }
 .hub-modal { width: min(680px, 100%); max-width: 680px; max-height: calc(100dvh - 56px); border: 1px solid var(--portal-line); border-radius: var(--portal-radius-dialog); background: #fff; box-shadow: var(--portal-shadow-float); }
@@ -223,6 +246,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
     .hub-modal, .hub-modal--wide, .portal-action-sheet { width: 100%; max-width: none; max-height: calc(100dvh - 10px); border-width: 1px 0 0; border-radius: 16px 16px 0 0; }
     .hub-modal-body, .portal-action-sheet { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
     body.hub-modal-open .portal-mobile-nav { display: none; }
+    .help-start-panel { align-items: flex-start; flex-direction: column; gap: 13px; padding: 15px; }
+    .help-start-panel > a { width: 100%; justify-content: center; }
+    .help-guide-grid { grid-template-columns: 1fr; gap: 10px; }
+    .help-guide-card { padding: 15px; }
 }
 
 @media (max-width: 390px) {
