@@ -16,6 +16,7 @@ interface Props {
         animalsTotal: number;
         animalsNeedingChecks: number;
         attendanceTrend: number[];
+        visitorsOnSite: number;
     };
     welfareAlerts: { id: number; name: string; species: string; welfare_status: string }[];
     checklist: ChecklistItem[];
@@ -42,6 +43,7 @@ function PanelTitle({ icon, title, count, href, action }: { icon: string; title:
 
 const quickActions = [
     { href: '/register', label: 'Take the register', icon: 'register', caps: ['view_member_details', 'log_sessions'] },
+    { href: '/fire-register', label: 'Staff or visitor', icon: 'shield', caps: [] },
     { href: '/incidents', label: 'Report an incident', icon: 'alert', caps: ['report_incidents'] },
     { href: '/documents', label: 'Open documents', icon: 'folder', caps: ['view_documents'] },
     { href: '/leave', label: 'Request leave', icon: 'leave', caps: ['request_leave'] },
@@ -83,7 +85,7 @@ export default function Dashboard(props: Props) {
                 <Metric icon="users" label="Member records" value={props.stats.memberRecords} detail="Support at a glance"/>
                 <Metric icon="paw" label="Animal care" value={`${props.stats.animalsChecked} / ${props.stats.animalsTotal}`} detail={props.stats.animalsNeedingChecks ? `${props.stats.animalsNeedingChecks} care records outstanding` : 'All daily care recorded'} tone="yellow"/>
                 <Metric icon="tasks" label="Daily workflow" value={`${completed} / ${props.checklist.length}`} detail={openTasks ? `${openTasks} actions remaining` : 'Everything complete'}/>
-                <Metric icon="shield" label="Staff on site" value={props.staffAvatars.length} detail="From the morning register"/>
+                <Metric icon="shield" label="Staff & visitors" value={props.staffAvatars.length + props.stats.visitorsOnSite} detail={`${props.staffAvatars.length} staff · ${props.stats.visitorsOnSite} visitors`}/>
             </section>
 
             <section className="overview-top-grid">
@@ -97,10 +99,10 @@ export default function Dashboard(props: Props) {
                 </article>
 
                 <article className="overview-panel overview-register-panel">
-                    <PanelTitle icon="register" title="Fire register" count={props.stats.membersInToday || props.staffAvatars.length ? 'Live' : 'Not started'}/>
-                    <div className="overview-register-numbers"><div><strong>{props.stats.membersInToday}</strong><span>members present</span></div><i/><div><strong>{props.staffAvatars.length}</strong><span>staff on site</span></div></div>
+                    <PanelTitle icon="register" title="Fire register" count={props.stats.membersInToday || props.staffAvatars.length || props.stats.visitorsOnSite ? 'Live' : 'Not started'}/>
+                    <div className="overview-register-numbers"><div><strong>{props.stats.membersInToday}</strong><span>members present</span></div><i/><div><strong>{props.staffAvatars.length + props.stats.visitorsOnSite}</strong><span>{props.staffAvatars.length} staff · {props.stats.visitorsOnSite} visitors</span></div></div>
                     <p>The printable fire register uses these live attendance records.</p>
-                    <div>{canUseRegister && <Link href="/register">Open morning register</Link>}<Link href="/fire-register?print=1">Print fire register</Link></div>
+                    <div><Link href="/fire-register">Update people on site</Link><Link href="/fire-register?print=1">Print fire register</Link></div>
                 </article>
             </section>
 

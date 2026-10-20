@@ -12,6 +12,7 @@ use App\Models\Member;
 use App\Models\StaffAttendance;
 use App\Models\StaffRosterMember;
 use App\Models\User;
+use App\Models\VisitorAttendance;
 use App\Support\PrivateMedia;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -44,12 +45,30 @@ class RegisterController extends Controller
             ->map(fn (StaffAttendance $attendance) => [
                 'id' => $attendance->id,
                 'name' => $attendance->staff_name,
+                'checked_in_at' => $attendance->checked_in_at?->format('H:i'),
             ]);
+
+        $visitors = VisitorAttendance::query()
+            ->whereDate('date', $today)
+            ->whereNull('checked_out_at')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (VisitorAttendance $attendance) => $this->visitorRow($attendance));
+
+        $checkedOutVisitors = VisitorAttendance::query()
+            ->whereDate('date', $today)
+            ->whereNotNull('checked_out_at')
+            ->latest('checked_out_at')
+            ->get()
+            ->map(fn (VisitorAttendance $attendance) => $this->visitorRow($attendance));
 
         return Inertia::render('FireRegister', [
             'date' => $today->toDateString(),
             'members' => $members,
             'staff' => $staff,
+            'staffRoster' => $this->staffRows($today),
+            'visitors' => $visitors,
+            'checkedOutVisitors' => $checkedOutVisitors,
             'autoPrint' => $request->boolean('print'),
         ]);
     }
@@ -69,34 +88,6 @@ class RegisterController extends Controller
         $rows = $scheduled->map(fn ($m) => $this->row($m, $attendance->get($m->id), true))
             ->concat($extras->map(fn ($m) => $this->row($m, $attendance->get($m->id), false)));
 
-        $staffAttendance = StaffAttendance::whereDate('date', $today)
-            ->get()
-            ->keyBy(fn (StaffAttendance $entry) => $entry->staff_type.':'.$entry->staff_id);
-
-        $users = User::orderBy('name')->get();
-        $userNames = $users->pluck('name')->map(fn ($name) => mb_strtolower($name));
-
-        $staff = $users->map(fn (User $user) => $this->staffRow(
-            'user',
-            $user->id,
-            $user->name,
-            $user->job_title,
-            $staffAttendance->get(User::class.':'.$user->id),
-        ))->concat(
-            StaffRosterMember::where('active', true)
-                ->whereDoesntHave('user')
-                ->orderBy('name')
-                ->get()
-                ->reject(fn (StaffRosterMember $person) => $userNames->contains(mb_strtolower($person->name)))
-                ->map(fn (StaffRosterMember $person) => $this->staffRow(
-                    'roster',
-                    $person->id,
-                    $person->name,
-                    $person->job_title,
-                    $staffAttendance->get(StaffRosterMember::class.':'.$person->id),
-                ))
-        )->sortBy('name')->values();
-
         return Inertia::render('Register', [
             'date' => $today->toDateString(),
             'rows' => $rows->values(),
@@ -107,7 +98,7 @@ class RegisterController extends Controller
                 ->map(fn ($m) => ['id' => $m->id, 'name' => $m->displayName()]),
             'moods' => Attendance::MOODS,
             'cancellation' => DayCancellation::whereDate('date', $today)->first(),
-            'staff' => $staff,
+            'staff' => $this->staffRows($today),
         ]);
     }
 
@@ -123,20 +114,55 @@ class RegisterController extends Controller
             default => abort(404),
         };
 
-        StaffAttendance::updateOrCreate(
+        $attendance = StaffAttendance::firstOrNew(
             [
                 'date' => today(),
                 'staff_type' => $person::class,
                 'staff_id' => $person->getKey(),
             ],
-            [
-                'staff_name' => $person->name,
-                'present' => $data['present'],
-                'recorded_by' => $request->user()->id,
-            ],
         );
 
-        return back()->with('success', "{$person->name} marked ".($data['present'] ? 'here today.' : 'not on site.'));
+        $attendance->fill([
+            'staff_name' => $person->name,
+            'present' => $data['present'],
+            'recorded_by' => $request->user()->id,
+            'checked_in_at' => $data['present'] ? ($attendance->checked_in_at ?? now()) : $attendance->checked_in_at,
+            'checked_out_at' => $data['present'] ? null : now(),
+        ])->save();
+
+        return back()->with('success', "{$person->name} checked ".($data['present'] ? 'in.' : 'out.'));
+    }
+
+    public function checkInVisitor(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'organisation' => ['nullable', 'string', 'max:120'],
+            'visiting' => ['nullable', 'string', 'max:160'],
+        ]);
+
+        VisitorAttendance::create([
+            ...$data,
+            'date' => today(),
+            'checked_in_at' => now(),
+            'recorded_by' => $request->user()->id,
+        ]);
+
+        return back()->with('success', "{$data['name']} checked in as a visitor.");
+    }
+
+    public function checkOutVisitor(Request $request, VisitorAttendance $visitorAttendance)
+    {
+        abort_unless($visitorAttendance->date->isSameDay(today()), 404);
+
+        if ($visitorAttendance->checked_out_at === null) {
+            $visitorAttendance->update([
+                'checked_out_at' => now(),
+                'checked_out_by' => $request->user()->id,
+            ]);
+        }
+
+        return back()->with('success', "{$visitorAttendance->name} checked out.");
     }
 
     public function checkIn(Request $request, Member $member)
@@ -264,6 +290,43 @@ class RegisterController extends Controller
             'name' => $name,
             'job_title' => $jobTitle,
             'present' => (bool) $attendance?->present,
+            'checked_in_at' => $attendance?->checked_in_at?->format('H:i'),
+            'checked_out_at' => $attendance?->checked_out_at?->format('H:i'),
+        ];
+    }
+
+    private function staffRows($today)
+    {
+        $attendance = StaffAttendance::whereDate('date', $today)
+            ->get()
+            ->keyBy(fn (StaffAttendance $entry) => $entry->staff_type.':'.$entry->staff_id);
+
+        $users = User::orderBy('name')->get();
+        $userNames = $users->pluck('name')->map(fn ($name) => mb_strtolower($name));
+
+        return $users->map(fn (User $user) => $this->staffRow(
+            'user', $user->id, $user->name, $user->job_title, $attendance->get(User::class.':'.$user->id),
+        ))->concat(
+            StaffRosterMember::where('active', true)
+                ->whereDoesntHave('user')
+                ->orderBy('name')
+                ->get()
+                ->reject(fn (StaffRosterMember $person) => $userNames->contains(mb_strtolower($person->name)))
+                ->map(fn (StaffRosterMember $person) => $this->staffRow(
+                    'roster', $person->id, $person->name, $person->job_title, $attendance->get(StaffRosterMember::class.':'.$person->id),
+                ))
+        )->sortBy('name')->values();
+    }
+
+    private function visitorRow(VisitorAttendance $attendance): array
+    {
+        return [
+            'id' => $attendance->id,
+            'name' => $attendance->name,
+            'organisation' => $attendance->organisation,
+            'visiting' => $attendance->visiting,
+            'checked_in_at' => $attendance->checked_in_at->format('H:i'),
+            'checked_out_at' => $attendance->checked_out_at?->format('H:i'),
         ];
     }
 }

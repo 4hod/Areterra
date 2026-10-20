@@ -8,7 +8,7 @@ import { promptDialog } from '../utils/dialogs';
 import { SharedProps } from '../types';
 
 interface Row { id: number; name: string; scheduled: boolean; status: 'expected' | 'present' | 'absent'; absence_reason: string | null; checked_in: boolean; checked_in_at: string | null; arrival_mood: Mood | null; notes: string | null; }
-interface StaffRow { key: string; kind: 'user' | 'roster'; id: number; name: string; job_title: string | null; present: boolean; }
+interface StaffRow { key: string; kind: 'user' | 'roster'; id: number; name: string; job_title: string | null; present: boolean; checked_in_at: string | null; checked_out_at: string | null; }
 interface Cancellation { date: string; reason: string }
 interface Props { date: string; rows: Row[]; others: { id: number; name: string }[]; staff: StaffRow[]; cancellation: Cancellation | null; }
 
@@ -104,21 +104,23 @@ export default function Register({ date, rows, others, staff, cancellation }: Pr
 
                 <section className="staff-register-4a">
                     <header>
-                        <div><span className="module-kicker-4a">Fire safety</span><h2>Staff register</h2><p>Mark everyone who is on site today. This does not affect transport, payroll or member attendance.</p></div>
+                        <div><span className="module-kicker-4a">Fire safety</span><h2>Staff register</h2><p>Check staff in when they arrive and out when they leave. This does not affect transport, payroll or member attendance.</p></div>
                         <strong>{staffPresent.length} here</strong>
                     </header>
                     <div className="staff-register-list-4a">
                         {staff.map((person) => (
                             <article key={person.key} className={person.present ? 'is-present' : ''}>
                                 <div className="staff-register-avatar-4a">{person.name.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2)}</div>
-                                <div><b>{person.name}</b><span>{person.job_title ?? 'Staff'}</span></div>
+                                <div><b>{person.name}</b><span>{person.present ? `Arrived ${person.checked_in_at ?? 'today'}` : person.checked_out_at ? `Left ${person.checked_out_at}` : (person.job_title ?? 'Staff')}</span></div>
                                 <button onClick={() => setStaffPresence(person, !person.present)} className={person.present ? 'is-present' : ''} aria-pressed={person.present}>
-                                    {person.present ? '✓ Here today' : 'Mark here'}
+                                    {person.present ? 'Check out' : 'Check in'}
                                 </button>
                             </article>
                         ))}
                     </div>
                 </section>
+
+                <p className="mt-3 text-center text-xs text-slate-500">Visitors can be checked in and out from the <Link href="/fire-register" className="font-bold text-brand">live fire register</Link>.</p>
 
             </div>
 

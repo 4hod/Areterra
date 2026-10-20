@@ -12,6 +12,7 @@ use App\Models\LeaveBalance;
 use App\Models\Member;
 use App\Models\Setting;
 use App\Models\StaffAttendance;
+use App\Models\VisitorAttendance;
 use App\Services\TodayChecklist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -74,6 +75,7 @@ class DashboardController extends Controller
                 'animalsTotal' => $activeAnimals,
                 'animalsNeedingChecks' => max(0, $activeAnimals - $checkedAnimals),
                 'attendanceTrend' => $attendanceTrend,
+                'visitorsOnSite' => VisitorAttendance::whereDate('date', $today)->whereNull('checked_out_at')->count(),
             ],
             'welfareAlerts' => Animal::active()
                 ->whereIn('welfare_status', ['amber', 'red'])
