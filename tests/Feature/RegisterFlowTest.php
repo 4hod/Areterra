@@ -7,6 +7,7 @@ use App\Models\Member;
 use App\Models\StaffAttendance;
 use App\Models\StaffRosterMember;
 use App\Models\User;
+use App\Models\VisitorAttendance;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -82,6 +83,7 @@ class RegisterFlowTest extends TestCase
             'present' => true,
             'recorded_by' => $recorder->id,
         ]);
+        $this->assertNotNull(StaffAttendance::first()->checked_in_at);
         $this->assertDatabaseCount('timeclock_entries', 0);
 
         $this->actingAs($recorder)->put("/register/staff/user/{$colleague->id}", [
@@ -90,6 +92,38 @@ class RegisterFlowTest extends TestCase
 
         $this->assertSame(1, StaffAttendance::count());
         $this->assertFalse(StaffAttendance::first()->present);
+        $this->assertNotNull(StaffAttendance::first()->checked_out_at);
+    }
+
+    public function test_any_signed_in_user_can_check_visitors_in_and_out(): void
+    {
+        $volunteer = User::factory()->create(['role' => 'volunteer']);
+
+        $this->actingAs($volunteer)->post('/site-visitors', [
+            'name' => 'Pat Smith',
+            'organisation' => 'NHS',
+            'visiting' => 'Amy Buckle',
+        ])->assertRedirect();
+
+        $visitor = VisitorAttendance::sole();
+        $this->assertSame('Pat Smith', $visitor->name);
+        $this->assertNotNull($visitor->checked_in_at);
+        $this->assertNull($visitor->checked_out_at);
+
+        $this->actingAs($volunteer)->get('/fire-register')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('visitors.0.name', 'Pat Smith')
+                ->where('visitors.0.organisation', 'NHS'));
+
+        $this->actingAs($volunteer)->put("/site-visitors/{$visitor->id}/check-out")
+            ->assertRedirect();
+
+        $this->assertNotNull($visitor->fresh()->checked_out_at);
+        $this->actingAs($volunteer)->get('/fire-register')
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('visitors', 0)
+                ->where('checkedOutVisitors.0.name', 'Pat Smith'));
     }
 
     public function test_non_account_roster_staff_can_be_marked_here(): void

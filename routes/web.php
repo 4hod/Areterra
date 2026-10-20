@@ -113,7 +113,11 @@ Route::middleware(['auth', 'can:access_hub'])->group(function () {
     Route::put('/register/staff/{kind}/{id}', [RegisterController::class, 'updateStaff'])
         ->whereIn('kind', ['user', 'roster'])
         ->whereNumber('id')
-        ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:register'])->name('register.staff.update');
+        ->name('register.staff.update');
+    Route::post('/site-visitors', [RegisterController::class, 'checkInVisitor'])
+        ->name('site-visitors.check-in');
+    Route::put('/site-visitors/{visitorAttendance}/check-out', [RegisterController::class, 'checkOutVisitor'])
+        ->name('site-visitors.check-out');
 
     Route::get('/end-of-day', [EndOfDayController::class, 'index'])
         ->middleware(['can:view_member_details', 'can:log_sessions', 'daily.step:end_of_day'])->name('end-of-day');

@@ -16,6 +16,8 @@ class StaffAttendance extends Model
         return [
             'date' => 'date',
             'present' => 'boolean',
+            'checked_in_at' => 'datetime',
+            'checked_out_at' => 'datetime',
         ];
     }
 
