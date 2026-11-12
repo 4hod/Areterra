@@ -191,7 +191,7 @@ body{background:radial-gradient(circle at 83% -20%,rgba(0,157,230,.08),transpare
 
 @media print{
   @page{size:A4 portrait;margin:14mm}
-  .hub-app-shell *{visibility:hidden}
+  .fire-register-page-4a *{visibility:hidden}
   .fire-register-print,.fire-register-print *{visibility:visible}
   .hub-sidebar,.hub-topbar,.register-page-4a>:not(.fire-register-print){display:none!important}
   .fire-register-page-4a>:not(.fire-register-print){display:none!important}
